@@ -1,0 +1,4 @@
+.ml-side { width: 220px; background: #2b2a28; color: #f3efe6; padding: 18px 14px; }
+.ml-side h1 { font-size: 15px; margin: 0 0 18px; letter-spacing: 0.04em; }
+.ml-side a { display: block; padding: 8px 10px; text-decoration: none; border-radius: 4px; margin-bottom: 4px; color: #ddd6c8; }
+.ml-side a.on, .ml-side a:hover { background: #4a463f; color: #fff; }

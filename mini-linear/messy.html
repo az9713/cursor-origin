@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mini Linear (Session A)</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/sidebar.css">
+  <link rel="stylesheet" href="css/header.css">
+  <link rel="stylesheet" href="css/buttons.css">
+  <link rel="stylesheet" href="css/filters.css">
+  <link rel="stylesheet" href="css/filters-bar.css">
+  <link rel="stylesheet" href="css/board.css">
+  <link rel="stylesheet" href="css/board-page.css">
+  <link rel="stylesheet" href="css/column-backlog.css">
+  <link rel="stylesheet" href="css/column-todo.css">
+  <link rel="stylesheet" href="css/column-progress.css">
+  <link rel="stylesheet" href="css/column-done.css">
+  <link rel="stylesheet" href="css/card.css">
+  <link rel="stylesheet" href="css/card-board.css">
+  <link rel="stylesheet" href="css/card-list.css">
+  <link rel="stylesheet" href="css/list.css">
+  <link rel="stylesheet" href="css/list-page.css">
+  <link rel="stylesheet" href="css/detail.css">
+  <link rel="stylesheet" href="css/modal.css">
+  <link rel="stylesheet" href="css/badges.css">
+  <link rel="stylesheet" href="css/empty.css">
+  <link rel="stylesheet" href="css/avatars.css">
+  <link rel="stylesheet" href="css/banner.css">
+</head>
+<body class="ml-body">
+  <div class="ml-banner">Session A messy build. Clean app: <a href="./index.html">index.html</a></div>
+  <div class="ml-shell">
+    <aside class="ml-side">
+      <h1>Mini Linear</h1>
+      <a class="ml-nav" data-view="board" href="#/board">Board</a>
+      <a class="ml-nav" data-view="list" href="#/list">Issues</a>
+    </aside>
+    <div class="ml-main">
+      <header class="ml-top">
+        <h2 id="ml-title">Board</h2>
+        <button type="button" class="btn-new" id="ml-new">New issue</button>
+      </header>
+      <div id="ml-filter-host"></div>
+      <div id="ml-main"></div>
+    </div>
+  </div>
+  <div id="ml-modal-bg" class="ml-modal-bg hidden">
+    <div class="ml-modal" role="dialog" aria-labelledby="ml-modal-h">
+      <h3 id="ml-modal-h">New issue</h3>
+      <label>Title<input id="ml-new-title" required></label>
+      <label>Description<textarea id="ml-new-desc"></textarea></label>
+      <label>Status
+        <select id="ml-new-status">
+          <option value="backlog">backlog</option>
+          <option value="todo" selected>todo</option>
+          <option value="in_progress">in_progress</option>
+          <option value="done">done</option>
+        </select>
+      </label>
+      <label>Priority
+        <select id="ml-new-pri">
+          <option>low</option>
+          <option selected>medium</option>
+          <option>high</option>
+          <option>urgent</option>
+        </select>
+      </label>
+      <label>Assignee
+        <select id="ml-new-as"><option value="">Unassigned</option></select>
+      </label>
+      <p>
+        <button type="button" class="btn-new" id="ml-modal-save">Create</button>
+        <button type="button" class="btn-ghost" id="ml-modal-cancel">Cancel</button>
+      </p>
+    </div>
+  </div>
+  <script src="js/users.js"></script>
+  <script src="js/labels.js"></script>
+  <script src="js/seed/issue-01.js"></script>
+  <script src="js/seed/issue-02.js"></script>
+  <script src="js/seed/issue-03.js"></script>
+  <script src="js/seed/issue-04.js"></script>
+  <script src="js/seed/issue-05.js"></script>
+  <script src="js/seed/issue-06.js"></script>
+  <script src="js/seed/issue-07.js"></script>
+  <script src="js/seed/issue-08.js"></script>
+  <script src="js/seed/issue-09.js"></script>
+  <script src="js/seed/issue-10.js"></script>
+  <script src="js/seed/issue-11.js"></script>
+  <script src="js/seed/issue-12.js"></script>
+  <script src="js/seed/issue-13.js"></script>
+  <script src="js/seed/issue-14.js"></script>
+  <script src="js/seed/issue-15.js"></script>
+  <script src="js/seed/issue-16.js"></script>
+  <script src="js/seed/issue-17.js"></script>
+  <script src="js/seed/issue-18.js"></script>
+  <script src="js/seed/issue-19.js"></script>
+  <script src="js/seed/issue-20.js"></script>
+  <script src="js/seed/issue-21.js"></script>
+  <script src="js/seed/issue-22.js"></script>
+  <script src="js/seed/issue-23.js"></script>
+  <script src="js/seed/issue-24.js"></script>
+  <script src="js/seed/issue-25.js"></script>
+  <script src="js/seed/issue-26.js"></script>
+  <script src="js/seed/issue-27.js"></script>
+  <script src="js/seed/issue-28.js"></script>
+  <script src="js/seed/issue-29.js"></script>
+  <script src="js/seed/issue-30.js"></script>
+  <script src="js/storage-list.js"></script>
+  <script src="js/storage-board.js"></script>
+  <script src="js/messy-state.js"></script>
+  <script src="js/messy-router.js"></script>
+  <script src="js/filters-list.js"></script>
+  <script src="js/filters-board.js"></script>
+  <script src="js/cards/card-inner.js"></script>
+  <script src="js/cards/card-board-backlog.js"></script>
+  <script src="js/cards/card-board-todo.js"></script>
+  <script src="js/cards/card-board-in_progress.js"></script>
+  <script src="js/cards/card-board-done.js"></script>
+  <script src="js/cards/card-list.js"></script>
+  <script src="js/columns/col-backlog.js"></script>
+  <script src="js/columns/col-todo.js"></script>
+  <script src="js/columns/col-in_progress.js"></script>
+  <script src="js/columns/col-done.js"></script>
+  <script src="js/views/filters-ui.js"></script>
+  <script src="js/views/board.js"></script>
+  <script src="js/views/list.js"></script>
+  <script src="js/views/detail.js"></script>
+  <script src="js/modal.js"></script>
+  <script src="js/boot.js"></script>
+</body>
+</html>

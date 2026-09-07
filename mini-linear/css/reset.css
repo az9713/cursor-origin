@@ -1,0 +1,5 @@
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+button, input, select, textarea { font: inherit; }
+button { cursor: pointer; }
+a { color: inherit; }

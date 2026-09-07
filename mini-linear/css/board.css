@@ -1,0 +1,1 @@
+.ml-board { display: grid; grid-template-columns: repeat(4, minmax(200px, 1fr)); gap: 10px; padding: 12px; align-items: start; overflow: auto; flex: 1; }

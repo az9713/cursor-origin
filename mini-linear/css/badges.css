@@ -1,0 +1,11 @@
+.pill { font-size: 10px; padding: 2px 6px; border-radius: 99px; background: #eee; }
+.pill-bug { background: #f3d0c8; }
+.pill-feature { background: #d5e4f2; }
+.pill-design { background: #eadcf3; }
+.pill-infra { background: #dce8d8; }
+.pill-docs { background: #efe6c8; }
+.pill-perf { background: #d8e8ea; }
+.pri-urgent { color: #9b1c1c; font-weight: 700; }
+.pri-high { color: #b4451a; }
+.pri-medium { color: #6b5a2a; }
+.pri-low { color: #555; }

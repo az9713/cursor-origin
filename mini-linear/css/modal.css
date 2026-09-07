@@ -1,0 +1,5 @@
+.ml-modal-bg { position: fixed; inset: 0; background: rgba(30,24,16,.45); display: flex; align-items: center; justify-content: center; }
+.ml-modal { background: #fff; padding: 18px; width: min(480px, 92vw); border: 1px solid #ccc; }
+.ml-modal-bg.hidden, .ml-modal.hidden { display: none; }
+.ml-modal h3 { margin-top: 0; }
+.ml-modal input, .ml-modal textarea, .ml-modal select { width: 100%; margin: 6px 0 10px; padding: 8px; }

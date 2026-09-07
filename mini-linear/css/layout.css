@@ -1,0 +1,4 @@
+body.ml-body { font-family: "Segoe UI", Tahoma, sans-serif; background: #ece9e2; color: #222; }
+.ml-shell { display: flex; min-height: 100vh; }
+.ml-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+#ml-main { flex: 1; min-height: 0; display: flex; flex-direction: column; }

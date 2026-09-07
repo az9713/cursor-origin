@@ -1,0 +1,3 @@
+.ml-col { background: #e4ded3; border: 1px solid #cfc6b8; min-height: 240px; padding: 8px; }
+.ml-col h3 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; }
+.ml-col.over { outline: 2px dashed #c45c26; }

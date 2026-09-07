@@ -1,0 +1,3 @@
+.ml-row { display: grid; grid-template-columns: 72px 1fr 110px 100px 90px; gap: 8px; padding: 10px 12px; border-bottom: 1px solid #ddd6ca; background: #fff; cursor: pointer; }
+.ml-row:hover { background: #f6f1e8; }
+.ml-rowhead { font-size: 11px; text-transform: uppercase; color: #888; background: #efeae1; }

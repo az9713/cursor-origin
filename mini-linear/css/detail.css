@@ -1,0 +1,4 @@
+.ml-detail { max-width: 720px; padding: 20px; }
+.ml-detail input.title { width: 100%; font-size: 22px; border: 0; border-bottom: 1px solid #ddd; padding: 6px 0; background: transparent; }
+.ml-detail textarea { width: 100%; min-height: 140px; padding: 8px; border: 1px solid #d5ccbe; }
+.ml-detail .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }

@@ -2,6 +2,8 @@
 
 Internal spec for Project 1. Do not change this file during Session B polish. Session C may reorganize files but must not drop behavior listed here.
 
+Session A (messy, 60–100 files) is served at `messy.html`. Session C (tokens, one state module, one router) is `index.html`. Do not delete either tree.
+
 ## Product
 
 A static, no-backend issue tracker (Linear-lite). Vanilla HTML/CSS/JS. Persist to `localStorage` key `mini-linear-v1`. No new dependencies.
