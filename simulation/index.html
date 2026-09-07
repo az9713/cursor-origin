@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ant City</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <div class="layout">
+    <header class="top">
+      <div>
+        <p class="kicker">Simulation</p>
+        <h1>Ant City</h1>
+      </div>
+      <a href="../">Hub</a>
+    </header>
+
+    <div class="stage-wrap">
+      <canvas id="stage" width="960" height="640" aria-label="Ant colony simulation"></canvas>
+    </div>
+
+    <aside class="sidebar">
+      <section class="panel-section">
+        <h2>Controls</h2>
+        <div class="control">
+          <label for="speed">Speed <span id="speed-val">1.0×</span></label>
+          <input id="speed" type="range" min="25" max="400" value="100" step="5">
+        </div>
+        <div class="control">
+          <label for="population">Population <span id="pop-val">40</span></label>
+          <input id="population" type="range" min="4" max="120" value="40" step="1">
+        </div>
+        <div class="control">
+          <label for="fade">Pheromone fade <span id="fade-val">35</span></label>
+          <input id="fade" type="range" min="0" max="100" value="35" step="1">
+        </div>
+        <div class="control-row">
+          <button type="button" id="pause">Pause</button>
+          <button type="button" id="step">Step</button>
+        </div>
+        <div class="control">
+          <label for="seed">Seed replay</label>
+          <div class="seed-row">
+            <input id="seed" type="number" value="42" min="0" max="999999" step="1">
+            <button type="button" id="reset" class="primary">Reset</button>
+          </div>
+        </div>
+        <p class="hint">Same seed rebuilds the same city layout, food lots, and ant spawn order. Sliders persist in this browser.</p>
+      </section>
+
+      <section class="panel-section">
+        <h2>Live stats</h2>
+        <div class="stats-grid">
+          <div class="stat"><span class="val" id="stat-ants">0</span><span class="lbl">Ants</span></div>
+          <div class="stat"><span class="val" id="stat-food">0</span><span class="lbl">Food collected</span></div>
+          <div class="stat"><span class="val" id="stat-tick">0</span><span class="lbl">Ticks</span></div>
+          <div class="stat"><span class="val" id="stat-active">0</span><span class="lbl">Carrying</span></div>
+        </div>
+        <canvas id="chart" width="248" height="72" aria-label="Food collected over time"></canvas>
+      </section>
+    </aside>
+  </div>
+
+  <script src="js/rng.js"></script>
+  <script src="js/world.js"></script>
+  <script src="js/ant.js"></script>
+  <script src="js/chart.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

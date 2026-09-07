@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shader Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <header class="top">
+    <h1>Shader Studio</h1>
+    <span class="tag">WebGL2 · GLSL ES 3.00</span>
+    <span class="spacer"></span>
+    <span id="status-dot" class="status-dot"></span>
+    <span id="status-label" class="tag">Idle</span>
+    <a href="../">Hub</a>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-head">Presets</div>
+      <div id="gallery" class="gallery" aria-label="Shader presets"></div>
+
+      <div class="controls">
+        <div class="sidebar-head">Uniforms</div>
+        <div class="control">
+          <label for="rust">
+            Rust
+            <output id="rust-val" for="rust">0.55</output>
+          </label>
+          <input type="range" id="rust" min="0" max="1" step="0.01" value="0.55">
+        </div>
+        <div class="control">
+          <label for="grain">
+            Grain
+            <output id="grain-val" for="grain">0.35</output>
+          </label>
+          <input type="range" id="grain" min="0" max="1" step="0.01" value="0.35">
+        </div>
+      </div>
+    </aside>
+
+    <main class="stage">
+      <canvas id="preview" width="960" height="600" aria-label="Shader preview"></canvas>
+      <div id="error-overlay" class="error-overlay" aria-live="polite">
+        <div class="error-box">
+          <h2>Shader compile error</h2>
+          <pre id="error-text"></pre>
+        </div>
+      </div>
+    </main>
+
+    <section class="editor-panel">
+      <div class="editor-head">
+        <span>Fragment shader</span>
+        <button type="button" id="reset-shader" class="ghost">Reset</button>
+      </div>
+      <textarea id="fragment" spellcheck="false" aria-label="Fragment shader source"></textarea>
+      <div class="editor-foot">
+        Uniforms: <code>u_time</code>, <code>u_resolution</code>, <code>u_rust</code>, <code>u_grain</code>
+      </div>
+    </section>
+  </div>
+
+  <script src="js/gl.js"></script>
+  <script src="js/presets.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vector Editor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <header class="top">
+    <h1>Vector</h1>
+    <div class="tools" role="toolbar" aria-label="Tools">
+      <button type="button" class="tool active" data-tool="select" title="Select (V)">Select</button>
+      <button type="button" class="tool" data-tool="rect" title="Rectangle (R)">Rect</button>
+      <button type="button" class="tool" data-tool="ellipse" title="Ellipse (O)">Ellipse</button>
+      <button type="button" class="tool" data-tool="draw" title="Draw polyline">Draw</button>
+    </div>
+    <div class="actions">
+      <button type="button" id="undo" title="Undo (Ctrl+Z)">Undo</button>
+      <button type="button" id="redo" class="ghost" title="Redo">Redo</button>
+      <button type="button" id="export" class="ghost">Export SVG</button>
+      <a href="../">Hub</a>
+    </div>
+  </header>
+
+  <div class="workspace">
+    <aside class="layers-panel" aria-label="Layers">
+      <div class="panel-head">Layers</div>
+      <ul id="layers" class="layers-list"></ul>
+    </aside>
+
+    <div class="canvas-area">
+      <div class="canvas-scroll">
+        <svg id="artboard" xmlns="http://www.w3.org/2000/svg"
+             viewBox="0 0 800 560" width="800" height="560"
+             aria-label="Artboard">
+          <defs>
+            <pattern id="grid" width="8" height="8" patternUnits="userSpaceOnUse">
+              <path d="M 8 0 L 0 0 0 8" fill="none" stroke="#ebe4d6" stroke-width="0.5"/>
+            </pattern>
+          </defs>
+          <rect class="artboard-bg" x="0" y="0" width="800" height="560" fill="url(#grid)"/>
+          <g id="shapes"></g>
+          <g id="preview"></g>
+          <g id="selection"></g>
+        </svg>
+      </div>
+      <div class="status" id="status">Select tool · Snap 8px</div>
+    </div>
+  </div>
+
+  <script src="js/model.js"></script>
+  <script src="js/history.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

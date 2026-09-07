@@ -1,0 +1,54 @@
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  font-family: var(--font);
+  background: var(--paper);
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+}
+a { color: var(--link); }
+.top {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.7rem 1rem;
+  background: var(--head);
+  color: #efe7db;
+}
+.top h1 { margin: 0; font-size: 0.9rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.top a { color: #e8c4b0; font-size: 0.85rem; }
+.top input {
+  flex: 1;
+  max-width: 22rem;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid #4a433a;
+  background: #3a342c;
+  color: #fff;
+}
+.wrap { flex: 1; display: flex; min-height: 0; }
+.side {
+  width: 15rem;
+  padding: 0.85rem;
+  border-right: 1px solid var(--line);
+  overflow: auto;
+  background: #fffdf8;
+}
+.side label { display: block; margin: 0.35rem 0; font-size: 0.88rem; }
+canvas { display: block; flex: 1; background: var(--paper); cursor: grab; }
+.detail {
+  width: 18rem;
+  padding: 1rem;
+  border-left: 1px solid var(--line);
+  background: #fffdf8;
+  overflow: auto;
+}
+.detail h2 { margin: 0 0 0.4rem; font-size: 1.1rem; }
+.detail .meta { color: var(--muted); font-size: 0.82rem; }
+.detail ul { padding-left: 1.1rem; }
+.swatch { display: inline-block; width: 0.7rem; height: 0.7rem; border-radius: 50%; margin-right: 0.35rem; vertical-align: -1px; }
+.person { background: var(--node-person); }
+.company { background: var(--node-company); }
+.technology { background: var(--node-technology); }
+.event { background: var(--node-event); }
+.concept { background: var(--node-concept); }

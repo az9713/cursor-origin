@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Harbor Ledger — Maritime finance ops</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=IBM+Plex+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;0,6..72,700;1,6..72,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/page.css">
+  <link rel="stylesheet" href="css/inspector.css">
+</head>
+<body>
+  <nav class="site-nav">
+    <a class="logo" href="#">Harbor <span>Ledger</span></a>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
+      <a href="#docs">Docs</a>
+      <a class="nav-cta" href="#pricing">Start trial</a>
+    </div>
+    <a class="hub-link" href="../">← Hub</a>
+  </nav>
+
+  <header class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <p class="section-kicker">Maritime finance platform</p>
+        <h1>Reconcile freight revenue <em>before</em> the vessel docks</h1>
+        <p class="hero-sub">Harbor Ledger unifies charter parties, bunker invoices, and demurrage claims into one auditable ledger. Built for operators who can't afford spreadsheet drift.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#pricing">Book a pilot</a>
+          <a class="btn btn-ghost" href="#docs">Read the docs</a>
+        </div>
+      </div>
+      <div class="hero-card">
+        <div class="hero-card-header">
+          <strong>live_reconciliation</strong>
+          <span class="dim">v2.4.1</span>
+        </div>
+        <div class="line"><span class="dim">09:14:02</span>  MV <span class="ok">Nordfjord</span> — freight accrual matched</div>
+        <div class="line"><span class="dim">09:14:03</span>  Bunker delta: <span class="ok">+$12,440</span> within tolerance</div>
+        <div class="line"><span class="dim">09:14:05</span>  Demurrage window: 18h remaining</div>
+        <div class="line"><span class="dim">09:14:08</span>  Export queued → SAP GL / cost center 4402</div>
+        <div class="line dim">… 847 voyages synced this quarter</div>
+      </div>
+    </div>
+  </header>
+
+  <section class="stats">
+    <div class="wrap stats-grid">
+      <div class="stat">
+        <span class="stat-value">$2.1B</span>
+        <span class="stat-label">Freight reconciled (2025)</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value">847</span>
+        <span class="stat-label">Active vessel contracts</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value">99.7%</span>
+        <span class="stat-label">Match rate on first pass</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value">12min</span>
+        <span class="stat-label">Avg. close per voyage</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="features">
+    <div class="wrap">
+      <p class="section-kicker">Platform</p>
+      <h2 class="section-title">Everything between berth and balance sheet</h2>
+      <p class="section-lead">Six modules ship out of the box. Each writes to the same immutable event log so finance and ops never argue about which number is current.</p>
+      <div class="features-grid">
+        <article class="feature-card">
+          <div class="feature-icon">01 · CHARTER</div>
+          <h3>Charter party ingestion</h3>
+          <p>Parse CP clauses, laytime rules, and escalation tables from PDF or EDI. Version every amendment with diff history.</p>
+        </article>
+        <article class="feature-card">
+          <div class="feature-icon">02 · BUNKER</div>
+          <h3>Bunker reconciliation</h3>
+          <p>Match stem invoices against ROB surveys and consumption curves. Flag off-spec fuel before payment runs.</p>
+        </article>
+        <article class="feature-card">
+          <div class="feature-icon">03 · DEMURRAGE</div>
+          <h3>Demurrage engine</h3>
+          <p>Compute laytime with reversible clocks, weather exceptions, and SHINC/SHEX modifiers. Export claim packs in one click.</p>
+        </article>
+        <article class="feature-card">
+          <div class="feature-icon">04 · FX</div>
+          <h3>Multi-currency ledger</h3>
+          <p>Lock voyage FX at fixture date or spot. Revalue open items daily with configurable rate sources.</p>
+        </article>
+        <article class="feature-card">
+          <div class="feature-icon">05 · AUDIT</div>
+          <h3>Immutable audit trail</h3>
+          <p>Every adjustment carries actor, reason code, and supporting document hash. SOC 2 Type II controls built in.</p>
+        </article>
+        <article class="feature-card">
+          <div class="feature-icon">06 · ERP</div>
+          <h3>ERP export adapters</h3>
+          <p>Push accruals to SAP, Oracle, or NetSuite with mapping templates per cost center and voyage type.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="pricing">
+    <div class="wrap">
+      <p class="section-kicker">Pricing</p>
+      <h2 class="section-title">Transparent tiers for fleet size</h2>
+      <p class="section-lead">All plans include unlimited users, API access, and the audit log. Annual billing saves 18%.</p>
+      <div class="pricing-table-wrap">
+        <table class="pricing-table">
+          <thead>
+            <tr>
+              <th>Plan</th>
+              <th>Harbor Starter</th>
+              <th class="featured">Harbor Pro</th>
+              <th>Harbor Enterprise</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Monthly</td>
+              <td><span class="price">$890</span>/mo</td>
+              <td class="featured"><span class="price">$2,400</span>/mo</td>
+              <td>Custom</td>
+            </tr>
+            <tr>
+              <td>Vessels</td>
+              <td>Up to 15</td>
+              <td class="featured">Up to 80</td>
+              <td>Unlimited</td>
+            </tr>
+            <tr>
+              <td>Charter ingestion</td>
+              <td class="check">✓</td>
+              <td class="featured check">✓</td>
+              <td class="check">✓</td>
+            </tr>
+            <tr>
+              <td>Demurrage engine</td>
+              <td>—</td>
+              <td class="featured check">✓</td>
+              <td class="check">✓</td>
+            </tr>
+            <tr>
+              <td>ERP adapters</td>
+              <td>1 connector</td>
+              <td class="featured">3 connectors</td>
+              <td>Unlimited + custom</td>
+            </tr>
+            <tr>
+              <td>Support</td>
+              <td>Email, 48h SLA</td>
+              <td class="featured">Priority, 8h SLA</td>
+              <td>Dedicated CSM</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="wrap">
+      <p class="section-kicker">FAQ</p>
+      <h2 class="section-title">Common questions</h2>
+      <div class="faq-list">
+        <div class="faq-item">
+          <button type="button" class="faq-q">How long does onboarding take?</button>
+          <div class="faq-a">Most fleets go live in 6–8 weeks. Week 1–2 covers data migration and CP template setup; week 3–5 runs parallel reconciliation against your existing spreadsheets.</div>
+        </div>
+        <div class="faq-item">
+          <button type="button" class="faq-q">Do you support time charters and voyage charters?</button>
+          <div class="faq-a">Both. Voyage charters use the demurrage engine; time charters accrue hire day-by-day with off-hire deductions and bunker adjustments on redelivery.</div>
+        </div>
+        <div class="faq-item">
+          <button type="button" class="faq-q">Where is data hosted?</button>
+          <div class="faq-a">Primary region is AWS eu-west-1 (Ireland). US and APAC regions available on Enterprise. All data encrypted at rest (AES-256) and in transit (TLS 1.3).</div>
+        </div>
+        <div class="faq-item">
+          <button type="button" class="faq-q">Can we keep using Excel for ad-hoc analysis?</button>
+          <div class="faq-a">Yes. Export any ledger view to CSV or connect via the read-only SQL bridge. Writes always go through the API or UI to preserve the audit trail.</div>
+        </div>
+        <div class="faq-item">
+          <button type="button" class="faq-q">What ERP systems do you integrate with?</button>
+          <div class="faq-a">Pre-built adapters for SAP S/4HANA, Oracle Fusion, and NetSuite. Custom GL mapping is included with Enterprise.</div>
+        </div>
+        <div class="faq-item">
+          <button type="button" class="faq-q">Is there a sandbox environment?</button>
+          <div class="faq-a">Every account gets a sandbox tenant with sample voyages. Pro and Enterprise can clone production data (PII scrubbed) for UAT.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="docs" class="docs">
+    <div class="wrap docs-layout">
+      <nav class="docs-nav">
+        <a href="#install">Installation</a>
+        <a href="#auth">Authentication</a>
+        <a href="#voyages">Voyages API</a>
+        <a href="#webhooks">Webhooks</a>
+        <a href="#compliance">Compliance</a>
+      </nav>
+      <div class="docs-body">
+        <h2 id="install">Installation &amp; setup</h2>
+        <p>Harbor Ledger is a hosted SaaS platform. There is no on-prem installer — you provision a tenant from the admin console and invite users via SSO (SAML 2.0 or OIDC).</p>
+        <h3>Quick start checklist</h3>
+        <ul>
+          <li>Create tenant at <code>app.harborledger.example/admin</code></li>
+          <li>Configure IdP metadata (Okta, Azure AD, or Google Workspace)</li>
+          <li>Upload charter party templates or connect EDI inbox</li>
+          <li>Map GL accounts for freight, bunker, and demurrage buckets</li>
+          <li>Run first reconciliation in sandbox before production cutover</li>
+        </ul>
+        <div class="note">Sandbox tenants expire after 90 days unless upgraded. Export your mapping config before expiry.</div>
+
+        <h2 id="auth">Authentication</h2>
+        <p>All API requests require a bearer token issued via OAuth 2.0 client credentials. Tokens expire after 3600 seconds.</p>
+        <pre><code>POST /oauth/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=client_credentials
+&amp;client_id=hl_live_xxxx
+&amp;client_secret=xxxx
+&amp;scope=voyages:read voyages:write ledger:export</code></pre>
+
+        <h2 id="voyages">Voyages API</h2>
+        <p>List open voyages with pending reconciliation items. Pagination uses cursor-based <code>next</code> tokens.</p>
+        <pre><code>GET /v2/voyages?status=open&amp;limit=50
+Authorization: Bearer {token}
+
+{
+  "data": [
+    {
+      "id": "voy_8f2a91",
+      "vessel": "MV Nordfjord",
+      "cp_date": "2025-08-14",
+      "freight_usd": 1840000,
+      "unmatched_items": 3
+    }
+  ],
+  "next": "voy_curs_abc123"
+}</code></pre>
+        <h3>Posting an adjustment</h3>
+        <p>Adjustments require a reason code from the catalog (<code>REASON_BUNKER_DELTA</code>, <code>REASON_DEMURRAGE</code>, etc.) and an optional attachment ID.</p>
+
+        <h2 id="webhooks">Webhooks</h2>
+        <p>Subscribe to ledger events: <code>voyage.closed</code>, <code>reconciliation.matched</code>, <code>export.completed</code>. Payloads are signed with HMAC-SHA256 using your webhook secret.</p>
+        <ul>
+          <li>Retries: 3 attempts with exponential backoff (1m, 5m, 30m)</li>
+          <li>Dead-letter queue retained 30 days</li>
+          <li>Replay from admin console or <code>POST /webhooks/{id}/replay</code></li>
+        </ul>
+
+        <h2 id="compliance">Compliance &amp; retention</h2>
+        <p>Harbor Ledger maintains SOC 2 Type II certification. Audit logs are append-only and retained for 7 years by default (configurable up to 10 on Enterprise).</p>
+        <p>Data processing agreements cover GDPR, UK GDPR, and APPI. Sub-processors list available on request. Right-to-erasure applies to user PII only — financial records follow statutory retention.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p>Harbor Ledger is a fictional product for the cursor-origin stress test. <a href="../">Back to hub</a></p>
+    </div>
+  </footer>
+
+  <!-- Live inspector -->
+  <aside id="inspector-panel" class="inspector-panel" data-inspector-chrome>
+    <div class="inspector-header" data-inspector-chrome>
+      <h2 data-inspector-chrome>Live inspector</h2>
+      <span class="inspector-mode-badge" data-inspector-chrome>ON</span>
+    </div>
+    <div class="inspector-body" data-inspector-chrome>
+      <p class="inspector-hint" data-inspector-chrome>Click any element on the page to select it. Edit text and color below — changes save automatically.</p>
+      <p id="inspector-empty" class="inspector-empty" data-inspector-chrome>No element selected. Click a heading, paragraph, or stat to begin.</p>
+      <div id="inspector-tag" class="inspector-tag" hidden data-inspector-chrome></div>
+      <div id="inspector-fields" hidden data-inspector-chrome>
+        <div class="inspector-field" data-inspector-chrome>
+          <label for="inspector-text" data-inspector-chrome>Text content</label>
+          <textarea id="inspector-text" data-inspector-chrome></textarea>
+        </div>
+        <div class="inspector-field" data-inspector-chrome>
+          <label for="inspector-color" data-inspector-chrome>Text color</label>
+          <input type="color" id="inspector-color" value="#0c1829" data-inspector-chrome>
+        </div>
+        <div class="inspector-actions" data-inspector-chrome>
+          <button type="button" id="inspector-apply" class="btn-apply" data-inspector-chrome>Apply</button>
+          <button type="button" id="inspector-reset" class="btn-reset" data-inspector-chrome>Reset all</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <script src="js/inspector.js"></script>
+  <script>
+    document.querySelectorAll(".faq-q").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        btn.parentElement.classList.toggle("open");
+      });
+    });
+  </script>
+</body>
+</html>

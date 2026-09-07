@@ -1,0 +1,24 @@
+:root {
+  --ink: #0c1829;
+  --ink-soft: #1e3348;
+  --muted: #5a6b7d;
+  --paper: #f4efe6;
+  --paper-bright: #faf7f1;
+  --sand: #e8dfd0;
+  --sea: #2d6a62;
+  --sea-light: #4a9b8e;
+  --amber: #c4842a;
+  --amber-bright: #e8a840;
+  --rust: #9c4a2e;
+  --rule: #d4cbb8;
+  --shadow: 0 12px 40px rgba(12, 24, 41, 0.08);
+
+  --font-display: "Newsreader", Georgia, "Times New Roman", serif;
+  --font-body: "DM Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --radius: 6px;
+  --radius-lg: 12px;
+  --max: 72rem;
+  --inspector-width: 320px;
+}

@@ -1,0 +1,21 @@
+:root {
+  --ink: #1a1612;
+  --paper: #f3eee4;
+  --panel: #fffdf8;
+  --line: #d9d0c1;
+  --muted: #5e564c;
+  --head: #2a251f;
+  --rust: #b4451a;
+  --rust-soft: rgba(180, 69, 26, 0.14);
+  --rust-glow: rgba(180, 69, 26, 0.35);
+  --link: #c45a2a;
+  --link-dim: rgba(196, 90, 42, 0.25);
+  --highlight: rgba(180, 69, 26, 0.55);
+  --node-person: #5c7a8a;
+  --node-company: #8a6b4a;
+  --node-technology: #4a7a5c;
+  --node-event: #7a5c8a;
+  --node-concept: #6a6a4a;
+  --font: "IBM Plex Sans", "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+}

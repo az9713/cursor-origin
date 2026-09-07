@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Desktop OS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <div id="desktop" class="desktop">
+    <header class="desktop-brand" aria-hidden="true">
+      <span class="brand-mark">◆</span>
+      <span>Desktop OS</span>
+    </header>
+    <div id="window-layer" class="window-layer" aria-live="polite"></div>
+  </div>
+
+  <footer class="taskbar" role="toolbar" aria-label="Taskbar">
+    <div id="taskbar-apps" class="taskbar-apps"></div>
+    <div class="taskbar-end">
+      <a id="hub-link" class="taskbar-hub" href="../" title="Back to hub">Hub</a>
+      <time id="clock" class="taskbar-clock" aria-live="off"></time>
+    </div>
+  </footer>
+
+  <script src="js/vfs.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/apps/notes.js"></script>
+  <script src="js/apps/finder.js"></script>
+  <script src="js/apps/terminal.js"></script>
+  <script src="js/window-manager.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

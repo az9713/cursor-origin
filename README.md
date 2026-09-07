@@ -8,7 +8,16 @@ https://az9713.github.io/cursor-origin/
 
 ## Sub-projects
 
-- [Mini Linear](https://az9713.github.io/cursor-origin/mini-linear/) — issue board + list, localStorage, hash routes
+- [Mini Linear](https://az9713.github.io/cursor-origin/mini-linear/)
+- [Spreadsheet](https://az9713.github.io/cursor-origin/spreadsheet/)
+- [Vector editor](https://az9713.github.io/cursor-origin/vector-editor/)
+- [Desktop OS](https://az9713.github.io/cursor-origin/desktop-os/)
+- [Compiler](https://az9713.github.io/cursor-origin/compiler/)
+- [Page + inspector](https://az9713.github.io/cursor-origin/page-clone/)
+- [Ant simulation](https://az9713.github.io/cursor-origin/simulation/)
+- [SaaS shell](https://az9713.github.io/cursor-origin/saas-shell/)
+- [Shader studio](https://az9713.github.io/cursor-origin/shader-studio/)
+- [Knowledge graph](https://az9713.github.io/cursor-origin/knowledge-graph/)
 
 ## Run locally
 
@@ -16,4 +25,4 @@ https://az9713.github.io/cursor-origin/
 python -m http.server 8080
 ```
 
-Open `http://localhost:8080/` or `http://localhost:8080/mini-linear/`.
+Open `http://localhost:8080/` or any sub-project folder.

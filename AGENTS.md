@@ -6,16 +6,25 @@ Hub repo for Cursor stress-test sub-projects. GitHub: `az9713/cursor-origin`. Ea
 
 Current sub-projects:
 - `mini-linear/` — Project 1: messy mini Linear, then architectural refactor
+- `spreadsheet/` — Project 2: grid with a real formula engine
+- `vector-editor/` — Project 3: Figma-lite artboard
+- `desktop-os/` — Project 4: windowed desktop + three apps
+- `compiler/` — Project 5: toy language playground
+- `page-clone/` — Project 6: original page + inspector
+- `simulation/` — Project 7: ant simulation
+- `saas-shell/` — Project 8: Incident Commander SaaS shell
+- `shader-studio/` — Project 9: WebGL2 shader studio
+- `knowledge-graph/` — Project 10: computing-history graph
 
 ## How to run
 
-Open `index.html` at the repo root (hub) or `mini-linear/index.html` (the app). Or from the repo root:
+Open `index.html` at the repo root (hub) or any sub-project `index.html`. Or from the repo root:
 
 ```bash
 python -m http.server 8080
 ```
 
-Then visit `http://localhost:8080/` or `http://localhost:8080/mini-linear/`.
+Then visit `http://localhost:8080/` or a folder such as `http://localhost:8080/spreadsheet/`.
 
 ## Conventions
 

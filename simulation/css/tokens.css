@@ -1,0 +1,18 @@
+:root {
+  --ink: #161410;
+  --paper: #ebe4d6;
+  --panel: #fffdf8;
+  --line: #cfc6b6;
+  --muted: #5c564c;
+  --head: #2a251f;
+  --rust: #b4451a;
+  --rust-soft: rgba(180, 69, 26, 0.18);
+  --rust-glow: rgba(180, 69, 26, 0.45);
+  --building: #c4b8a4;
+  --building-edge: #9a8f7c;
+  --street: #ddd5c8;
+  --food: #3d7a4a;
+  --nest: #8b6914;
+  --font: "IBM Plex Sans", "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+}

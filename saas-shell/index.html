@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Incident Commander</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <div class="shell" id="shell">
+    <aside class="sidebar" aria-label="Main navigation">
+      <div class="sidebar-brand">
+        <span class="brand-mark" aria-hidden="true">IC</span>
+        <div>
+          <strong>Incident Commander</strong>
+          <span class="brand-sub">Design shell</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav" id="nav"></nav>
+      <div class="sidebar-foot">
+        <a href="../" class="hub-link">← Hub</a>
+      </div>
+    </aside>
+
+    <div class="main-col">
+      <header class="topbar">
+        <form class="search-form" id="search-form" role="search">
+          <label class="sr-only" for="global-search">Search</label>
+          <input type="search" id="global-search" placeholder="Search incidents, services…" autocomplete="off">
+          <kbd>/</kbd>
+        </form>
+        <div class="topbar-actions">
+          <button type="button" class="btn-ghost" id="help-btn" title="Keyboard shortcuts (?)">?</button>
+          <button type="button" class="btn-ghost" id="reset-btn" title="Reset demo data">Reset</button>
+          <span class="status-pill" id="status-pill">All systems nominal</span>
+        </div>
+      </header>
+
+      <main class="content" id="content" tabindex="-1">
+        <div class="state-loading" id="loading" hidden>
+          <div class="spinner" aria-hidden="true"></div>
+          <p>Loading workspace…</p>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <dialog class="modal" id="help-modal" aria-labelledby="help-title">
+    <div class="modal-head">
+      <h2 id="help-title">Keyboard shortcuts</h2>
+      <button type="button" class="btn-icon" id="help-close" aria-label="Close">×</button>
+    </div>
+    <div class="modal-body">
+      <dl class="shortcut-list">
+        <div><dt><kbd>?</kbd></dt><dd>Show this help</dd></div>
+        <div><dt><kbd>/</kbd></dt><dd>Focus search</dd></div>
+        <div><dt><kbd>g</kbd> <kbd>d</kbd></dt><dd>Go to Dashboard</dd></div>
+        <div><dt><kbd>g</kbd> <kbd>i</kbd></dt><dd>Go to Incidents</dd></div>
+        <div><dt><kbd>g</kbd> <kbd>t</kbd></dt><dd>Go to Team</dd></div>
+        <div><dt><kbd>g</kbd> <kbd>s</kbd></dt><dd>Go to Settings</dd></div>
+        <div><dt><kbd>Esc</kbd></dt><dd>Close dialogs / blur search</dd></div>
+      </dl>
+    </div>
+  </dialog>
+
+  <script src="js/state.js"></script>
+  <script src="js/router.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

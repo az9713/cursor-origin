@@ -1,0 +1,143 @@
+.inspector-panel {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  width: var(--inspector-width);
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+  font-size: 0.88rem;
+  z-index: 1000;
+}
+
+.inspector-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.inspector-header h2 {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--amber-bright);
+}
+
+.inspector-body {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.inspector-field label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 0.35rem;
+}
+
+.inspector-field input[type="text"],
+.inspector-field textarea {
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--paper);
+  font: inherit;
+  font-size: 0.88rem;
+}
+
+.inspector-field textarea {
+  min-height: 4.5rem;
+  resize: vertical;
+}
+
+.inspector-field input[type="color"] {
+  width: 100%;
+  height: 2.25rem;
+  padding: 0.15rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius);
+  background: transparent;
+  cursor: pointer;
+}
+
+.inspector-tag {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--sea-light);
+  padding: 0.35rem 0.5rem;
+  background: rgba(74, 155, 142, 0.15);
+  border-radius: var(--radius);
+  word-break: break-all;
+}
+
+.inspector-empty {
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.inspector-actions {
+  display: flex;
+  gap: 0.5rem;
+  padding-top: 0.25rem;
+}
+
+.inspector-actions button {
+  flex: 1;
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.inspector-actions .btn-apply {
+  background: var(--sea);
+  color: #fff;
+}
+
+.inspector-actions .btn-apply:hover { background: var(--sea-light); }
+
+.inspector-actions .btn-reset {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--paper);
+}
+
+.inspector-actions .btn-reset:hover {
+  border-color: var(--rust);
+  color: #f0a090;
+}
+
+.inspector-hint {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.35);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.inspector-mode-badge {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  padding: 0.2rem 0.45rem;
+  background: rgba(232, 168, 64, 0.2);
+  color: var(--amber-bright);
+  border-radius: 3px;
+}

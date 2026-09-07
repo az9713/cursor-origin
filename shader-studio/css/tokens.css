@@ -1,0 +1,22 @@
+:root {
+  --bg: #0e0d0b;
+  --surface: #161412;
+  --panel: #1c1916;
+  --elevated: #242019;
+  --line: #2e2923;
+  --line-soft: #3a342c;
+  --ink: #e8e2d8;
+  --muted: #8a8178;
+  --dim: #5c554d;
+  --rust: #c45c2a;
+  --rust-bright: #e07040;
+  --rust-soft: rgba(196, 92, 42, 0.18);
+  --rust-glow: rgba(196, 92, 42, 0.35);
+  --error: #e05a5a;
+  --error-bg: rgba(224, 90, 90, 0.12);
+  --ok: #6ab87a;
+  --font: "IBM Plex Sans", "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+  --radius: 6px;
+  --header-h: 48px;
+}

@@ -1,0 +1,23 @@
+:root {
+  --ink: #161410;
+  --paper: #ebe4d6;
+  --panel: #fffdf8;
+  --line: #cfc6b6;
+  --muted: #5c564c;
+  --head: #2a251f;
+  --taskbar: #1e1b17;
+  --taskbar-line: #3a342c;
+  --rust: #b4451a;
+  --rust-light: #d4623a;
+  --rust-dim: rgba(180, 69, 26, 0.18);
+  --focus-ring: rgba(180, 69, 26, 0.45);
+  --shadow: rgba(22, 20, 16, 0.22);
+  --term-bg: #141210;
+  --term-fg: #e8dfd0;
+  --term-prompt: #d4623a;
+  --font: "IBM Plex Sans", "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+  --titlebar-h: 36px;
+  --taskbar-h: 48px;
+  --win-radius: 8px;
+}

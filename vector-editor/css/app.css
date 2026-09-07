@@ -1,0 +1,231 @@
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  font-family: var(--font);
+  background: var(--paper);
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+button { font: inherit; cursor: pointer; }
+
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.6rem 0.85rem;
+  background: var(--head);
+  color: #efe7db;
+  border-bottom: 1px solid #3d3630;
+}
+.top h1 {
+  margin: 0 0.75rem 0 0;
+  font-size: 0.82rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.tools {
+  display: flex;
+  gap: 0.25rem;
+}
+.tools .tool {
+  background: transparent;
+  border: 1px solid #6a6156;
+  color: #efe7db;
+  padding: 0.32rem 0.6rem;
+  border-radius: 3px;
+  font-size: 0.82rem;
+}
+.tools .tool:hover { border-color: #a89888; }
+.tools .tool.active {
+  background: var(--rust);
+  border-color: var(--rust);
+  color: #fff;
+}
+.actions {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  margin-left: auto;
+}
+.actions button {
+  background: var(--rust);
+  color: #fff;
+  border: 0;
+  padding: 0.35rem 0.65rem;
+  border-radius: 3px;
+  font-size: 0.82rem;
+}
+.actions button.ghost {
+  background: transparent;
+  border: 1px solid #6a6156;
+  color: #efe7db;
+}
+.actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.actions a {
+  color: #e8c4b0;
+  font-size: 0.85rem;
+  margin-left: 0.25rem;
+}
+
+.workspace {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  min-height: 0;
+}
+
+.layers-panel {
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.panel-head {
+  padding: 0.55rem 0.75rem;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+}
+.layers-list {
+  list-style: none;
+  margin: 0;
+  padding: 0.35rem 0;
+  overflow-y: auto;
+  flex: 1;
+}
+.layer-item {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  gap: 0.2rem;
+  align-items: center;
+  padding: 0.35rem 0.5rem 0.35rem 0.65rem;
+  font-size: 0.82rem;
+  border-left: 3px solid transparent;
+  cursor: pointer;
+}
+.layer-item:hover { background: var(--rust-soft); }
+.layer-item.selected {
+  background: var(--sel);
+  border-left-color: var(--rust);
+}
+.layer-item.hidden-layer .layer-name {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+.layer-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.layer-btn {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border-radius: 2px;
+  font-size: 0.7rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.layer-btn:hover {
+  border-color: var(--rust);
+  color: var(--rust);
+}
+.layer-btn.danger:hover {
+  border-color: #8b2e0f;
+  color: #8b2e0f;
+}
+
+.canvas-area {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--paper);
+}
+.canvas-scroll {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  min-height: 0;
+}
+#artboard {
+  background: var(--artboard);
+  border: 1px solid var(--line);
+  box-shadow: 0 2px 12px rgba(26, 22, 18, 0.08);
+  touch-action: none;
+  user-select: none;
+}
+#artboard .shape {
+  cursor: pointer;
+}
+#artboard.tool-select .shape { cursor: move; }
+#artboard.tool-rect,
+#artboard.tool-ellipse,
+#artboard.tool-draw { cursor: crosshair; }
+
+.status {
+  padding: 0.4rem 0.85rem;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+}
+
+/* Selection overlay */
+.sel-box {
+  fill: none;
+  stroke: var(--rust);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+  pointer-events: none;
+}
+.handle {
+  fill: #fff;
+  stroke: var(--handle);
+  stroke-width: 1.5;
+  cursor: nwse-resize;
+}
+.handle[data-handle="n"],
+.handle[data-handle="s"] { cursor: ns-resize; }
+.handle[data-handle="e"],
+.handle[data-handle="w"] { cursor: ew-resize; }
+.handle[data-handle="ne"],
+.handle[data-handle="sw"] { cursor: nesw-resize; }
+
+.draw-preview {
+  fill: none;
+  stroke: var(--rust);
+  stroke-width: 2;
+  stroke-dasharray: 6 4;
+  pointer-events: none;
+}
+.draw-vertex {
+  fill: var(--rust);
+  stroke: #fff;
+  stroke-width: 1;
+  pointer-events: none;
+}
+
+.empty-layers {
+  padding: 1rem 0.75rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}

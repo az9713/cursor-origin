@@ -1,0 +1,440 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--font);
+  color: var(--ink);
+  background: var(--paper);
+}
+
+.desktop {
+  position: relative;
+  height: calc(100vh - var(--taskbar-h));
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(180, 69, 26, 0.08), transparent 55%),
+    radial-gradient(ellipse at 85% 75%, rgba(42, 37, 31, 0.06), transparent 50%),
+    linear-gradient(165deg, #f0e9db 0%, var(--paper) 45%, #e3dac8 100%);
+  overflow: hidden;
+}
+
+.desktop::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.35;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E");
+  pointer-events: none;
+}
+
+.desktop-brand {
+  position: absolute;
+  top: 1.25rem;
+  left: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  user-select: none;
+  z-index: 0;
+}
+
+.brand-mark {
+  color: var(--rust);
+  font-size: 1rem;
+}
+
+.window-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+/* —— Windows —— */
+
+.window {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  min-width: 280px;
+  min-height: 180px;
+  border: 1px solid var(--line);
+  border-radius: var(--win-radius);
+  background: var(--panel);
+  box-shadow: 0 14px 40px var(--shadow);
+  overflow: hidden;
+}
+
+.window.minimized {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.window.focused {
+  border-color: color-mix(in srgb, var(--rust) 55%, var(--line));
+  box-shadow: 0 18px 48px var(--shadow), 0 0 0 1px var(--rust-dim);
+}
+
+.window-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--titlebar-h);
+  padding: 0 0.35rem 0 0.75rem;
+  background: linear-gradient(180deg, #f7f2e8, #ece4d6);
+  border-bottom: 1px solid var(--line);
+  cursor: grab;
+  user-select: none;
+}
+
+.window.focused .window-titlebar {
+  background: linear-gradient(180deg, #2f2a24, var(--head));
+  color: #f3eee4;
+  border-bottom-color: #3f3830;
+}
+
+.window-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.window-controls {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.win-btn {
+  width: 28px;
+  height: 24px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.win-btn:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.window.focused .win-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.win-close:hover {
+  background: var(--rust) !important;
+  color: #fff;
+  border-color: var(--rust-light);
+}
+
+.window-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: var(--panel);
+}
+
+.window-resize {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 16px;
+  height: 16px;
+  cursor: nwse-resize;
+  background: linear-gradient(135deg, transparent 50%, var(--line) 50%, var(--line) 58%, transparent 58%);
+}
+
+.window.focused .window-resize {
+  background: linear-gradient(135deg, transparent 50%, var(--rust) 50%, var(--rust) 58%, transparent 58%);
+}
+
+/* —— Taskbar —— */
+
+.taskbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--taskbar-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0.75rem;
+  background: var(--taskbar);
+  border-top: 1px solid var(--taskbar-line);
+  color: #e8dfd0;
+  z-index: 10000;
+}
+
+.taskbar-apps {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.taskbar-btn,
+.taskbar-window {
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
+.taskbar-btn {
+  width: 40px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  font-size: 1.1rem;
+}
+
+.taskbar-btn.running {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.taskbar-btn.active,
+.taskbar-window.active {
+  background: var(--rust);
+  border-color: var(--rust-light);
+}
+
+.taskbar-btn.minimized,
+.taskbar-window.minimized {
+  opacity: 0.55;
+}
+
+.taskbar-window {
+  max-width: 9rem;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.78rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.taskbar-end {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.taskbar-hub {
+  color: #d4c9b8;
+  text-decoration: none;
+  font-size: 0.82rem;
+  padding: 0.35rem 0.55rem;
+  border-radius: 4px;
+}
+
+.taskbar-hub:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.taskbar-clock {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: #f3eee4;
+  min-width: 5.5rem;
+  text-align: right;
+}
+
+/* —— Notes —— */
+
+.app-notes {
+  height: 100%;
+}
+
+.notes-editor {
+  width: 100%;
+  height: 100%;
+  min-height: 140px;
+  border: 0;
+  resize: none;
+  padding: 0.85rem 1rem;
+  font: 0.95rem/1.55 var(--font);
+  color: var(--ink);
+  background: var(--panel);
+}
+
+.notes-editor:focus {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--focus-ring);
+}
+
+/* —— Finder —— */
+
+.app-finder {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.finder-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--line);
+  background: #f7f2e8;
+}
+
+.finder-up {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--panel);
+  padding: 0.2rem 0.55rem;
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.finder-up:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.finder-up:not(:disabled):hover {
+  border-color: var(--rust);
+  color: var(--rust);
+}
+
+.finder-path {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.finder-list {
+  list-style: none;
+  margin: 0;
+  padding: 0.35rem 0;
+  flex: 1;
+  overflow: auto;
+}
+
+.finder-item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 0.85rem;
+  cursor: default;
+  user-select: none;
+}
+
+.finder-item:hover {
+  background: var(--rust-dim);
+}
+
+.finder-item.selected {
+  background: color-mix(in srgb, var(--rust) 22%, transparent);
+}
+
+.finder-icon {
+  width: 1.25rem;
+  text-align: center;
+}
+
+.finder-name {
+  font-size: 0.9rem;
+}
+
+.finder-preview {
+  border-top: 1px solid var(--line);
+  max-height: 42%;
+  overflow: auto;
+  background: #faf6ee;
+}
+
+.finder-file-content {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.finder-error {
+  padding: 1rem;
+  color: var(--rust);
+}
+
+/* —— Terminal —— */
+
+.app-terminal {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--term-bg);
+  color: var(--term-fg);
+}
+
+.term-output {
+  flex: 1;
+  overflow: auto;
+  padding: 0.75rem 0.85rem 0.35rem;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.term-line {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.term-line.term-echo {
+  color: #9a9082;
+}
+
+.term-line.term-err {
+  color: #e8836b;
+}
+
+.term-form {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.75rem 0.65rem;
+  border-top: 1px solid #2a2620;
+}
+
+.term-prompt {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--term-prompt);
+  white-space: nowrap;
+}
+
+.term-input {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: var(--term-fg);
+  font-family: var(--mono);
+  font-size: 0.82rem;
+}
+
+.term-input:focus {
+  outline: none;
+}
