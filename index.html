@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>cursor-origin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root { --ink: #1a1612; --paper: #f3eee4; --rule: #d9d0c1; --rust: #b4451a; --muted: #5e564c; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--paper);
+      color: var(--ink);
+      font: 17px/1.5 "IBM Plex Sans", sans-serif;
+    }
+    main { max-width: 42rem; padding: 3.5rem 6vw 4rem; }
+    .kicker {
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: 0.75rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--rust);
+    }
+    h1 { font-family: Fraunces, Georgia, serif; font-size: 2.4rem; line-height: 1.15; margin: 0.4rem 0 1rem; }
+    p { color: var(--muted); max-width: 42ch; }
+    a.card {
+      display: block;
+      margin-top: 1.5rem;
+      padding: 1.1rem 1.2rem;
+      border: 1px solid var(--rule);
+      background: #fffdf8;
+      text-decoration: none;
+      color: var(--ink);
+    }
+    a.card:hover { border-color: var(--rust); }
+    a.card strong { display: block; font-size: 1.1rem; }
+    a.card span { color: var(--muted); font-size: 0.92rem; }
+    nav { margin-top: 2rem; font-size: 0.95rem; }
+    nav a { color: var(--rust); }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="kicker">az9713/cursor-origin</p>
+    <h1>Cursor stress-test hub</h1>
+    <p>Each sub-project is its own folder. This page is the directory, not the app.</p>
+    <a class="card" href="./mini-linear/">
+      <strong>1. Mini Linear</strong>
+      <span>Issue board + list, localStorage, hash routes. Session A is messy files; Session C refactors in place.</span>
+    </a>
+    <nav>
+      <a href="./token-heavy-projects.html">Why these projects</a>
+    </nav>
+  </main>
+</body>
+</html>

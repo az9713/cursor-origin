@@ -1,0 +1,9 @@
+---
+description: HTML for customer-facing docs; Markdown for internal docs
+alwaysApply: true
+---
+
+# Docs format
+
+- Customer-facing docs (product surface, briefing, GitHub Pages): **HTML**. Do not ship Markdown as that surface.
+- Internal docs (plans, agent notes, specs the agent consumes): **Markdown is fine**.

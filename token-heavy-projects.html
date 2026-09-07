@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Token-heavy projects that stress Cursor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #1a1612;
+      --paper: #f3eee4;
+      --rule: #d9d0c1;
+      --muted: #5e564c;
+      --rust: #b4451a;
+      --moss: #2c4a3e;
+      --card: #fffdf8;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font: 17px/1.55 "IBM Plex Sans", "Segoe UI", sans-serif;
+    }
+    .mast {
+      border-bottom: 1px solid var(--rule);
+      padding: 1.25rem 6vw;
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: baseline;
+      flex-wrap: wrap;
+    }
+    .mast strong {
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-weight: 500;
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .mast span { color: var(--muted); font-size: 0.9rem; }
+    header.hero { padding: 3.5rem 6vw 2.5rem; max-width: 72rem; }
+    .kicker {
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: 0.78rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--rust);
+      margin: 0 0 0.85rem;
+    }
+    h1 {
+      font-family: Fraunces, Georgia, serif;
+      font-size: clamp(2.2rem, 5vw, 3.6rem);
+      font-weight: 650;
+      line-height: 1.12;
+      margin: 0 0 1rem;
+      max-width: 18ch;
+    }
+    .lede { max-width: 62ch; font-size: 1.12rem; color: var(--muted); margin: 0; }
+    nav.toc {
+      margin: 0 6vw 2.5rem;
+      padding: 1rem 1.25rem;
+      border: 1px solid var(--rule);
+      background: var(--card);
+      max-width: 72rem;
+    }
+    nav.toc p {
+      margin: 0 0 0.6rem;
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    nav.toc ol { margin: 0; padding-left: 1.2rem; columns: 2; gap: 2rem; }
+    nav.toc a { color: var(--ink); }
+    @media (max-width: 720px) { nav.toc ol { columns: 1; } }
+    main { padding: 0 6vw 4rem; max-width: 72rem; }
+    section { margin-bottom: 3.25rem; }
+    h2 {
+      font-family: Fraunces, Georgia, serif;
+      font-size: 1.85rem;
+      font-weight: 650;
+      margin: 0 0 0.85rem;
+    }
+    h3 {
+      font-family: Fraunces, Georgia, serif;
+      font-size: 1.28rem;
+      font-weight: 650;
+      margin: 0 0 0.45rem;
+    }
+    p { margin: 0 0 0.9rem; max-width: 70ch; }
+    ul, ol { max-width: 70ch; }
+    li { margin-bottom: 0.4rem; }
+    code {
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: 0.88em;
+      background: #eae3d6;
+      padding: 0.08em 0.32em;
+    }
+    .surfaces {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+      gap: 0.75rem;
+      margin: 1.25rem 0;
+    }
+    .surfaces article {
+      background: var(--card);
+      border: 1px solid var(--rule);
+      padding: 0.9rem 1rem;
+    }
+    .surfaces h3 { font-size: 1.02rem; font-family: "IBM Plex Sans", sans-serif; font-weight: 600; }
+    .surfaces p { margin: 0; font-size: 0.94rem; color: var(--muted); }
+    .flow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      align-items: center;
+      margin: 1.25rem 0 0.5rem;
+    }
+    .node {
+      background: var(--moss);
+      color: #f3eee4;
+      padding: 0.55rem 0.75rem;
+      font-size: 0.86rem;
+      font-weight: 500;
+    }
+    .arrow { color: var(--muted); font-family: "IBM Plex Mono", monospace; }
+    .loop { font-size: 0.88rem; color: var(--muted); margin: 0; }
+    .rank { display: grid; gap: 1rem; }
+    .proj {
+      background: var(--card);
+      border: 1px solid var(--rule);
+      padding: 1.2rem 1.3rem 1.1rem;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.35rem 1.1rem;
+    }
+    .num {
+      font-family: Fraunces, Georgia, serif;
+      font-size: 2rem;
+      font-weight: 650;
+      color: var(--rust);
+      line-height: 1;
+      grid-row: span 6;
+      min-width: 2.2rem;
+    }
+    .proj h3 { grid-column: 2; }
+    .meta { grid-column: 2; display: grid; gap: 0.35rem; }
+    .meta p, .meta dd { margin: 0; max-width: none; }
+    .meta dt {
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--rust);
+      margin-top: 0.45rem;
+    }
+    .skip { background: var(--ink); color: var(--paper); padding: 1.4rem 1.5rem; }
+    .skip h2 { color: var(--paper); }
+    .skip li, .skip p { color: #d9d0c1; }
+    .steps { padding-left: 1.2rem; }
+    .call { border-left: 4px solid var(--rust); padding: 0.2rem 0 0.2rem 1rem; margin-top: 1rem; }
+    footer {
+      border-top: 1px solid var(--rule);
+      padding: 1.25rem 6vw 2rem;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+    .now {
+      margin: 1.5rem 0 0;
+      padding: 0.85rem 1rem;
+      border: 1px solid var(--rust);
+      background: #fff6ee;
+      max-width: 70ch;
+    }
+  </style>
+</head>
+<body>
+  <div class="mast">
+    <strong>cursor_origin briefing</strong>
+    <span>Project 1 is the live app at <a href="./mini-linear/">mini-linear/</a>.</span>
+  </div>
+  <header class="hero">
+    <p class="kicker">Internal Cursor stress list</p>
+    <h1>Token-heavy projects that stress Cursor, not Codex or Claude</h1>
+    <p class="lede">Ranked for internal stress, not marketing. Each item is Origin-pushable as a static site, GitHub Pages–friendly for <code>az9713/</code>, and meant to burn tokens over hours through many files, edge cases, and a browser-verify loop.</p>
+    <p class="now"><strong>Now building:</strong> #1 messy mini Linear, then an architectural refactor. Spreadsheet / vector editor are not in this pass.</p>
+  </header>
+  <nav class="toc" aria-label="Contents">
+    <p>Contents</p>
+    <ol>
+      <li><a href="#stress">What to stress</a></li>
+      <li><a href="#ranked">Ranked list</a></li>
+      <li><a href="#skip">What to skip</a></li>
+      <li><a href="#bakeoff">Fair bake-off</a></li>
+      <li><a href="#pick">First pick and Origin note</a></li>
+    </ol>
+  </nav>
+  <main>
+    <section id="stress">
+      <h2>What to actually stress</h2>
+      <p>Codex and Claude Code are strong at generating a pile of files in a sandbox. They are weaker at a tight IDE loop: see the diff, run the app, click the broken control, fix that file, keep the rest consistent, repeat.</p>
+      <p>Build projects that require these Cursor surfaces:</p>
+      <div class="surfaces">
+        <article>
+          <h3>Plan → Agent → browser → fix</h3>
+          <p>A screenshot is not verification. Click through the broken control.</p>
+        </article>
+        <article>
+          <h3>Rules and AGENTS.md</h3>
+          <p>Later edits must not drift off the original design system.</p>
+        </article>
+        <article>
+          <h3>Multi-file consistency</h3>
+          <p>Design tokens, shared state, one bug that spans eight files.</p>
+        </article>
+        <article>
+          <h3>Parallel subagents</h3>
+          <p>Explore vs implement vs review in the same session.</p>
+        </article>
+        <article>
+          <h3>MCP only for a real loop</h3>
+          <p>GitHub issues or live data. Ask before new dependencies.</p>
+        </article>
+        <article>
+          <h3>Checkpoints and Origin</h3>
+          <p>Rewind a long session that went off the rails, then push when it works. Origin CLI is macOS, Linux, or WSL. Native Windows is not supported yet.</p>
+        </article>
+      </div>
+      <div class="flow" aria-label="Session loop">
+        <span class="node">Spec + AGENTS.md</span>
+        <span class="arrow">→</span>
+        <span class="node">Plan mode</span>
+        <span class="arrow">→</span>
+        <span class="node">Agent edits</span>
+        <span class="arrow">→</span>
+        <span class="node">Browser click-through</span>
+        <span class="arrow">→</span>
+        <span class="node">Origin + Pages</span>
+      </div>
+      <p class="loop">Broken in the browser → back to the agent. Optional MCP feeds the agent. Stable UI → publish.</p>
+    </section>
+    <section id="ranked">
+      <h2>Ranked list (this order)</h2>
+      <div class="rank">
+        <article class="proj">
+          <div class="num">1</div>
+          <h3>Messy 60–100 file product, then architectural refactor</h3>
+          <dl class="meta">
+            <dt>What</dt>
+            <dd>Generate a working but ugly mini Linear: issues, board, filters, localStorage, duplicated CSS, copy-pasted components. A second long session refactors to tokens, one state module, and one router without breaking drag, filters, or deep links.</dd>
+            <dt>Why token-heavy</dt>
+            <dd>Two full products in one repo. Every refactor pass re-reads the graph.</dd>
+            <dt>Why Cursor wins</dt>
+            <dd>CLI agents dump a refactor and hope. Cursor has to keep the live board working while files move. Browser click-through after every slice is the point.</dd>
+            <dt>Origin shape</dt>
+            <dd><code>index.html</code> + <code>js/</code> + <code>css/</code>. GitHub Pages embed in README.</dd>
+          </dl>
+        </article>
+        <article class="proj">
+          <div class="num">2</div>
+          <h3>Spreadsheet with a real formula engine</h3>
+          <dl class="meta">
+            <dt>What</dt>
+            <dd>Vanilla JS grid, selection, fill handle, <code>SUM</code> / <code>IF</code> / <code>AVERAGE</code>, cell refs, cycles, undo, CSV import/export.</dd>
+            <dt>Why token-heavy</dt>
+            <dd>Hundreds of edge cases: circular refs, parse errors, copy-paste, keyboard nav. Tests plus UI polish.</dd>
+            <dt>Why Cursor wins</dt>
+            <dd>You type in cells and watch it lie. The agent has to reproduce the bug in-browser, not from a stack trace.</dd>
+            <dt>Origin shape</dt>
+            <dd>Single-page app, no backend.</dd>
+          </dl>
+        </article>
+        <article class="proj">
+          <div class="num">3</div>
+          <h3>Vector editor (Figma-lite, one artboard)</h3>
+          <dl class="meta">
+            <dt>What</dt>
+            <dd>Select, move, resize, layers, groups, stacking, snap, undo, SVG export, keyboard shortcuts.</dd>
+            <dt>Why token-heavy</dt>
+            <dd>Hit-testing, handles, zoom/pan, selection model.</dd>
+            <dt>Why Cursor wins</dt>
+            <dd>Visual tools are screenshot-plus-click work. CLI models cannot see that the resize handle is 4px off.</dd>
+          </dl>
+        </article>
+        <article class="proj">
+          <div class="num">4</div>
+          <h3>In-browser desktop OS</h3>
+          <dl class="meta">
+            <dt>What</dt>
+            <dd>Window manager, taskbar, three real apps (notes, finder, fake-VFS terminal), persistence, z-index, focus, minimize.</dd>
+            <dt>Why token-heavy</dt>
+            <dd>Cross-app state, many CSS files, accessibility, mobile vs desktop.</dd>
+            <dt>Why Cursor wins</dt>
+            <dd>Every session is a clipped window, a focus trap, a dock overlap.</dd>
+          </dl>
+        </article>
+        <article class="proj">
+          <div class="num">5</div>
+          <h3>Compiler playground (invented language)</h3>
+          <dl class="meta">
+            <dt>What</dt>
+            <dd>Lexer, parser, AST viewer, bytecode VM, stepper, error squiggles, docs generated from the grammar.</dd>
+            <dt>Why token-heavy</dt>
+            <dd>Many files, golden tests, a UI for each compiler stage.</dd>
+            <dt>Why Cursor wins</dt>
+            <dd>Change a token and the parser, VM, and docs all have to update.</dd>
+          </dl>
+        </article>
+        <article class="proj">
+          <div class="num">6</div>
+          <h3>Pixel-clone, then instrument a complex public page</h3>
+          <dl class="meta">
+            <dt>What</dt>
+            <dd>Recreate a dense marketing or docs page, then add a live inspector: click a node, edit copy or color, persist in <code>localStorage</code>.</dd>
+            <dt>Why token-heavy</dt>
+            <dd>CSS archaeology plus a second app sitting on top.</dd>
+            <dt>Why Cursor wins</dt>
+            <dd>Clone quality is a visual loop. Cursor can iterate until breakpoints match.</dd>
+            <dt>Constraint</dt>
+            <dd>Ask before clone-site tooling. Prefer hand-built CSS.</dd>
+          </dl>
+        </article>
+        <article class="proj">
+          <div class="num">7</div>
+          <h3>City, traffic, or ant simulation with a control panel</h3>
+          <dl class="meta">
+            <dt>What</dt>
+            <dd>Canvas or SVG agents, charts of population or flow, sliders, seed replay, pause/step.</dd>
+            <dt>Why token-heavy</dt>
+            <dd>Tuning loops burn tokens for hours with almost no new deps.</dd>
+            <dt>Why Cursor wins</dt>
+            <dd>The agent has to run the sim in the browser, not eyeball the update function.</dd>
+          </dl>
+        </article>
+        <article class="proj">
+          <div class="num">8</div>
+          <h3>Design-system SaaS shell (one workflow, many pages)</h3>
+          <dl class="meta">
+            <dt>What</dt>
+            <dd>A real 6–8 view app (hiring pipeline or incident commander), shared tokens, empty/error/loading states, keyboard shortcuts.</dd>
+            <dt>Why token-heavy</dt>
+            <dd>Consistency tax unless <code>AGENTS.md</code> and rules are enforced across files.</dd>
+            <dt>Why Cursor wins</dt>
+            <dd>Rules, file mentions, and repo-wide search.</dd>
+          </dl>
+        </article>
+        <article class="proj">
+          <div class="num">9</div>
+          <h3>Shader / WebGL studio</h3>
+          <dl class="meta">
+            <dt>What</dt>
+            <dd>Live GLSL editor, uniforms, presets, error overlay, thumbnail gallery of shaders the agent authors.</dd>
+            <dt>Why token-heavy</dt>
+            <dd>Compile errors plus visual iteration. Many shader files.</dd>
+            <dt>Why Cursor wins</dt>
+            <dd>GPU output is ground truth. Default is raw WebGL2, no deps.</dd>
+          </dl>
+        </article>
+        <article class="proj">
+          <div class="num">10</div>
+          <h3>Knowledge-graph explorer of a generated corpus</h3>
+          <dl class="meta">
+            <dt>What</dt>
+            <dd>200–500 nodes, layout, search, filters, detail panel, URL state.</dd>
+            <dt>Why token-heavy</dt>
+            <dd>Dataset generation, layout bugs, interaction polish.</dd>
+            <dt>Why Cursor wins</dt>
+            <dd>Wire Canvas or MCP later and it becomes Cursor-only.</dd>
+          </dl>
+        </article>
+      </div>
+    </section>
+    <section id="skip" class="skip">
+      <h2>Explicitly skip</h2>
+      <p>These fight this workspace: Origin, GitHub Pages, and “ask before adding dependencies.”</p>
+      <ul>
+        <li>Backends, auth, or paid APIs</li>
+        <li>ChatGPT clones and generic landing pages</li>
+        <li>Native apps, Docker, or Python GUIs</li>
+        <li>Huge real-world repo imports</li>
+      </ul>
+    </section>
+    <section id="bakeoff">
+      <h2>How to run the bake-off so it is fair</h2>
+      <ol class="steps">
+        <li>Write a frozen spec in the repo (<code>SPEC.md</code> + <code>AGENTS.md</code>) before Agent starts.</li>
+        <li><strong>Session A:</strong> implement to demoable.</li>
+        <li><strong>Session B:</strong> polish only from browser-repro bugs. No spec changes.</li>
+        <li><strong>Session C (the Cursor tell):</strong> refactor or add a cross-cutting feature and prove old flows still work in the browser.</li>
+        <li>Publish: README with a live GitHub Pages iframe; push <code>az9713/</code> and Origin when WSL or Origin CLI is available.</li>
+      </ol>
+      <p>Codex and Claude can do session A. Cursor is supposed to still be coherent after session C.</p>
+    </section>
+    <section id="pick">
+      <h2>Suggested first pick</h2>
+      <div class="call">
+        <p>This repo is running <strong>#1 (messy product → refactor)</strong>. Spreadsheet and vector editor are later, not nested in this pass.</p>
+      </div>
+      <h3>Windows / Origin</h3>
+      <p>This machine is native Windows. Origin CLI install is not supported outside WSL. Plan GitHub Pages first. Push to Origin from WSL (or a Mac/Linux agent) when you want <code>origin.cursor.com</code>.</p>
+    </section>
+  </main>
+  <footer>
+    Live app: <a href="./mini-linear/">mini Linear</a>. Internal spec: <code>mini-linear/SPEC.md</code>. Hub: <a href="./index.html">index.html</a>.
+  </footer>
+</body>
+</html>

@@ -1,0 +1,14 @@
+:root {
+  --ink: #161410;
+  --paper: #f2ece1;
+  --panel: #fffdf8;
+  --line: #d7cfc0;
+  --muted: #5c564c;
+  --side: #241f1a;
+  --side-text: #e8e0d4;
+  --rust: #b4451a;
+  --rust-hover: #933714;
+  --focus: #2c4a3e;
+  --font: "IBM Plex Sans", "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+}

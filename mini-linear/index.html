@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mini Linear</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <div class="shell">
+    <aside class="side">
+      <h1>Mini Linear</h1>
+      <a data-view="board" href="#/board">Board</a>
+      <a data-view="list" href="#/list">Issues</a>
+    </aside>
+    <div class="column">
+      <header class="top">
+        <h2 id="title">Board</h2>
+        <button type="button" class="btn" id="new">New issue</button>
+      </header>
+      <div id="filters"></div>
+      <div id="view"></div>
+    </div>
+  </div>
+  <div id="modal-bg" class="modal-bg" hidden>
+    <div class="modal" role="dialog" aria-labelledby="modal-h">
+      <h3 id="modal-h">New issue</h3>
+      <label>Title<input id="new-title" required></label>
+      <label>Description<textarea id="new-desc"></textarea></label>
+      <label>Status
+        <select id="new-status">
+          <option value="backlog">backlog</option>
+          <option value="todo" selected>todo</option>
+          <option value="in_progress">in_progress</option>
+          <option value="done">done</option>
+        </select>
+      </label>
+      <label>Priority
+        <select id="new-pri">
+          <option>low</option>
+          <option selected>medium</option>
+          <option>high</option>
+          <option>urgent</option>
+        </select>
+      </label>
+      <label>Assignee
+        <select id="new-as"><option value="">Unassigned</option></select>
+      </label>
+      <p>
+        <button type="button" class="btn" id="modal-save">Create</button>
+        <button type="button" class="btn-ghost" id="modal-cancel">Cancel</button>
+      </p>
+    </div>
+  </div>
+  <script src="js/state.js"></script>
+  <script src="js/router.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
