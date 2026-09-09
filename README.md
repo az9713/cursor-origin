@@ -18,6 +18,7 @@ https://az9713.github.io/cursor-origin/
 - [SaaS shell](https://az9713.github.io/cursor-origin/saas-shell/)
 - [Shader studio](https://az9713.github.io/cursor-origin/shader-studio/)
 - [Knowledge graph](https://az9713.github.io/cursor-origin/knowledge-graph/)
+- [Query studio](https://az9713.github.io/cursor-origin/query-studio/)
 
 ## Run locally
 

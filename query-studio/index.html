@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Query studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <header class="top">
+    <h1>Query studio</h1>
+    <button type="button" id="run-btn">Run</button>
+    <button type="button" class="ghost" id="save-btn">Save</button>
+    <button type="button" class="ghost" id="reset-btn">Reset</button>
+    <span id="selfcheck" class="selfcheck"></span>
+    <a href="../">Hub</a>
+  </header>
+  <div class="work">
+    <aside class="schema" id="schema" aria-label="Schema"></aside>
+    <pre class="rail" id="canonical" aria-label="Canonical SQL"></pre>
+    <aside class="presets" id="presets" aria-label="Saved queries"></aside>
+    <div class="edit">
+      <div class="sql-wrap">
+        <label class="hint" for="sql">SQL</label>
+        <textarea id="sql" spellcheck="false" aria-label="SQL editor"></textarea>
+        <p class="parse-err" id="parse-err" hidden></p>
+      </div>
+      <div class="builder" id="builder"></div>
+    </div>
+    <div class="results" id="results"></div>
+  </div>
+  <div class="status" id="status"></div>
+  <script src="js/schema.js"></script>
+  <script src="js/lexer.js"></script>
+  <script src="js/parser.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

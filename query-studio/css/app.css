@@ -1,0 +1,206 @@
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  font-family: var(--font);
+  background: var(--paper);
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+}
+button, input, select, textarea { font: inherit; }
+button { cursor: pointer; }
+code { font-family: var(--mono); font-size: 0.84em; }
+
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.65rem 0.85rem;
+  background: var(--head);
+  color: #efe7db;
+}
+.top h1 {
+  margin: 0 0.75rem 0 0;
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.top a { color: #e8c4b0; font-size: 0.85rem; margin-left: auto; }
+.top button {
+  background: var(--rust);
+  color: #fff;
+  border: 0;
+  padding: 0.35rem 0.65rem;
+}
+.top button.ghost {
+  background: transparent;
+  border: 1px solid #6a6156;
+  color: #efe7db;
+}
+.selfcheck { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.04em; }
+.selfcheck.ok { color: #b8cbb8; }
+.selfcheck.bad { color: #f0b4a8; }
+
+.work {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 13.5rem 1fr 13.5rem;
+  grid-template-rows: auto 1fr minmax(11rem, 32vh);
+  grid-template-areas:
+    "schema rail presets"
+    "schema edit presets"
+    "results results results";
+}
+
+.schema { grid-area: schema; overflow: auto; border-right: 1px solid var(--line); background: var(--panel); padding: 0.7rem 0.75rem; }
+.presets { grid-area: presets; overflow: auto; border-left: 1px solid var(--line); background: var(--panel); padding: 0.7rem 0.75rem; }
+.rail { grid-area: rail; border-bottom: 1px solid var(--line); background: #2a251f; color: #d7cbb8; padding: 0.45rem 0.75rem; font-family: var(--mono); font-size: 0.75rem; white-space: pre-wrap; min-height: 2.4rem; }
+.edit { grid-area: edit; overflow: auto; display: grid; grid-template-rows: minmax(9rem, 34%) auto; min-height: 0; }
+.results { grid-area: results; overflow: auto; border-top: 1px solid var(--line); background: var(--panel); }
+
+.schema h3, .presets h3 {
+  margin: 0.85rem 0 0.35rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--rust);
+}
+.schema article:first-child h3, .presets h3:first-child { margin-top: 0; }
+.schema h3 em { font-style: normal; color: var(--muted); font-family: var(--mono); font-size: 0.7rem; }
+.schema ul { list-style: none; margin: 0; padding: 0; }
+.schema li { display: flex; justify-content: space-between; gap: 0.5rem; font-size: 0.82rem; padding: 0.12rem 0; }
+.schema li span { color: var(--muted); font-size: 0.75rem; }
+
+.sql-wrap { display: flex; flex-direction: column; min-height: 0; padding: 0.55rem 0.7rem 0; }
+#sql {
+  flex: 1;
+  min-height: 7rem;
+  width: 100%;
+  resize: vertical;
+  border: 1px solid var(--line);
+  background: #fff;
+  padding: 0.5rem 0.6rem;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+#sql.err { border-color: var(--bad); }
+.parse-err {
+  margin: 0.3rem 0 0;
+  color: var(--bad);
+  font-size: 0.8rem;
+}
+.builder { padding: 0.55rem 0.7rem 0.85rem; border-top: 1px solid var(--line); }
+.field { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin-bottom: 0.55rem; }
+.field label { font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.alias-lab { letter-spacing: 0.04em; }
+.head-row { justify-content: space-between; }
+.chips { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0 0 0.7rem; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  border: 1px solid var(--line);
+  background: #fff;
+  padding: 0.2rem 0.4rem;
+  font-size: 0.78rem;
+}
+.chip input[type="text"] {
+  width: 5.5rem;
+  border: 0;
+  border-left: 1px solid var(--line);
+  padding: 0 0.3rem;
+  background: transparent;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+}
+.clause {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+  margin-bottom: 0.35rem;
+}
+.conj {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  width: 3.4rem;
+  color: var(--rust);
+}
+select, .clause input, #b-from-alias, #b-join-alias, #b-limit {
+  border: 1px solid var(--line);
+  background: #fff;
+  padding: 0.22rem 0.35rem;
+}
+#b-limit { width: 5rem; }
+button.ghost, button.link {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  padding: 0.22rem 0.45rem;
+  font-size: 0.8rem;
+}
+button.link {
+  display: block;
+  width: 100%;
+  text-align: left;
+  margin-bottom: 0.28rem;
+}
+button.link.on { border-color: var(--rust); background: var(--sel); }
+button.tiny {
+  border: 1px solid var(--line);
+  background: #fff;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  line-height: 1;
+}
+.saved-row { display: flex; gap: 0.25rem; align-items: center; }
+.saved-row .link { flex: 1; }
+.hint { margin: 0 0 0.4rem; color: var(--muted); font-size: 0.82rem; }
+.tiny-lab { font-size: 0.75rem; color: var(--muted); text-transform: none; letter-spacing: 0; }
+
+.status {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+  padding: 0.35rem 0.75rem;
+  border-top: 1px solid var(--line);
+  background: var(--paper);
+  font-size: 0.8rem;
+}
+.pill {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.12rem 0.4rem;
+}
+.pill.ok { background: var(--ok); color: #f3eee4; }
+.pill.bad { background: var(--bad); color: #fff6ee; }
+
+.results table { border-collapse: collapse; min-width: 100%; font-size: 0.82rem; }
+.results th, .results td {
+  border: 1px solid var(--line);
+  padding: 0.28rem 0.5rem;
+  text-align: left;
+  white-space: nowrap;
+}
+.results th { background: #f6f0e6; font-weight: 600; }
+.results td.empty { color: var(--muted); font-style: italic; }
+
+@media (max-width: 900px) {
+  .work {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto auto auto;
+    grid-template-areas:
+      "rail"
+      "edit"
+      "schema"
+      "presets"
+      "results";
+  }
+  .schema, .presets { border: 0; border-top: 1px solid var(--line); max-height: 12rem; }
+}

@@ -15,6 +15,7 @@ Current sub-projects:
 - `saas-shell/` — Project 8: Incident Commander SaaS shell
 - `shader-studio/` — Project 9: WebGL2 shader studio
 - `knowledge-graph/` — Project 10: computing-history graph
+- `query-studio/` — Project 11: bidirectional SQL studio (text ↔ visual builder)
 
 ## How to run
 
