@@ -39,3 +39,4 @@ Then visit `http://localhost:8080/` or a folder such as `http://localhost:8080/s
 - Internal docs (plans, agent notes, specs for the agent): Markdown is fine.
 - New apps go in a sibling folder (`mini-linear/`, later `spreadsheet/`, etc.), never overwrite the hub `index.html`
 - Frozen product spec for an app: `<app>/SPEC.md`
+- Pull requests are a GitHub feature. The Origin (`cursor`) remote is a second copy of the repo, not a second PR queue.
