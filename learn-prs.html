@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Practice pull requests</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,650&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root { --ink: #1a1612; --paper: #f3eee4; --rule: #d9d0c1; --rust: #b4451a; --muted: #5e564c; --card: #fffdf8; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font: 17px/1.55 "IBM Plex Sans", sans-serif; }
+    main { max-width: 42rem; padding: 3.5rem 6vw 4rem; }
+    .kicker { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--rust); }
+    h1 { font-family: Fraunces, Georgia, serif; font-size: 2.2rem; line-height: 1.15; margin: 0.4rem 0 1rem; }
+    h2 { font-family: Fraunces, Georgia, serif; font-size: 1.35rem; margin: 1.8rem 0 0.5rem; }
+    p, li { color: var(--muted); max-width: 62ch; }
+    a { color: var(--rust); }
+    code { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.88em; background: #eae3d6; padding: 0.08em 0.32em; }
+    .card { background: var(--card); border: 1px solid var(--rule); padding: 1rem 1.1rem; margin: 0.8rem 0; }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="kicker"><a href="./index.html">Hub</a> · practice</p>
+    <h1>How a pull request works</h1>
+    <p>A <strong>branch</strong> is a named line of work. A <strong>pull request</strong> (PR) is a GitHub page that says: “please take the commits on this branch and add them to <code>main</code>.” You read the diff, comment, then merge or close.</p>
+
+    <h2>The three practice PRs</h2>
+    <div class="card">
+      <p><strong>1. This page</strong> — a real, useful change. Open it, read Files changed, leave a comment if you want, then merge with <strong>Squash and merge</strong>. Afterward, delete the branch when GitHub offers.</p>
+    </div>
+    <div class="card">
+      <p><strong>2. A one-line AGENTS.md note</strong> — another developer’s tiny docs tweak. Merge this one with <strong>Create a merge commit</strong> so you can see how that differs from squash.</p>
+    </div>
+    <div class="card">
+      <p><strong>3. A junk file</strong> — do <em>not</em> merge. Click <strong>Close pull request</strong>, then delete the branch. That is how you reject work.</p>
+    </div>
+
+    <h2>On GitHub (no terminal)</h2>
+    <ol>
+      <li>Open <a href="https://github.com/az9713/cursor-origin/pulls">github.com/az9713/cursor-origin/pulls</a>.</li>
+      <li>Click a PR titled <code>[PRACTICE]</code>.</li>
+      <li><strong>Conversation</strong> is the discussion. <strong>Files changed</strong> is the actual diff. <strong>Commits</strong> lists each commit.</li>
+      <li>On Files changed, click Review changes → Comment or Approve → Submit review.</li>
+      <li>Merge or Close. That is the whole loop.</li>
+    </ol>
+
+    <h2>On your machine after a merge</h2>
+    <p>GitHub has the new <code>main</code>. Your laptop does not until you update it. In a terminal, from this repo:</p>
+    <p><code>git checkout main</code></p>
+    <p><code>git pull origin main</code></p>
+    <p>That downloads the merged work. You do not need Origin (<code>cursor</code>) for this lesson. PRs live on GitHub only.</p>
+  </main>
+</body>
+</html>
