@@ -137,7 +137,12 @@ QS.exec = function (ast) {
       return 0;
     });
   }
-  if (ast.limit != null) rows = rows.slice(0, ast.limit);
+  if (ast.limit != null) {
+    if (ast.limit < 0 || ast.limit !== Math.floor(ast.limit)) {
+      throw QS.err("LIMIT must be a non-negative integer");
+    }
+    rows = rows.slice(0, ast.limit);
+  }
 
   var headers = [];
   var star = ast.columns.length === 1 && ast.columns[0].type === "star";
@@ -213,6 +218,14 @@ QS.selfCheck = function () {
     ok("pretty where", /WHERE salary >= 100000/.test(printed));
   } catch (e) {
     fails.push("pretty " + e.message);
+  }
+  try {
+    var astLim = QS.parse("SELECT name FROM employees LIMIT 1");
+    astLim.limit = -1;
+    QS.exec(astLim);
+    fails.push("negative limit should throw");
+  } catch (e) {
+    ok("negative limit", /limit/i.test(e.message), e.message);
   }
   return { ok: fails.length === 0, fails: fails };
 };

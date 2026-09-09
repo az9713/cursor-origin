@@ -47,7 +47,7 @@ code { font-family: var(--mono); font-size: 0.84em; }
   min-height: 0;
   display: grid;
   grid-template-columns: 13.5rem 1fr 13.5rem;
-  grid-template-rows: auto 1fr minmax(11rem, 32vh);
+  grid-template-rows: auto minmax(12rem, 1fr) minmax(14rem, 1fr);
   grid-template-areas:
     "schema rail presets"
     "schema edit presets"

@@ -118,6 +118,9 @@ QS.renderPresets = function () {
         '">' +
         QS.esc(s.name) +
         "</button>" +
+        '<button type="button" class="tiny" data-ren="' +
+        QS.esc(s.id) +
+        '" aria-label="Rename saved query">ren</button>' +
         '<button type="button" class="tiny" data-del="' +
         QS.esc(s.id) +
         '" aria-label="Delete saved query">×</button></div>'
@@ -200,11 +203,13 @@ QS.renderBuilder = function (ast) {
     .map(function (c) {
       var match = ast.columns.some(function (col) {
         if (col.type === "star") return false;
+        if (col.name.toLowerCase() !== c.name.toLowerCase()) return false;
         var t = (col.table || "").toLowerCase();
-        return (
-          col.name.toLowerCase() === c.name.toLowerCase() &&
-          (!t || t === c.alias.toLowerCase() || t === c.table.toLowerCase())
-        );
+        if (t) return t === c.alias.toLowerCase() || t === c.table.toLowerCase();
+        var hits = cols.filter(function (x) {
+          return x.name.toLowerCase() === col.name.toLowerCase();
+        });
+        return hits.length === 1 && hits[0].label === c.label;
       });
       var alias = "";
       ast.columns.forEach(function (col) {
@@ -251,7 +256,7 @@ QS.renderBuilder = function (ast) {
         : '<input data-wright type="text" value="' + QS.esc(right) + '">') +
       '<label class="tiny-lab"><input type="checkbox" data-wright-mode' +
       (rightIsCol ? " checked" : "") +
-      "> col</label>" +
+      ' aria-label="Compare to a column"> column</label>' +
       '<button type="button" class="tiny" data-rm-where="' +
       idx +
       '">×</button></div>'
@@ -278,7 +283,7 @@ QS.renderBuilder = function (ast) {
     .join("");
 
   document.getElementById("builder").innerHTML =
-    '<div class="field"><label>From</label><select id="b-from">' +
+    '<div class="field"><label for="b-from">From</label><select id="b-from">' +
     tableOpts +
     '</select> <label class="alias-lab">AS</label> <input id="b-from-alias" type="text" value="' +
     QS.esc(ast.from.alias || "") +
@@ -320,7 +325,7 @@ QS.renderBuilder = function (ast) {
     '<div id="b-order">' +
     (orderRows || '<p class="hint">Result order is table order.</p>') +
     "</div>" +
-    '<div class="field"><label>Limit</label><input id="b-limit" type="number" min="0" step="1" value="' +
+    '<div class="field"><label for="b-limit">Limit</label><input id="b-limit" type="number" min="0" step="1" value="' +
     (ast.limit == null ? "" : ast.limit) +
     '" placeholder="none"></div>';
 };
@@ -389,12 +394,18 @@ QS.astFromBuilder = function () {
       ast.columns.push(col);
     });
     var prevKeys = [];
+    var prevAst = QS.lastAst;
     try {
-      QS.parse(document.getElementById("sql").value).columns.forEach(function (c) {
+      prevAst = QS.parse(document.getElementById("sql").value);
+    } catch (e) {
+      prevAst = QS.lastAst;
+    }
+    if (prevAst) {
+      prevAst.columns.forEach(function (c) {
         if (c.type === "star") return;
         prevKeys.push(((c.table || "") + "." + c.name).toLowerCase());
       });
-    } catch (e) {}
+    }
     ast.columns.sort(function (a, b) {
       function idx(c) {
         var key = ((c.table || "") + "." + c.name).toLowerCase();
@@ -407,7 +418,18 @@ QS.astFromBuilder = function () {
       }
       return idx(a) - idx(b);
     });
-    if (!ast.columns.length) ast.columns = [{ type: "star" }];
+    if (!ast.columns.length) {
+      var wasStar = prevAst && prevAst.columns.length === 1 && prevAst.columns[0].type === "star";
+      if (wasStar) {
+        QS.availableCols(ast).forEach(function (c) {
+          ast.columns.push({ type: "col", table: c.alias, name: c.name, alias: null });
+        });
+      } else if (prevAst && prevAst.columns.length && prevAst.columns[0].type !== "star") {
+        ast.columns = prevAst.columns.slice();
+      } else {
+        ast.columns = [{ type: "star" }];
+      }
+    }
   }
   document.querySelectorAll("#b-where .clause").forEach(function (row) {
     var left = QS.parseColLabel(row.querySelector("[data-wleft]").value);
@@ -421,15 +443,22 @@ QS.astFromBuilder = function () {
       var inp = row.querySelector("[data-wright]");
       right = QS.parseRightValue(inp ? inp.value : "");
     }
-    if (left && right) ast.where.push({ type: "cmp", op: opEl.value, left: left, right: right });
+    if (!left) throw QS.err("Pick a column for WHERE");
+    if (!right) throw QS.err("Pick a value for WHERE");
+    ast.where.push({ type: "cmp", op: opEl.value, left: left, right: right });
   });
   document.querySelectorAll("#b-order .clause").forEach(function (row) {
     var col = QS.parseColLabel(row.querySelector("[data-oleft]").value);
     var dir = row.querySelector("[data-odir]").value;
-    if (col) ast.order.push({ col: col, dir: dir });
+    if (!col) throw QS.err("Pick a column for ORDER BY");
+    ast.order.push({ col: col, dir: dir });
   });
   var lim = document.getElementById("b-limit").value;
-  if (lim !== "") ast.limit = Number(lim);
+  if (lim !== "") {
+    var n = Number(lim);
+    if (n < 0 || n !== Math.floor(n)) throw QS.err("LIMIT must be a non-negative integer");
+    ast.limit = n;
+  }
   return ast;
 };
 
@@ -440,22 +469,61 @@ QS.hintJoin = function (fromName, joinName) {
       (f.from === joinName && f.to === fromName)
     );
   })[0];
-  if (!hit) return null;
   var fromAlias = document.getElementById("b-from-alias").value.trim() || fromName;
   var joinAlias = document.getElementById("b-join-alias").value.trim() || joinName;
-  if (hit.from === fromName) {
-    return { left: fromAlias + "." + hit.col, right: joinAlias + "." + hit.toCol };
+  if (hit) {
+    if (hit.from === fromName) {
+      return { left: fromAlias + "." + hit.col, right: joinAlias + "." + hit.toCol };
+    }
+    return { left: fromAlias + "." + hit.toCol, right: joinAlias + "." + hit.col };
   }
-  return { left: fromAlias + "." + hit.toCol, right: joinAlias + "." + hit.col };
+  var fromT = QS.tableByName(fromName);
+  var joinT = QS.tableByName(joinName);
+  if (!fromT || !joinT) return null;
+  return {
+    left: fromAlias + "." + fromT.columns[0].name,
+    right: joinAlias + "." + joinT.columns[0].name
+  };
+};
+
+QS.clearResults = function (msg) {
+  document.getElementById("results").innerHTML =
+    '<p class="hint">' + QS.esc(msg || "No results.") + "</p>";
 };
 
 QS.applySql = function (sql, fromBuilder) {
   document.getElementById("sql").value = sql;
-  QS.saveStore({ sql: sql });
   var status = document.getElementById("status");
   var rail = document.getElementById("canonical");
+  var ast;
   try {
-    var result = QS.run(sql);
+    ast = QS.parse(sql);
+  } catch (e) {
+    QS.syncing = false;
+    document.getElementById("sql").classList.add("err");
+    document.getElementById("parse-err").hidden = false;
+    document.getElementById("parse-err").textContent =
+      (e.line ? "Line " + e.line + ":" + e.col + " — " : "") + e.message;
+    status.innerHTML = '<span class="pill bad">parse error</span>';
+    rail.textContent = "";
+    QS.clearResults("Fix the SQL to run.");
+    if (!QS.lastAst) {
+      try {
+        QS.syncing = true;
+        QS.renderBuilder(QS.parse(QS.SEED_SQL));
+        QS.syncing = false;
+      } catch (e2) {}
+    }
+    return;
+  }
+  try {
+    var result = QS.exec(ast);
+    result.ast = ast;
+    result.sql = QS.astToSql(ast);
+    result.roundtrip = QS.stable(ast) === QS.stable(QS.parse(result.sql));
+    QS.lastAst = ast;
+    QS.lastGoodSql = sql;
+    QS.saveStore({ sql: sql, hash: location.hash });
     QS.syncing = true;
     if (!fromBuilder) QS.renderBuilder(result.ast);
     QS.syncing = false;
@@ -473,12 +541,19 @@ QS.applySql = function (sql, fromBuilder) {
     document.getElementById("parse-err").hidden = true;
   } catch (e) {
     QS.syncing = false;
+    QS.lastAst = ast;
+    QS.saveStore({ sql: sql, hash: location.hash });
+    if (!fromBuilder) {
+      QS.syncing = true;
+      QS.renderBuilder(ast);
+      QS.syncing = false;
+    }
     document.getElementById("sql").classList.add("err");
     document.getElementById("parse-err").hidden = false;
-    document.getElementById("parse-err").textContent =
-      (e.line ? "Line " + e.line + ":" + e.col + " — " : "") + e.message;
-    status.innerHTML = '<span class="pill bad">parse error</span>';
-    rail.textContent = "";
+    document.getElementById("parse-err").textContent = e.message;
+    status.innerHTML = '<span class="pill bad">query error</span>';
+    rail.textContent = QS.astToSql(ast);
+    QS.clearResults(e.message);
   }
 };
 
@@ -522,29 +597,30 @@ QS.builderToSql = function () {
   }
 };
 
-QS.loadFromHash = function () {
+QS.loadFromHash = function (useCanonical) {
   var hash = QS.parseHash();
+  var store = QS.loadStore();
+  var canonical = null;
   if (hash.kind === "p") {
     var p = QS.PRESETS.filter(function (x) {
       return x.id === hash.id;
     })[0];
-    if (p) {
-      QS.applySql(p.sql, false);
-      QS.renderPresets();
-      return true;
-    }
+    if (p) canonical = p.sql;
   }
   if (hash.kind === "s") {
-    var s = (QS.loadStore().saved || []).filter(function (x) {
+    var s = (store.saved || []).filter(function (x) {
       return x.id === hash.id;
     })[0];
-    if (s) {
-      QS.applySql(s.sql, false);
-      QS.renderPresets();
-      return true;
-    }
+    if (s) canonical = s.sql;
   }
-  return false;
+  if (!canonical) return false;
+  if (!useCanonical && store.sql && store.hash === location.hash) {
+    QS.applySql(store.sql, false);
+  } else {
+    QS.applySql(canonical, false);
+  }
+  QS.renderPresets();
+  return true;
 };
 
 QS.bind = function () {
@@ -577,39 +653,69 @@ QS.bind = function () {
   document.getElementById("presets").addEventListener("click", function (ev) {
     var del = ev.target.closest("[data-del]");
     if (del) {
+      var delId = del.getAttribute("data-del");
       var store = QS.loadStore();
       store.saved = (store.saved || []).filter(function (s) {
-        return s.id !== del.getAttribute("data-del");
+        return s.id !== delId;
       });
       QS.saveStore({ saved: store.saved });
+      var hash = QS.parseHash();
+      if (hash.kind === "s" && hash.id === delId) QS.writeHash("p", "join-depts");
+      QS.renderPresets();
+      return;
+    }
+    var ren = ev.target.closest("[data-ren]");
+    if (ren) {
+      var store2 = QS.loadStore();
+      var item = (store2.saved || []).filter(function (s) {
+        return s.id === ren.getAttribute("data-ren");
+      })[0];
+      if (!item) return;
+      var name = window.prompt("Rename query", item.name);
+      if (!name) return;
+      item.name = name;
+      QS.saveStore({ saved: store2.saved });
       QS.renderPresets();
       return;
     }
     var btn = ev.target.closest("[data-kind]");
     if (!btn) return;
+    QS._hashFromClick = true;
+    var before = location.hash;
     QS.writeHash(btn.getAttribute("data-kind"), btn.getAttribute("data-id"));
-    QS.loadFromHash();
+    if (location.hash === before) QS.loadFromHash(true);
   });
   document.getElementById("builder").addEventListener("change", function (ev) {
-    if (ev.target.id === "b-join-on" && ev.target.checked) {
-      var from = document.getElementById("b-from").value;
-      var join = document.getElementById("b-join-table").value;
-      var hint = QS.hintJoin(from, join);
-      if (hint) {
-        document.getElementById("b-join-left").value = hint.left;
-        document.getElementById("b-join-right").value = hint.right;
-      }
-    }
-    if (ev.target.id === "b-from" || ev.target.id === "b-join-table") {
-      var f = document.getElementById("b-from").value;
-      var j = document.getElementById("b-join-table").value;
-      var h = QS.hintJoin(f, j);
-      if (h && document.getElementById("b-join-on").checked) {
-        document.getElementById("b-join-left").value = h.left;
-        document.getElementById("b-join-right").value = h.right;
+    if (
+      ev.target.id === "b-join-on" ||
+      ev.target.id === "b-from" ||
+      ev.target.id === "b-join-table"
+    ) {
+      if (document.getElementById("b-join-on").checked) {
+        var h = QS.hintJoin(
+          document.getElementById("b-from").value,
+          document.getElementById("b-join-table").value
+        );
+        if (h && document.getElementById("b-join-left")) {
+          document.getElementById("b-join-left").value = h.left;
+          document.getElementById("b-join-right").value = h.right;
+        }
       }
     }
     QS.builderToSql();
+  });
+  document.getElementById("builder").addEventListener("input", function (ev) {
+    var id = ev.target.id || "";
+    if (
+      id === "b-from-alias" ||
+      id === "b-join-alias" ||
+      id === "b-limit" ||
+      ev.target.getAttribute("data-alias-for") ||
+      ev.target.hasAttribute("data-wright")
+    ) {
+      clearTimeout(QS._bt);
+      QS._bt = setTimeout(QS.builderToSql, 160);
+    }
   });
   document.getElementById("builder").addEventListener("click", function (ev) {
     var addW = ev.target.closest("#b-add-where");
@@ -634,11 +740,14 @@ QS.bind = function () {
   document.addEventListener("keydown", function (ev) {
     if ((ev.ctrlKey || ev.metaKey) && ev.key === "Enter") {
       ev.preventDefault();
-      QS.applySql(document.getElementById("sql").value, false);
+      if (document.getElementById("builder").contains(ev.target)) QS.builderToSql();
+      else QS.applySql(document.getElementById("sql").value, false);
     }
   });
   window.addEventListener("hashchange", function () {
-    QS.loadFromHash();
+    var fromClick = QS._hashFromClick;
+    QS._hashFromClick = false;
+    QS.loadFromHash(fromClick);
   });
 };
 
@@ -651,7 +760,7 @@ QS.boot = function () {
     ? "self-check ok"
     : "self-check failed: " + check.fails.join("; ");
   document.getElementById("selfcheck").className = "selfcheck " + (check.ok ? "ok" : "bad");
-  if (QS.loadFromHash()) return;
+  if (QS.loadFromHash(false)) return;
   var stored = QS.loadStore().sql;
   if (stored) QS.applySql(stored, false);
   else {
