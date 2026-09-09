@@ -13,7 +13,14 @@ QS.KEYWORDS = {
   limit: true,
   as: true,
   asc: true,
-  desc: true
+  desc: true,
+  group: true,
+  having: true,
+  count: true,
+  sum: true,
+  avg: true,
+  min: true,
+  max: true
 };
 
 QS.lex = function (source) {
@@ -121,6 +128,16 @@ QS.lex = function (source) {
     if (ch === ".") {
       advance();
       add("DOT", ".", sl, sc);
+      continue;
+    }
+    if (ch === "(") {
+      advance();
+      add("LPAREN", "(", sl, sc);
+      continue;
+    }
+    if (ch === ")") {
+      advance();
+      add("RPAREN", ")", sl, sc);
       continue;
     }
     throw QS.err("Unexpected character '" + ch + "'", sl, sc);

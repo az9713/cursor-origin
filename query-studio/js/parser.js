@@ -43,6 +43,32 @@ QS.parse = function (source) {
     }
     return { type: "col", table: table, name: name, alias: alias };
   }
+  function parseAgg(allowAlias) {
+    var fn = eat("KEYWORD").value.toUpperCase();
+    eat("LPAREN");
+    var arg;
+    if (at("STAR")) {
+      eat("STAR");
+      arg = { type: "star" };
+    } else {
+      arg = parseColRef(false);
+    }
+    eat("RPAREN");
+    if (fn !== "COUNT" && arg.type === "star") {
+      throw QS.err(fn + "(*) is not allowed");
+    }
+    var alias = null;
+    if (allowAlias && at("KEYWORD", "as")) {
+      eat("KEYWORD", "as");
+      alias = eat("IDENT").value;
+    }
+    return { type: "agg", fn: fn, arg: arg, alias: alias };
+  }
+  function atAgg() {
+    var t = peek();
+    var n = tokens[i + 1];
+    return t && t.type === "KEYWORD" && QS.AGGS[t.value] && n && n.type === "LPAREN";
+  }
   function parseOperand() {
     if (at("NUMBER")) {
       return { type: "num", value: eat("NUMBER").value };
@@ -50,11 +76,12 @@ QS.parse = function (source) {
     if (at("STRING")) {
       return { type: "str", value: eat("STRING").value };
     }
+    if (atAgg()) return parseAgg(false);
     if (at("IDENT")) {
       return parseColRef(false);
     }
     var t = peek();
-    throw QS.err("Expected column, number, or string", t && t.line, t && t.col);
+    throw QS.err("Expected column, aggregate, number, or string", t && t.line, t && t.col);
   }
   function parseComparison() {
     var left = parseOperand();
@@ -73,15 +100,19 @@ QS.parse = function (source) {
     }
     return { name: name, alias: alias };
   }
+  function parseSelectItem() {
+    if (atAgg()) return parseAgg(true);
+    return parseColRef(true);
+  }
   function parseSelectList() {
     if (at("STAR")) {
       eat("STAR");
       return [{ type: "star" }];
     }
-    var cols = [parseColRef(true)];
+    var cols = [parseSelectItem()];
     while (at("COMMA")) {
       eat("COMMA");
-      cols.push(parseColRef(true));
+      cols.push(parseSelectItem());
     }
     return cols;
   }
@@ -105,6 +136,25 @@ QS.parse = function (source) {
     while (at("KEYWORD", "and")) {
       eat("KEYWORD", "and");
       where.push(parseComparison());
+    }
+  }
+  var group = [];
+  if (at("KEYWORD", "group")) {
+    eat("KEYWORD", "group");
+    eat("KEYWORD", "by");
+    group.push(parseColRef(false));
+    while (at("COMMA")) {
+      eat("COMMA");
+      group.push(parseColRef(false));
+    }
+  }
+  var having = [];
+  if (at("KEYWORD", "having")) {
+    eat("KEYWORD", "having");
+    having.push(parseComparison());
+    while (at("KEYWORD", "and")) {
+      eat("KEYWORD", "and");
+      having.push(parseComparison());
     }
   }
   var order = [];
@@ -141,8 +191,20 @@ QS.parse = function (source) {
     var extra = peek();
     throw QS.err("Unexpected input after query", extra.line, extra.col);
   }
-  return { type: "select", columns: columns, from: from, join: join, where: where, order: order, limit: limit };
+  return {
+    type: "select",
+    columns: columns,
+    from: from,
+    join: join,
+    where: where,
+    group: group,
+    having: having,
+    order: order,
+    limit: limit
+  };
 };
+
+QS.AGGS = { count: true, sum: true, avg: true, min: true, max: true };
 
 QS.operandToSql = function (op) {
   if (op.type === "num") return String(op.value);
@@ -152,8 +214,16 @@ QS.operandToSql = function (op) {
 
 QS.colToSql = function (col, withAlias) {
   if (col.type === "star") return "*";
+  if (col.type === "agg") return QS.aggToSql(col, withAlias);
   var s = col.table ? col.table + "." + col.name : col.name;
   if (withAlias && col.alias) s += " AS " + col.alias;
+  return s;
+};
+
+QS.aggToSql = function (agg, withAlias) {
+  var inner = agg.arg && agg.arg.type === "star" ? "*" : QS.colToSql(agg.arg, false);
+  var s = agg.fn + "(" + inner + ")";
+  if (withAlias && agg.alias) s += " AS " + agg.alias;
   return s;
 };
 
@@ -176,6 +246,26 @@ QS.astToSql = function (ast) {
         ast.where
           .map(function (w) {
             return QS.operandToSql(w.left) + " " + w.op + " " + QS.operandToSql(w.right);
+          })
+          .join(" AND ")
+    );
+  }
+  if (ast.group && ast.group.length) {
+    lines.push(
+      "GROUP BY " +
+        ast.group
+          .map(function (g) {
+            return QS.colToSql(g, false);
+          })
+          .join(", ")
+    );
+  }
+  if (ast.having && ast.having.length) {
+    lines.push(
+      "HAVING " +
+        ast.having
+          .map(function (h) {
+            return QS.operandToSql(h.left) + " " + h.op + " " + QS.operandToSql(h.right);
           })
           .join(" AND ")
     );

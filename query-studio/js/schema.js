@@ -108,5 +108,16 @@ QS.PRESETS = [
       "INNER JOIN products AS p ON o.sku = p.sku\n" +
       "WHERE o.total >= 100\n" +
       "ORDER BY o.total DESC"
+  },
+  {
+    id: "dept-agg",
+    name: "Headcount by department",
+    sql:
+      "SELECT d.name AS department, COUNT(*) AS n, AVG(e.salary) AS avg_salary\n" +
+      "FROM employees AS e\n" +
+      "INNER JOIN departments AS d ON e.dept_id = d.id\n" +
+      "GROUP BY d.name\n" +
+      "HAVING COUNT(*) >= 2\n" +
+      "ORDER BY n DESC"
   }
 ];

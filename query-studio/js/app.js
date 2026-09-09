@@ -153,7 +153,7 @@ QS.renderBuilder = function (ast) {
 
   function colOptions(selectedLabel) {
     var want = String(selectedLabel || "").toLowerCase();
-    return (
+    var html =
       '<option value=""></option>' +
       cols
         .map(function (c) {
@@ -164,8 +164,20 @@ QS.renderBuilder = function (ast) {
               (c.table + "." + c.name).toLowerCase() === want);
           return "<option value=\"" + QS.esc(c.label) + "\"" + (hit ? " selected" : "") + ">" + QS.esc(c.label) + "</option>";
         })
-        .join("")
-    );
+        .join("");
+    (ast.columns || []).forEach(function (c) {
+      if (!c.alias) return;
+      var hit = want === c.alias.toLowerCase();
+      html +=
+        "<option value=\"" +
+        QS.esc(c.alias) +
+        "\"" +
+        (hit ? " selected" : "") +
+        ">" +
+        QS.esc(c.alias) +
+        "</option>";
+    });
+    return html;
   }
 
   function operandLabel(op) {
@@ -202,7 +214,7 @@ QS.renderBuilder = function (ast) {
   var colChips = cols
     .map(function (c) {
       var match = ast.columns.some(function (col) {
-        if (col.type === "star") return false;
+        if (col.type === "star" || col.type === "agg") return false;
         if (col.name.toLowerCase() !== c.name.toLowerCase()) return false;
         var t = (col.table || "").toLowerCase();
         if (t) return t === c.alias.toLowerCase() || t === c.table.toLowerCase();
@@ -213,7 +225,7 @@ QS.renderBuilder = function (ast) {
       });
       var alias = "";
       ast.columns.forEach(function (col) {
-        if (col.type === "star") return;
+        if (col.type === "star" || col.type === "agg") return;
         if (col.name.toLowerCase() === c.name.toLowerCase() && col.alias) {
           var t = (col.table || "").toLowerCase();
           if (!t || t === c.alias.toLowerCase() || t === c.table.toLowerCase()) alias = col.alias;
@@ -282,6 +294,83 @@ QS.renderBuilder = function (ast) {
     })
     .join("");
 
+  var groupRows = (ast.group || [])
+    .map(function (g, idx) {
+      return (
+        '<div class="clause" data-group="' +
+        idx +
+        '"><select data-gleft>' +
+        colOptions(operandLabel(g)) +
+        "</select>" +
+        '<button type="button" class="tiny" data-rm-group="' +
+        idx +
+        '">×</button></div>'
+      );
+    })
+    .join("");
+
+  function aggOptions(selectedLabel) {
+    var opts = ['<option value="COUNT(*)"' + (selectedLabel === "COUNT(*)" ? " selected" : "") + ">COUNT(*)</option>"];
+    cols.forEach(function (c) {
+      ["COUNT", "SUM", "AVG", "MIN", "MAX"].forEach(function (fn) {
+        var lab = fn + "(" + c.label + ")";
+        opts.push(
+          "<option value=\"" +
+            QS.esc(lab) +
+            "\"" +
+            (selectedLabel === lab ? " selected" : "") +
+            ">" +
+            QS.esc(lab) +
+            "</option>"
+        );
+      });
+    });
+    return opts.join("");
+  }
+
+  var havingRows = (ast.having || [])
+    .map(function (h, idx) {
+      var leftLab = h.left.type === "agg" ? QS.aggToSql(h.left, false) : operandLabel(h.left);
+      var right = h.right.type === "col" ? operandLabel(h.right) : h.right.type === "agg" ? QS.aggToSql(h.right, false) : h.right.type === "str" ? h.right.value : String(h.right.value);
+      return (
+        '<div class="clause" data-having="' +
+        idx +
+        '">' +
+        (idx ? "<span class=\"conj\">AND</span>" : "<span class=\"conj\">HAVING</span>") +
+        "<select data-hleft>" +
+        aggOptions(leftLab) +
+        "</select>" +
+        opSel("hop", h.op) +
+        '<input data-hright type="text" value="' +
+        QS.esc(right) +
+        '">' +
+        '<button type="button" class="tiny" data-rm-having="' +
+        idx +
+        '">×</button></div>'
+      );
+    })
+    .join("");
+
+  var aggRows = ast.columns
+    .filter(function (c) {
+      return c.type === "agg";
+    })
+    .map(function (a, idx) {
+      return (
+        '<div class="clause" data-agg="' +
+        idx +
+        '"><select data-afn>' +
+        aggOptions(QS.aggToSql(a, false)) +
+        '</select> <input type="text" data-aalias value="' +
+        QS.esc(a.alias || "") +
+        '" placeholder="alias">' +
+        '<button type="button" class="tiny" data-rm-agg="' +
+        idx +
+        '">×</button></div>'
+      );
+    })
+    .join("");
+
   document.getElementById("builder").innerHTML =
     '<div class="field"><label for="b-from">From</label><select id="b-from">' +
     tableOpts +
@@ -321,6 +410,18 @@ QS.renderBuilder = function (ast) {
     '<div id="b-where">' +
     (whereRows || '<p class="hint">No filter.</p>') +
     "</div>" +
+    '<div class="field head-row"><label>Aggregates</label><button type="button" class="ghost" id="b-add-agg">Add aggregate</button></div>' +
+    '<div id="b-aggs">' +
+    (aggRows || '<p class="hint">COUNT / SUM / AVG / MIN / MAX.</p>') +
+    "</div>" +
+    '<div class="field head-row"><label>Group by</label><button type="button" class="ghost" id="b-add-group">Add group</button></div>' +
+    '<div id="b-group">' +
+    (groupRows || '<p class="hint">No grouping.</p>') +
+    "</div>" +
+    '<div class="field head-row"><label>Having</label><button type="button" class="ghost" id="b-add-having">Add having</button></div>' +
+    '<div id="b-having">' +
+    (havingRows || '<p class="hint">Filter groups.</p>') +
+    "</div>" +
     '<div class="field head-row"><label>Order</label><button type="button" class="ghost" id="b-add-order">Add sort</button></div>' +
     '<div id="b-order">' +
     (orderRows || '<p class="hint">Result order is table order.</p>') +
@@ -335,6 +436,17 @@ QS.parseColLabel = function (label) {
   if (parts.length === 2) return { type: "col", table: parts[0], name: parts[1], alias: null };
   if (parts.length === 1 && parts[0]) return { type: "col", table: null, name: parts[0], alias: null };
   return null;
+};
+
+QS.parseSelectish = function (label) {
+  var s = String(label || "").trim();
+  if (/^COUNT\(\*\)$/i.test(s)) return { type: "agg", fn: "COUNT", arg: { type: "star" }, alias: null };
+  var m = /^(COUNT|SUM|AVG|MIN|MAX)\((.+)\)$/i.exec(s);
+  if (m) {
+    var arg = m[2] === "*" ? { type: "star" } : QS.parseColLabel(m[2]);
+    return { type: "agg", fn: m[1].toUpperCase(), arg: arg, alias: null };
+  }
+  return QS.parseColLabel(s);
 };
 
 QS.parseRightValue = function (raw) {
@@ -356,6 +468,8 @@ QS.astFromBuilder = function () {
     from: { name: fromName, alias: fromAlias },
     join: null,
     where: [],
+    group: [],
+    having: [],
     order: [],
     limit: null
   };
@@ -402,7 +516,7 @@ QS.astFromBuilder = function () {
     }
     if (prevAst) {
       prevAst.columns.forEach(function (c) {
-        if (c.type === "star") return;
+        if (c.type === "star" || c.type === "agg") return;
         prevKeys.push(((c.table || "") + "." + c.name).toLowerCase());
       });
     }
@@ -447,6 +561,28 @@ QS.astFromBuilder = function () {
     if (!right) throw QS.err("Pick a value for WHERE");
     ast.where.push({ type: "cmp", op: opEl.value, left: left, right: right });
   });
+  document.querySelectorAll("#b-aggs .clause").forEach(function (row) {
+    var agg = QS.parseSelectish(row.querySelector("[data-afn]").value);
+    if (!agg || agg.type !== "agg") throw QS.err("Pick an aggregate");
+    var aliasIn = row.querySelector("[data-aalias]");
+    agg.alias = aliasIn && aliasIn.value.trim() ? aliasIn.value.trim() : null;
+    ast.columns.push(agg);
+  });
+  document.querySelectorAll("#b-group .clause").forEach(function (row) {
+    var col = QS.parseColLabel(row.querySelector("[data-gleft]").value);
+    if (!col) throw QS.err("Pick a column for GROUP BY");
+    ast.group.push(col);
+  });
+  document.querySelectorAll("#b-having .clause").forEach(function (row) {
+    var left = QS.parseSelectish(row.querySelector("[data-hleft]").value);
+    var opEl = row.querySelectorAll("select")[1];
+    var right = QS.parseRightValue(row.querySelector("[data-hright]").value);
+    if (!left) throw QS.err("Pick a HAVING expression");
+    ast.having.push({ type: "cmp", op: opEl.value, left: left, right: right });
+  });
+  if (ast.columns.some(function (c) { return c.type === "star"; }) && (ast.group.length || ast.columns.some(function (c) { return c.type === "agg"; }))) {
+    throw QS.err("SELECT * cannot be used with GROUP BY or aggregates");
+  }
   document.querySelectorAll("#b-order .clause").forEach(function (row) {
     var col = QS.parseColLabel(row.querySelector("[data-oleft]").value);
     var dir = row.querySelector("[data-odir]").value;
@@ -720,17 +856,36 @@ QS.bind = function () {
   document.getElementById("builder").addEventListener("click", function (ev) {
     var addW = ev.target.closest("#b-add-where");
     var addO = ev.target.closest("#b-add-order");
+    var addG = ev.target.closest("#b-add-group");
+    var addH = ev.target.closest("#b-add-having");
+    var addA = ev.target.closest("#b-add-agg");
     var rmW = ev.target.closest("[data-rm-where]");
     var rmO = ev.target.closest("[data-rm-order]");
-    if (!addW && !addO && !rmW && !rmO) return;
+    var rmG = ev.target.closest("[data-rm-group]");
+    var rmH = ev.target.closest("[data-rm-having]");
+    var rmA = ev.target.closest("[data-rm-agg]");
+    if (!addW && !addO && !addG && !addH && !addA && !rmW && !rmO && !rmG && !rmH && !rmA) return;
     try {
       var ast = QS.astFromBuilder();
+      ast.group = ast.group || [];
+      ast.having = ast.having || [];
       var cols = QS.availableCols(ast);
       var first = cols[0] ? cols[0].ast : { type: "col", table: null, name: "id", alias: null };
+      var countStar = { type: "agg", fn: "COUNT", arg: { type: "star" }, alias: "n" };
       if (addW) ast.where.push({ type: "cmp", op: "=", left: first, right: { type: "num", value: 0 } });
       if (addO) ast.order.push({ col: first, dir: "ASC" });
+      if (addG) ast.group.push(first);
+      if (addH) ast.having.push({ type: "cmp", op: ">=", left: countStar, right: { type: "num", value: 1 } });
+      if (addA) ast.columns.push(countStar);
       if (rmW) ast.where.splice(Number(rmW.getAttribute("data-rm-where")), 1);
       if (rmO) ast.order.splice(Number(rmO.getAttribute("data-rm-order")), 1);
+      if (rmG) ast.group.splice(Number(rmG.getAttribute("data-rm-group")), 1);
+      if (rmH) ast.having.splice(Number(rmH.getAttribute("data-rm-having")), 1);
+      if (rmA) {
+        var aggs = ast.columns.filter(function (c) { return c.type === "agg"; });
+        var drop = aggs[Number(rmA.getAttribute("data-rm-agg"))];
+        ast.columns = ast.columns.filter(function (c) { return c !== drop; });
+      }
       QS.applySql(QS.astToSql(ast), false);
     } catch (e) {
       document.getElementById("status").innerHTML =
