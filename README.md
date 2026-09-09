@@ -1,6 +1,10 @@
 # cursor-origin
 
-Hub for Cursor stress-test apps. Warts-and-all process record: [development journey](https://az9713.github.io/cursor-origin/development_journey.html). Live site:
+## About
+
+Hub repo for vanilla HTML/CSS/JS apps that stress Cursor’s agentic IDE loop — freeze a spec, implement, click the broken control, keep old flows green. Eleven sibling products (Mini Linear through query studio) plus a [warts-and-all development journey](https://az9713.github.io/cursor-origin/development_journey.html). No backends, no build step.
+
+Live site:
 
 https://az9713.github.io/cursor-origin/
 
