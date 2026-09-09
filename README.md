@@ -1,6 +1,6 @@
 # cursor-origin
 
-Hub for Cursor stress-test apps. Live site:
+Hub for Cursor stress-test apps. Warts-and-all process record: [development journey](https://az9713.github.io/cursor-origin/development_journey.html). Live site:
 
 https://az9713.github.io/cursor-origin/
 

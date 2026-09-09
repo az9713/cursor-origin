@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Development Journey — cursor_origin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #1a1612;
+      --paper: #f3eee4;
+      --rule: #d9d0c1;
+      --muted: #5e564c;
+      --rust: #b4451a;
+      --moss: #2c4a3e;
+      --card: #fffdf8;
+      --warn: #fff6ee;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font: 17px/1.55 "IBM Plex Sans", "Segoe UI", sans-serif;
+    }
+    .mast {
+      border-bottom: 1px solid var(--rule);
+      padding: 1.25rem 6vw;
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: baseline;
+      flex-wrap: wrap;
+    }
+    .mast strong {
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-weight: 500;
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .mast span { color: var(--muted); font-size: 0.9rem; }
+    header.hero { padding: 3.5rem 6vw 2.5rem; max-width: 72rem; }
+    .kicker {
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: 0.78rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--rust);
+      margin: 0 0 0.85rem;
+    }
+    h1 {
+      font-family: Fraunces, Georgia, serif;
+      font-size: clamp(2.2rem, 5vw, 3.4rem);
+      font-weight: 650;
+      line-height: 1.12;
+      margin: 0 0 1rem;
+      max-width: 22ch;
+    }
+    .lede { max-width: 68ch; font-size: 1.12rem; color: var(--muted); margin: 0 0 1rem; }
+    .meta {
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: 0.82rem;
+      color: var(--muted);
+      max-width: 78ch;
+    }
+    .meta dt {
+      color: var(--rust);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-size: 0.7rem;
+      margin-top: 0.7rem;
+    }
+    .meta dd { margin: 0.15rem 0 0; }
+    nav.toc {
+      margin: 0 6vw 2.5rem;
+      padding: 1rem 1.25rem;
+      border: 1px solid var(--rule);
+      background: var(--card);
+      max-width: 72rem;
+    }
+    nav.toc p {
+      margin: 0 0 0.6rem;
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    nav.toc ol { margin: 0; padding-left: 1.2rem; columns: 2; gap: 2rem; }
+    nav.toc a { color: var(--ink); }
+    @media (max-width: 720px) { nav.toc ol { columns: 1; } }
+    main { padding: 0 6vw 4rem; max-width: 72rem; }
+    section { margin-bottom: 3.25rem; }
+    h2 {
+      font-family: Fraunces, Georgia, serif;
+      font-size: 1.85rem;
+      font-weight: 650;
+      margin: 0 0 0.85rem;
+    }
+    h3 {
+      font-family: Fraunces, Georgia, serif;
+      font-size: 1.28rem;
+      font-weight: 650;
+      margin: 1.4rem 0 0.45rem;
+    }
+    p { margin: 0 0 0.9rem; max-width: 72ch; }
+    ul, ol { max-width: 72ch; }
+    li { margin-bottom: 0.4rem; }
+    code, pre {
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: 0.88em;
+    }
+    code { background: #eae3d6; padding: 0.08em 0.32em; }
+    pre {
+      background: var(--card);
+      border: 1px solid var(--rule);
+      padding: 0.9rem 1rem;
+      overflow-x: auto;
+      max-width: 78ch;
+      white-space: pre-wrap;
+    }
+    blockquote {
+      margin: 0 0 1rem;
+      padding: 0.7rem 1rem;
+      border-left: 4px solid var(--rust);
+      background: var(--warn);
+      max-width: 72ch;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      max-width: 78rem;
+      font-size: 0.92rem;
+      background: var(--card);
+      margin: 0 0 1.2rem;
+    }
+    th, td {
+      border: 1px solid var(--rule);
+      padding: 0.45rem 0.6rem;
+      vertical-align: top;
+      text-align: left;
+    }
+    th {
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--rust);
+    }
+    .call {
+      border: 1px solid var(--rust);
+      background: var(--warn);
+      padding: 0.85rem 1rem;
+      max-width: 72ch;
+      margin: 1rem 0;
+    }
+    .recon { color: var(--muted); font-size: 0.92rem; }
+    footer {
+      border-top: 1px solid var(--rule);
+      padding: 1.25rem 6vw 2rem;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="mast">
+    <strong>cursor_origin journey</strong>
+    <span>
+      <a href="./index.html">Hub</a> ·
+      <a href="./token-heavy-projects.html">Briefing</a> ·
+      <a href="https://github.com/az9713/cursor-origin">GitHub</a> ·
+      <a href="https://cursor.com/codebase/az9713/cursor-origin">Origin</a>
+    </span>
+  </div>
+  <header class="hero">
+    <p class="kicker">Development journey — warts and all</p>
+    <h1>From an empty Downloads folder to eleven live apps</h1>
+    <p class="lede">This is the story of how an agent actually built <code>az9713/cursor-origin</code>: empty folder, Cursor onboarding, a token-heavy bake-off, a parallel-subagent pile-up, a machine shutdown, and a bidirectional SQL studio that still had to keep its JOIN seed green after GROUP BY.</p>
+    <p class="lede">The failures are the product. A victory lap would hide the only evidence that matters: where autonomy broke, what a human had to say, and what the agent almost concluded wrongly.</p>
+    <dl class="meta">
+      <dt>Date written</dt>
+      <dd>2026-09-09 (Pacific)</dd>
+      <dt>Deliverable</dt>
+      <dd><a href="./index.html">https://az9713.github.io/cursor-origin/</a> — hub plus sibling apps 1–11</dd>
+      <dt>This file</dt>
+      <dd><code>development_journey.html</code> at repo root. Customer-facing docs in this repo are HTML. The invoked skill defaults to <code>DEVELOPMENT-JOURNEY.md</code>; the filename follows the user request.</dd>
+      <dt>First prompt, quoted</dt>
+      <dd>“please work in the folder ~/Downloads/cursor_origin”</dd>
+      <dt>Product brief, quoted</dt>
+      <dd>“Please suggest a list of token-heavy projects that showcase Cursor coding abilities and distinguish Cursor from Codex and Claude. Ask me if questions”</dd>
+      <dt>This document’s brief, quoted</dt>
+      <dd>“can you write a &quot;development_journey.html&quot; using Claude skill &quot;dev-journey&quot; ? i want to capture all the projects, how you design/develop each project, each and every design decision, every problem encountered and its solution. did you spin up subagents ? if so, when and how ? how was orchestration done .... address all my unknown unknowns in this project development proess also. the ultimate goal is the capture your capability of automatic / agentic code development, warts and all.”</dd>
+    </dl>
+  </header>
+  <nav class="toc" aria-label="Contents">
+    <p>Contents</p>
+    <ol>
+      <li><a href="#brief">The brief</a></li>
+      <li><a href="#evidence">Evidence and reconstruction</a></li>
+      <li><a href="#cold">Cold start</a></li>
+      <li><a href="#decisions">Standing design decisions</a></li>
+      <li><a href="#crux">The coherence problem</a></li>
+      <li><a href="#tools">Tools used</a></li>
+      <li><a href="#agents">Subagents and orchestration</a></li>
+      <li><a href="#projects">How each project was built</a></li>
+      <li><a href="#wrong">What went wrong</a></li>
+      <li><a href="#verify">Verification</a></li>
+      <li><a href="#unknowns">Unknown unknowns</a></li>
+      <li><a href="#stand">Where things stand</a></li>
+    </ol>
+  </nav>
+  <main>
+    <section id="brief">
+      <h2>1. The brief — two briefs, weeks apart</h2>
+      <p>The repo did not start as a bake-off. It started as an empty folder and a request to learn Cursor.</p>
+      <blockquote>please work in the folder ~/Downloads/cursor_origin</blockquote>
+      <p>Then: “walk me through the best practices of starting a Cursor coding project.” The agent interpreted that as onboarding, not as “build a product.” That interpretation was correct. The user never named an app that night. The agent offered to write <code>.gitignore</code> and <code>AGENTS.md</code> and never did it in that chat.</p>
+      <p>Seven days later the real product brief arrived in a different chat titled “Token-heavy Cursor projects”:</p>
+      <blockquote>Please suggest a list of token-heavy projects that showcase Cursor coding abilities and distinguish Cursor from Codex and Claude. Ask me if questions</blockquote>
+      <p>Silent interpretation that shaped everything after:</p>
+      <ul>
+        <li>“Token-heavy” meant many files, engines, and a browser-verify loop — not a chatbot wrapper.</li>
+        <li>“Distinguish Cursor from Codex and Claude” meant the IDE loop (see the broken control, fix that file, keep the rest coherent), not first-draft volume.</li>
+        <li>“Ask me if questions” was later revoked by “i will be off and cannot answer further questions” and “will you be able to complete 3-10 autonomously.”</li>
+      </ul>
+      <p>The user then froze two house rules that the first chat never mentioned: customer-facing docs are HTML; internal specs may be Markdown. That rule is why this journey is HTML and why <code>token-heavy-projects.html</code> exists instead of a README essay.</p>
+    </section>
+
+    <section id="evidence">
+      <h2>2. Evidence and reconstruction — this is not one live session</h2>
+      <p>The <code>dev-journey</code> skill says write from the live transcript, and mark reconstruction when the session is past. This document covers <strong>three chats plus one aborted starter</strong>, then git history. Context in the long bake-off chat was already summarized once before this file was requested. Silent reconstruction would be a lie.</p>
+      <table>
+        <thead>
+          <tr><th>Source</th><th>What it is</th><th>How used here</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>8bbc41d6-9290-46bb-a82f-43be68d5b926</code></td>
+            <td>Empty-window chat, 2026-08-31. Same first prompt. Turn ended <code>"User aborted request"</code>.</td>
+            <td>Found. First workspace bind failed.</td>
+          </tr>
+          <tr>
+            <td><code>06e271a1-899a-4793-9326-471098c604c5</code></td>
+            <td>“Cursor origin folder.” Aug 31 8:36 PM–11:21 PM. Onboarding only.</td>
+            <td>Found. Swept by subagent <a href="#agents">451a2ede</a>.</td>
+          </tr>
+          <tr>
+            <td><code>a214396e-8a47-4387-ad65-d21cdf4b3c4b</code></td>
+            <td>“Token-heavy Cursor projects.” Sep 7–9. 311 JSONL lines. The build.</td>
+            <td>Found. Swept by subagent <a href="#agents">1e170412</a>.</td>
+          </tr>
+          <tr>
+            <td>Subagent jsonl under those chats</td>
+            <td>cursor-guide, 8 builders, audit, Session B hunt</td>
+            <td>Found. Swept by subagent <a href="#agents">c617fba9</a>.</td>
+          </tr>
+          <tr>
+            <td><code>git log</code> on <code>main</code></td>
+            <td>Seven commits, 2026-08-31 to 2026-09-09</td>
+            <td>Found. Dates and messages are exact.</td>
+          </tr>
+          <tr>
+            <td>Conversation summary injected into the journey-writing turn</td>
+            <td>Parent memory after compaction</td>
+            <td>Reconstructed. Used only where transcripts agree.</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="recon">Rule learned: the session transcript is perishable. This file exists because the user asked whether a journey doc already existed, heard no, and then invoked the skill. The skill also says to offer a journey doc at the natural end of a substantial build. That offer was never made after Mini Linear, after projects 3–10, or after query-studio Session C.</p>
+    </section>
+
+    <section id="cold">
+      <h2>3. Cold start — empty folder, then a week of silence</h2>
+      <p>Environment at minute zero, Aug 31 2026: Windows 10, Git 2.55, folder <code>C:\Users\simon\Downloads\cursor_origin</code> empty, no remotes, no Origin CLI on PATH. The first <code>move_agent_to_root</code> aborted. Retry bound the chat. The empty-window copy of the same prompt died with <code>"User aborted request"</code>.</p>
+      <p>What the agent reused instead of inventing: Cursor skills <code>origin</code>, <code>new-repo</code>, <code>create-rule</code>, <code>update-cursor-settings</code>, plus four background <code>cursor-guide</code> subagents. Official docs beat forum folklore except when the UI did not match the docs (no chevron next to the terminal <code>+</code>).</p>
+      <p>The only file edit that night was Cursor user settings: default terminal profile PowerShell → Git Bash at <code>C:\Program Files\Git\bin\bash.exe</code>. The user ran <code>git init</code> themselves. The agent said “Don’t add a remote yet.”</p>
+      <p>Commit <code>3e58d97</code> on 2026-08-31 added <code>.gitignore</code> and a short <code>AGENTS.md</code>. That commit is <strong>not</strong> in the onboarding transcript. Someone — user or a later unlogged action — finished the bootstrap the agent only described. Between Aug 31 11:21 PM and Sep 7 6:33 AM there is no agent transcript for this repo. That gap is a finding: the “entire project since the very first prompt” is not one continuous agent run.</p>
+      <p>Sep 7 opened in Plan mode. The agent tried to write HTML and could not. <code>SwitchMode</code> to Agent was rejected twice. Verbatim: “Plan mode can only edit Markdown. I tried to switch to Agent… that switch was rejected.” The user had to click Agent mode. The agent spawned <code>cursor-guide</code> <code>b5f55cb7</code> to answer “how do i switch to Agent mode.” Human-in-the-loop, before any app existed.</p>
+    </section>
+
+    <section id="decisions">
+      <h2>4. Design decisions — options considered, losers named</h2>
+      <h3>Hub repo, not one-app repo</h3>
+      <p>First instinct was a repo named for Mini Linear. The user overrode it: “we will have multiple sub-project folders in ./cursor_origin/. so use az9713/cursor-origin (match this folder).” Rejected: nested apps inside <code>mini-linear/</code>, overwriting hub <code>index.html</code>, or a new GitHub repo per app.</p>
+      <p>Rule learned: the folder name is the GitHub name; the hub is a directory, not an app.</p>
+
+      <h3>Customer docs are HTML</h3>
+      <p>User, Sep 7 6:38 AM: “please commit to your memory that html docs are preferred for customer-facing docs. for internal docs, md are fine.” Written into <code>AGENTS.md</code>, user-level <code>AGENTS.md</code>, and <code>.cursor/rules/docs-format.mdc</code>. Rejected: shipping the briefing as Markdown; this journey as <code>DEVELOPMENT-JOURNEY.md</code>.</p>
+
+      <h3>No new dependencies</h3>
+      <p>Standing rule: ask before adding dependencies. Combined with GitHub Pages + Origin, that killed backends, auth, paid APIs, Docker, native apps, and “import a huge real repo.” Every app is vanilla HTML/CSS/JS. Rejected for shader-studio: three.js. Rejected for page-clone: cloning a third-party site. The page-clone worker prompt said “Do NOT clone a real third-party website.”</p>
+
+      <h3>Visual language</h3>
+      <p>IBM Plex Sans / Mono, Fraunces headings, paper <code>#f3eee4</code> / <code>#ebe4d6</code>, rust <code>#b4451a</code>, dark chrome <code>#2a251f</code> / <code>#241f1a</code>. Chosen so eleven apps look like one studio, not eleven demos. Rejected: Tailwind, component libraries, per-app fashion.</p>
+
+      <h3>Frozen SPEC before Agent</h3>
+      <p>Bake-off protocol in <code>token-heavy-projects.html</code>:</p>
+      <ol>
+        <li>Freeze <code>SPEC.md</code> + <code>AGENTS.md</code> before implementation.</li>
+        <li>Session A: implement to demoable.</li>
+        <li>Session B: polish only from browser-repro bugs. No spec changes.</li>
+        <li>Session C: one cross-cutting feature or refactor. Prove old flows in the browser.</li>
+      </ol>
+      <p>Quote from the briefing: “Codex and Claude can do session A. Cursor is supposed to still be coherent after session C.” That sentence is the product thesis. Everything else is evidence for or against it.</p>
+
+      <h3>GitHub first, Origin second, two remotes forever</h3>
+      <p>Options: Origin-only (CLI unsupported on native Windows), GitHub-only (loses the Cursor-hosted copy), or dual remotes. Chosen: GitHub remote name <code>origin</code> → <code>https://github.com/az9713/cursor-origin.git</code>. Cursor Origin remote name <code>cursor</code> → <code>https://origin.cursor.com/az9713/cursor-origin.git</code>. Do not replace <code>origin</code> with Origin. After any <code>git push -u cursor</code>, restore <code>git branch -u origin/main</code>. Prefer <code>git push cursor main</code> without <code>-u</code>.</p>
+      <p>Sep 9 1:26 PM the user made this a standing order: “from now on till revoked, commit and push means both.”</p>
+
+      <h3>localStorage keys are versioned per app</h3>
+      <p><code>spreadsheet-v2</code> after the demo seed changed. <code>query-studio-v1</code>, <code>vector-editor-v1</code>, <code>desktop-os-v1</code>, <code>simulation-v1</code>, <code>saas-shell-v1</code>, <code>page-clone-v1</code>, <code>compiler-v1</code>. Rejected: one shared key. Near-miss: Mini Linear messy and clean still share storage. That was noticed and left.</p>
+
+      <h3>Descoped on purpose</h3>
+      <p>Never built: backends, OR in SQL, subqueries, CTEs, LEFT JOIN, writes, paid APIs, Wave 2 items 12–19. Wave 2 canvas recommended <code>query-studio/</code> first; the rest stayed a table. Mini Linear HTML5 drag was never proven in automation. Those absences are choices, not forgotten work — except Wave 2 after query-studio, which is simply not started.</p>
+    </section>
+
+    <section id="crux">
+      <h2>5. The coherence problem — still green after Session C</h2>
+      <p>The session’s actual crux is not “can an agent emit files.” Codex and Claude can emit files. The crux is: after a messy Session A, a polish Session B, and a cross-cutting Session C, do the original demo flows still work when a human clicks them?</p>
+      <p>Mini Linear tested that as messy → 7-file collapse, then a later restore of the messy tree beside the clean app because the user said “do not delete any file.” Query studio tested it as JOIN seed → browser-repro polish → GROUP BY / HAVING, with the seed still required to return 7 rows and Chris Patel / Payments / 155000 first.</p>
+      <p>The agentic claim is narrower than “built 11 apps.” The claim is: a parent agent can freeze a spec, fan out work, audit the wreckage, reproduce bugs in a real browser, and refuse to treat a screenshot as done. The wreckage is part of the claim. Two of eight parallel builders shipped incomplete apps. The parent had to finish them. That is orchestration, not magic.</p>
+    </section>
+
+    <section id="tools">
+      <h2>6. Tools and features used</h2>
+      <table>
+        <thead>
+          <tr><th>Tool</th><th>What it did in this project</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Plan / Agent / Ask / Debug modes</td><td>Briefing started in Plan; HTML writes blocked until the user switched to Agent. Ask used for the “is there a journey doc?” check. Debug never used as a mode for these apps.</td></tr>
+          <tr><td><code>Task</code> subagents</td><td>cursor-guide for docs; explore for audit and Session B hunt; builder workers for apps 3–10; explore workers to mine transcripts for this file.</td></tr>
+          <tr><td>Cursor canvas</td><td>Wave 2 ranking table at <code>canvases/wave-2-agentic-projects.canvas.tsx</code> (project scratch, not in git).</td></tr>
+          <tr><td><code>cursor-ide-browser</code> MCP</td><td>Navigate, snapshot, click, CDP <code>Runtime.evaluate</code>, lock/unlock. The Session B/C proof surface.</td></tr>
+          <tr><td>Puppeteer MCP</td><td>Used by some builders during verify; several then died with connection failures.</td></tr>
+          <tr><td><code>python -m http.server</code></td><td>8080 first, then 8765, then 8790 bound to 127.0.0.1 when 8080 went stale.</td></tr>
+          <tr><td><code>gh</code></td><td>Create/push <code>az9713/cursor-origin</code>, GitHub Pages.</td></tr>
+          <tr><td>WSL + Origin CLI</td><td>Install, <code>origin auth login</code>, <code>git push cursor main</code>. Native Windows cannot do this path cleanly.</td></tr>
+          <tr><td>Node one-liners</td><td><code>QS.selfCheck()</code> by loading schema/lexer/parser/engine under <code>global.window = global</code>.</td></tr>
+          <tr><td>User rules / AGENTS.md / docs-format rule</td><td>Invisible constraints: no surprise deps, HTML customer docs, no root app code, dual-push after Sep 9.</td></tr>
+          <tr><td><code>dev-journey</code> skill</td><td>Invoked for this file. Completeness checklist drove the unknown-unknowns section.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="agents">
+      <h2>7. Subagents and orchestration — yes, and the log is incomplete</h2>
+      <p>Yes. Subagents were used in four waves. The parent kept user-facing speech. Workers researched, built, or audited. The parent merged results, sometimes ignored them, and sometimes had to finish the job.</p>
+
+      <h3>How orchestration actually worked</h3>
+      <ol>
+        <li><strong>Docs first.</strong> Background <code>cursor-guide</code> workers. Parent keeps talking. System inserts “Perform any necessary follow-up actions in response to the subagent completion above.” Parent folds the answer in.</li>
+        <li><strong>Human gate.</strong> “confirm before execute” for projects 3–10. The parent asked. The user said go — twice, because the message was sent twice.</li>
+        <li><strong>Parallel fan-out.</strong> Eight builders launched around Sep 7 8:50–9:04 AM. Their Task calls are <strong>not</strong> in the parent JSONL. The files on disk and the subagent transcripts prove they ran. At 9:36 the parent said folders already existed and audited instead of building from scratch. Reconstructed: the fan-out happened just before or as the “go” landed, and the parent transcript lost the Task payloads. That is a process wart. Autonomy started before the human’s last check was fully digested.</li>
+        <li><strong>Audit the wreckage.</strong> Explicit <code>explore</code> Task <code>e6463511</code>: 6/8 complete, saas-shell missing <code>js/app.js</code>, knowledge-graph missing the UI. Parent wrote the missing files in the main thread.</li>
+        <li><strong>Hunt, then reproduce, then fix.</strong> Query-studio Session B: <code>explore</code> <code>b6940cf3</code> listed 16 bugs. Parent reproduced the serious ones in the browser. Fixed only those. Spec stayed frozen.</li>
+        <li><strong>Do the hard Session C inline.</strong> GROUP BY / HAVING was parent work, not a builder. Regression proof was browser + <code>selfCheck</code>.</li>
+        <li><strong>Mine the past to write this.</strong> Three explore workers in parallel: earliest chats, main bake-off, subagent folder.</li>
+      </ol>
+      <p>Rule learned: a builder that dies after writing CSS is not a finished app. Audit is not optional when you fan out.</p>
+
+      <h3>Wave 0 — Cursor onboarding (Aug 31)</h3>
+      <table>
+        <thead><tr><th>ID</th><th>Type</th><th>Job</th><th>Outcome</th></tr></thead>
+        <tbody>
+          <tr><td><code>bef8d1fd</code></td><td>cursor-guide</td><td>Project-start docs</td><td>Used. Origin optional; Windows notes.</td></tr>
+          <tr><td><code>61ae0568</code></td><td>cursor-guide</td><td>Click-path git init</td><td>Used after user demanded click paths.</td></tr>
+          <tr><td><code>0888e8f2</code></td><td>cursor-guide</td><td>Git Bash profile</td><td>Used after “there is no v next to +”.</td></tr>
+          <tr><td><code>0b21222e</code></td><td>cursor-guide</td><td>Explain “No Repo”</td><td>Corrected the parent’s wrong first answer.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Wave 1 — bake-off helpers and builders (Sep 7)</h3>
+      <table>
+        <thead><tr><th>ID</th><th>Type</th><th>Job</th><th>Outcome</th></tr></thead>
+        <tbody>
+          <tr><td><code>b5f55cb7</code></td><td>cursor-guide</td><td>How to switch to Agent</td><td>Used. User still had to click it.</td></tr>
+          <tr><td><code>3d2f357e</code></td><td>builder</td><td>vector-editor</td><td>Complete. Fixed its own history double-snapshot.</td></tr>
+          <tr><td><code>daf257a9</code></td><td>builder</td><td>desktop-os</td><td>Complete.</td></tr>
+          <tr><td><code>b9c57852</code></td><td>builder</td><td>compiler (Oak)</td><td>Complete. Sample prints 0–4.</td></tr>
+          <tr><td><code>2ef8a5fb</code></td><td>builder</td><td>page-clone</td><td>Complete. Fixed Reset-after-reload.</td></tr>
+          <tr><td><code>242959bc</code></td><td>builder</td><td>simulation</td><td>Code written; verify died <code>Connection failed repeatedly</code>.</td></tr>
+          <tr><td><code>5b5bc44c</code></td><td>builder</td><td>saas-shell</td><td>Died after CSS. No <code>js/app.js</code>.</td></tr>
+          <tr><td><code>40fc47cc</code></td><td>builder</td><td>shader-studio</td><td>Code written; verify died <code>Connection failed repeatedly</code>.</td></tr>
+          <tr><td><code>6b1af4e4</code></td><td>builder</td><td>knowledge-graph</td><td>Died after <code>data.js</code>. No UI.</td></tr>
+          <tr><td><code>e6463511</code></td><td>explore</td><td>Audit 3–10</td><td>Used immediately. Named the two broken apps.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Wave 2 — query studio and this document (Sep 9)</h3>
+      <table>
+        <thead><tr><th>ID</th><th>Type</th><th>Job</th><th>Outcome</th></tr></thead>
+        <tbody>
+          <tr><td><code>b6940cf3</code></td><td>explore</td><td>Session B bug hunt</td><td>16 bugs ranked. Parent fixed only browser-proven ones. Linked as the query-studio review.</td></tr>
+          <tr><td><code>451a2ede</code></td><td>explore</td><td>Mine Aug 31 chats</td><td>Used for sections 1–3 of this file.</td></tr>
+          <tr><td><code>1e170412</code></td><td>explore</td><td>Mine a214396e</td><td>Used for the bake-off chronology.</td></tr>
+          <tr><td><code>c617fba9</code></td><td>explore</td><td>Mine subagent folder</td><td>Used for the tables above.</td></tr>
+        </tbody>
+      </table>
+      <p>Standalone folders named with those UUIDs under <code>agent-transcripts/</code> are duplicates of the subagent copies, not second reviews.</p>
+    </section>
+
+    <section id="projects">
+      <h2>8. How each project was designed and built</h2>
+
+      <h3>Project 1 — <code>mini-linear/</code></h3>
+      <p>Designed as the bake-off prototype: Session A messy (60–100 files), Session C collapse to tokens + one state + one router. Session B was browser polish in between. The generator <code>_gen_messy.py</code> wrote duplicated CSS, per-issue seed files, copy-pasted cards. That was intentional token burn, not incompetence.</p>
+      <p>Problems: create-issue save button used <code>ml-new-save</code> in one tree and <code>ml-modal-save</code> in another. Layout needed <code>#ml-main</code> flex. HTML5 drag was hard to confirm in automation and still is. After the clean refactor, the user said do not delete files. Session A came back as <code>messy.html</code> via <code>_add_session_a.py</code> with a PROTECT list so Session C files were not overwritten. Hub card 1b points at the messy tree.</p>
+      <p>Subagents: none for the build. Parent did it. Verification: <code>http://localhost:8080/mini-linear/</code> board, list, search, create, hash filters. Pages: <a href="https://az9713.github.io/cursor-origin/mini-linear/">live Mini Linear</a>.</p>
+
+      <h3>Project 2 — <code>spreadsheet/</code></h3>
+      <p>Designed after the user asked whether Project 1 had outstanding issues, then “proceed to project 2 Spreadsheet with real formula engine.” Parent built it inline. Engine: SUM, AVERAGE, IF, refs, cycles, fill handle, undo, CSV. Grid A–Z × 40.</p>
+      <p>User wrote “SUM VAG.” Treated as AVERAGE. Demo column added so every formula had a labeled example. ArrowLeft bug found in browser: <code>SS.select(a.col, a.row - 1)</code> moved up instead of left. Fixed to <code>SS.select(a.col - 1, a.row)</code>. Storage bumped to <code>spreadsheet-v2</code> after the demo seed changed so old localStorage would not hide the new examples.</p>
+      <p>Subagents: none. Verification: D7 = 20.8, cycle shows <code>#CYCLE!</code>, undo works.</p>
+
+      <h3>Projects 3–10 — parallel builders, then a parent rescue</h3>
+      <p>User: “will you be able to complete 3-10 autonomously without me in the loop ? confirm before execute.” Then: “go and push to both Github and Origin.” Eight workers got the same constraints: sibling folder, vanilla stack, frozen SPEC, IBM Plex paper/rust, no third-party page clone, no three.js.</p>
+      <ul>
+        <li><strong>3 vector-editor.</strong> Artboard 800×560, V/R/O/draw, layers, 8px snap, undo, SVG export. Worker fixed a double history snapshot after draw finish.</li>
+        <li><strong>4 desktop-os.</strong> Window manager, taskbar+clock, Notes, Finder, Terminal, fake VFS, <code>desktop-os-v1</code>.</li>
+        <li><strong>5 compiler.</strong> Toy language Oak: lex → parse → bytecode VM → Run/Step/Reset. Sample prints 0–4. Temp <code>_test.js</code> deleted after verify.</li>
+        <li><strong>6 page-clone.</strong> Original “Harbor Ledger” marketing page plus inspector. Reset-after-reload was wrong until originals were captured before overrides.</li>
+        <li><strong>7 simulation.</strong> Seeded city, ants, pheromones, sliders, chart. Files landed; browser verify connection-failed.</li>
+        <li><strong>8 saas-shell.</strong> Incident Commander, hash routes, eight views. Worker wrote SPEC, tokens, HTML, state, router, a large <code>app.css</code>, then died. <code>IC.render</code> did not exist.</li>
+        <li><strong>9 shader-studio.</strong> Raw WebGL2, five presets (Plasma, Rust Noise, Voronoi, Ripple, Gradient Ray). Verify connection-failed.</li>
+        <li><strong>10 knowledge-graph.</strong> Worker generated ~350-node <code>data.js</code> and died. Parent wrote <code>index.html</code>, <code>layout.js</code>, <code>app.js</code>, <code>css/app.css</code>. Browser check: search updates hash <code>#?q=Turing</code>. Shipped count in the parent report: 350 nodes / 817 edges.</li>
+      </ul>
+      <p>Commit <code>06100bf</code> — “Add spreadsheet and projects 3–10 so the hub covers the full stress-test set.” 72 files, +11043 / −6.</p>
+
+      <h3>Wave 2 proposal, then Project 11 — <code>query-studio/</code></h3>
+      <p>Sep 9 the machine had shut down. User: “please continue. the machine shut down and we were cut off.” The next ask was agentic projects, not more token volume. Parent drew a canvas of Wave 2 candidates and recommended query-studio: text SQL and visual builder as two views of one AST.</p>
+      <p>Session A (commit <code>2ed87ce</code>): lexer, parser, nested-loop join engine, builder, presets, hash <code>#/p/&lt;id&gt;</code> / <code>#/s/&lt;id&gt;</code>, storage <code>query-studio-v1</code>. Language: SELECT / FROM / one INNER JOIN / WHERE AND-chain / ORDER BY / LIMIT. <code>!=</code> pretty-prints as <code>&lt;&gt;</code>. Seed: employees ⋈ departments, <code>salary &gt;= 80000</code>, <code>ORDER BY e.salary DESC</code>, <code>LIMIT 10</code> → 7 rows, Chris Patel first. Bad SQL during build: “Line 1:17 — Expected IDENT, got EOF.”</p>
+      <p>Session B (commit <code>c0546a9</code>): hunt pass <code>b6940cf3</code>, then parent browser repro. Proven and fixed:</p>
+      <ul>
+        <li>Unchecking <code>*</code> snapped back to <code>SELECT *</code> because <code>astFromBuilder()</code> fell back to star. Now expands to explicit columns.</li>
+        <li>Parse error left the old result grid. Now “Fix the SQL to run.” and the table clears.</li>
+        <li><code>LIMIT -1</code> used <code>Array.slice</code> and dropped a row (8→7). Now rejected: “LIMIT must be a non-negative integer.”</li>
+        <li>Ambiguous <code>id</code> was labeled a parse error and checked both chips. Now a query error; neither chip checked.</li>
+        <li>Invalid SQL was persisted; preset-hash edits died on refresh. Boot now keeps hash-matched store SQL when <code>store.hash === location.hash</code>.</li>
+        <li>JOIN ON went stale when the table pair changed; aliases flushed late. Reset ON; flush aliases on input / Ctrl+Enter.</li>
+        <li>Saved queries could not be renamed; results pane was only 32vh. Rename button; more vertical room. Scripts cache-busted to <code>?v=2</code>.</li>
+      </ul>
+      <p>Session C (commit <code>4f09121</code>): GROUP BY, HAVING, COUNT/SUM/AVG/MIN/MAX. Spec grammar grew. Engine order: JOIN → WHERE → group/aggs → HAVING → ORDER → LIMIT. New preset <code>dept-agg</code> “Headcount by department.” Expected 3 rows: Payments/3, Auth/2, Support/2.</p>
+      <p>Session C bug found in the working tree before commit: <code>QS.renderBuilder</code> called <code>.toLowerCase()</code> on aggregate select items that have no <code>.name</code>. Verbatim: <code>Cannot read properties of undefined (reading 'toLowerCase')</code>. The builder stayed stale while SQL updated. Fix: skip <code>col.type === "agg"</code> in chip match and alias loops. Later polish: ORDER BY dropdown also lists SELECT aliases so <code>ORDER BY n</code> is selectable.</p>
+      <p>Query-studio Sessions A–C were parent work plus one hunt subagent. No builder wrote the SQL engine.</p>
+    </section>
+
+    <section id="wrong">
+      <h2>9. What went wrong, and the fixes</h2>
+      <ol>
+        <li><strong>Workspace move aborted.</strong> First <code>move_agent_to_root</code> failed; empty-window chat aborted. Retry bound <code>cursor_origin</code>.</li>
+        <li><strong>Wrong “No Repo” story.</strong> Parent said the sidebar group meant no git remote. Subagent <code>0b21222e</code> said Cursor 3.11 “No Repo” means chats with no project folder (it replaced Home). User’s “Remove from Sidebar” did not remove it. Workaround: group by Updated/Status; archive. Both explanations may have been partly true. Uncertain.</li>
+        <li><strong>Overstated New Chat advice.</strong> Walkthrough said start a new chat on every mode switch. User asked why, if a mode already starts new context. Agent retracted after re-reading docs.</li>
+        <li><strong>Git Bash UI mismatch.</strong> Docs assumed a chevron next to <code>+</code>. User: “there is no v next to +.” Command Palette profiles; then agent wrote settings.json.</li>
+        <li><strong>Plan mode blocked the briefing.</strong> “Plan mode can only edit Markdown.” Switch rejected twice. User switched. HTML appeared on the second implement pass. User had already said “i do not see any html.”</li>
+        <li><strong>Origin on Windows.</strong> Origin CLI is not supported on native Windows. Install went through WSL: curl, HTTP/1.1 tarball from <code>downloads.cursor.com</code>, extract to <code>~/.local/bin/origin</code>, <code>origin auth login</code>, browser deep link. Push pattern: Windows <code>git push origin main</code>, then <code>wsl -e bash -lc 'cd /mnt/c/Users/simon/Downloads/cursor_origin &amp;&amp; git push cursor main'</code>.</li>
+        <li><strong>WSL dirty-tree hallucination.</strong> After Origin pushes, WSL <code>git status</code> lists dozens of <code>M mini-linear/**</code> files. Windows <code>git status</code> is clean. CRLF. Do not commit that noise. Windows status is source of truth.</li>
+        <li><strong>Four builders died mid-flight</strong> with <code>Connection failed repeatedly</code>, usually during browser/MCP verify. Two of those deaths left incomplete products. Audit + parent rescue.</li>
+        <li><strong>saas-shell:</strong> missing <code>js/app.js</code>. <code>IC.render</code> never defined. Parent wrote it (~400 lines) and wired the router.</li>
+        <li><strong>knowledge-graph:</strong> dataset without a page. Parent wrote the explorer.</li>
+        <li><strong>Port 8080 went bad</strong> during query-studio Session B. Stale tabs, empty replies, two listeners. Fallback 8765, then <code>python -m http.server 8790 --bind 127.0.0.1</code>. CDP tests ran on 8790. Rule learned: probe the port, do not trust “the window is visible.”</li>
+        <li><strong>Spreadsheet ArrowLeft.</strong> Off-by-axis select. Browser found it; code reading would have found it too if anyone had read the handler before demoing arrows.</li>
+        <li><strong>Query studio <code>*</code> trap, LIMIT -1, stale grid, ambiguous id, hash vs localStorage.</strong> See Session B above. The hunt list had 16 items; medium/low a11y and column-order nits were not all fixed. Session B is “proven bugs,” not “every note in the review.”</li>
+        <li><strong>GROUP BY crashed the builder.</strong> <code>toLowerCase</code> on undefined. Fixed before commit <code>4f09121</code>.</li>
+        <li><strong>Parallel builds started before the user’s last confirmation was logged.</strong> Autonomy without a clean handshake. The apps exist; the audit saved the two that did not finish.</li>
+        <li><strong>Machine shutdown Sep 9.</strong> Wave 2 canvas and query-studio happened after “please continue.” No crash dump. Continuity was the user’s prompt plus git, not an agent memory file.</li>
+      </ol>
+    </section>
+
+    <section id="verify">
+      <h2>10. Verification — observed effects, not clean exits</h2>
+      <p>How “it works” was actually checked:</p>
+      <ul>
+        <li>Mini Linear: clicked board, list, search, create issue, hash filters on localhost:8080. Drag not proven in automation.</li>
+        <li>Spreadsheet: opened demo cells; D7 20.8; cycle <code>#CYCLE!</code>; undo; ArrowLeft after the bugfix.</li>
+        <li>Projects 3–7 and 9: builder self-reports plus explore audit “COMPLETE.” Parent did not re-click every control in those six apps after the rescue. That is a verification gap.</li>
+        <li>saas-shell: parent smoke — dashboard and incidents showed seed data.</li>
+        <li>knowledge-graph: 350 nodes visible; search wrote <code>#?q=Turing</code>.</li>
+        <li>Query studio Session A/B/C: node <code>QS.selfCheck()</code>; browser seed 7 rows Chris Patel; Headcount 3 rows; All employees 8 rows; status “ROUNDTRIP OK.” Session C CDP dump (verbatim shape): <code>seed.status "ROUNDTRIP OK\\n7 rows"</code>, first row Chris Patel / Payments / 155000; group preset 3 rows.</li>
+        <li>GitHub Pages polled after first push. Live hub: <a href="https://az9713.github.io/cursor-origin/">az9713.github.io/cursor-origin</a>.</li>
+        <li>Dual remotes: after Session C, <code>origin/main</code>, <code>cursor/main</code>, and <code>HEAD</code> all <code>4f09121</code>.</li>
+      </ul>
+      <p>What was not verified: exhaustive keyboard maps on saas-shell; WebGL2 on machines without it; Mini Linear drag; every Wave 1 preset after later hub edits; this journey page in the browser before the first commit of the file (the write you are reading is the first version).</p>
+    </section>
+
+    <section id="unknowns">
+      <h2>11. Unknown unknowns — the checklist the brief did not name</h2>
+      <h3>Invisible constraints</h3>
+      <p>Active style: paper/rust IBM Plex from the briefing, not from a design-system skill. House rules loaded: repo <code>AGENTS.md</code>, user <code>AGENTS.md</code> (HTML vs Markdown), <code>.cursor/rules/docs-format.mdc</code>, git commit protocol, “ask before dependencies,” “do not delete files,” “work in cwd only,” dual-push after Sep 9. Skills invoked by name: Cursor <code>origin</code> / <code>new-repo</code>, canvas SDK types for Wave 2, <code>dev-journey</code> for this file. No minimalism mode was on; the opposite — token-heavy on purpose.</p>
+
+      <h3>Human-in-the-loop moments (the work does not reproduce without these)</h3>
+      <ul>
+        <li>User ran <code>git init</code>.</li>
+        <li>User switched Plan → Agent so HTML could be written.</li>
+        <li>User named the hub repo and forbade deleting Session A.</li>
+        <li>User said they would be off; then later asked for a last check; then asked autonomy for 3–10; then said go.</li>
+        <li>User authenticated Origin in a browser after WSL <code>origin auth login</code>.</li>
+        <li>User continued the chat after a shutdown.</li>
+        <li>User defined “commit and push” as both remotes.</li>
+        <li>User asked for this journey; the agent had not offered it.</li>
+      </ul>
+
+      <h3>Near-misses</h3>
+      <p>A lagging localhost:8080 tab nearly counted as “query studio is broken” or “query studio is fine” depending on cache. The save was switching ports and confirming with Python urllib, then CDP against 8790.</p>
+      <p>WSL’s dirty mini-linear tree nearly looked like a real diff. Committing it would have been a CRLF disaster.</p>
+      <p>The Session B hunt listed 16 bugs. Fixing all of them would have been spec creep and a11y busywork. The protocol said browser-repro only. That restraint is easy to drop when a review looks thorough.</p>
+      <p>Treating eight parallel builders as “done because folders exist” was the wrong conclusion the audit prevented.</p>
+
+      <h3>Fragility and luck</h3>
+      <p>GitHub Pages and Origin both depend on the user’s <code>gh</code> auth and WSL Origin credential helper. A future Windows-only agent cannot push Origin without that helper. Script cache-bust query params (<code>?v=2</code> … <code>?v=4</code>) are a luck protocol: forget them and the browser lies. In-memory SQL has no backend to hide behind; that made Session C honest and also made every parse edge visible.</p>
+
+      <h3>Costs and limits</h3>
+      <p>No dollar figure appears in the transcripts. Limits that were hit: Plan mode cannot write HTML; Origin CLI absent on Windows; browser MCP connections failed repeatedly for four builders; chat context was summarized before this journey was written; a machine shutdown cut the Sep 7 thread. Token volume was the point of Wave 1 (commit <code>06100bf</code> alone is +11k lines). Wave 2 was an explicit turn away from more of that.</p>
+      <p>Wall-clock that mattered: Aug 31 evening onboarding (~3 hours of UI questions). Sep 7 morning: briefing → Mini Linear → spreadsheet → 3–10 fan-out → audit → push, roughly 6:33 AM to early afternoon, then a 1:27 PM “how is progress ?” after the user had left. Sep 9: Wave 2 + query-studio A/B/C in one calendar day, interrupted by shutdown.</p>
+
+      <h3>Knowledge captured elsewhere</h3>
+      <ul>
+        <li><code>AGENTS.md</code> — hub conventions and the app list.</li>
+        <li><code>token-heavy-projects.html</code> — ranked list and bake-off protocol. Its “suggested first pick” footer is stale (still talks as if only Mini Linear is running).</li>
+        <li>Per-app <code>SPEC.md</code> — frozen product, not history.</li>
+        <li>This file — process, including the stale briefing footer called out.</li>
+        <li>No HANDOFF.md was written. Continuity after shutdown was git + the user’s “please continue.”</li>
+      </ul>
+
+      <h3>Unfinished on purpose or by stop</h3>
+      <ul>
+        <li>Wave 2 items after query-studio (language-workbench, block-editor, calendar-engine, and the rest of the canvas) — not started.</li>
+        <li>Mini Linear messy/clean shared localStorage — noticed, not fixed.</li>
+        <li>Mini Linear drag — not proven in automation.</li>
+        <li>Full a11y pass on query-studio — hunt listed it; Session B skipped most of it.</li>
+        <li>Compiler Session C (typechecker + rename) was mentioned as a cheaper alternative to a new Wave 2 app. Not built.</li>
+        <li>The briefing HTML “now” line says projects 1–10 shipped and Wave 2 started; it does not say Session C landed. Small staleness.</li>
+      </ul>
+    </section>
+
+    <section id="stand">
+      <h2>12. Where things stand</h2>
+      <p>As of writing, <code>main</code> at <code>4f09121</code> is on GitHub and Origin. Apps 1–11 are on GitHub Pages.</p>
+      <ul>
+        <li>Hub: <a href="https://az9713.github.io/cursor-origin/">https://az9713.github.io/cursor-origin/</a></li>
+        <li>GitHub: <a href="https://github.com/az9713/cursor-origin">https://github.com/az9713/cursor-origin</a></li>
+        <li>Origin: <a href="https://cursor.com/codebase/az9713/cursor-origin">https://cursor.com/codebase/az9713/cursor-origin</a></li>
+        <li>Query studio: <a href="https://az9713.github.io/cursor-origin/query-studio/">https://az9713.github.io/cursor-origin/query-studio/</a></li>
+      </ul>
+      <div class="call">
+        <p>Concrete next options, not promises: start Wave 2 #12 from the canvas; run a cheaper Session C on <code>compiler/</code> (typechecker + rename); or leave the bake-off frozen and use this journey as the capability record. Unblock for Origin pushes remains WSL on this machine.</p>
+      </div>
+      <p>What this record actually shows about automatic / agentic development: a parent agent can keep a monorepo coherent across eleven vanilla apps if a human sets the constraints, a spec is frozen, workers can be audited, and “done” means a clicked browser, not a generated folder. It also shows the parent will start workers early, lose Task lines from its own transcript, finish two broken apps by hand, lie once about the sidebar, and forget to offer the journey doc until asked.</p>
+    </section>
+  </main>
+  <footer>
+    Written 2026-09-09 from transcripts <code>8bbc41d6</code>, <code>06e271a1</code>, <code>a214396e</code> and their subagents, plus <code>git log</code>. Skill: <code>dev-journey</code>. Filename requested by the user.
+  </footer>
+</body>
+</html>

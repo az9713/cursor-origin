@@ -35,6 +35,7 @@ Then visit `http://localhost:8080/` or a folder such as `http://localhost:8080/s
 - always have a README.md at repo root
 - if any main html exists, make it a GitHub page and render it live in README.md
 - Customer-facing docs: HTML. Do not ship Markdown as the customer-facing surface.
+- Process record for the whole hub: `development_journey.html`
 - Internal docs (plans, agent notes, specs for the agent): Markdown is fine.
 - New apps go in a sibling folder (`mini-linear/`, later `spreadsheet/`, etc.), never overwrite the hub `index.html`
 - Frozen product spec for an app: `<app>/SPEC.md`
