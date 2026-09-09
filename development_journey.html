@@ -179,7 +179,7 @@
   </div>
   <header class="hero">
     <p class="kicker">Development journey — warts and all</p>
-    <h1>From an empty Downloads folder to eleven live apps</h1>
+    <h1>From an empty folder to eleven live apps</h1>
     <p class="lede">This is the story of how an agent actually built <code>az9713/cursor-origin</code>: empty folder, Cursor onboarding, a token-heavy bake-off, a parallel-subagent pile-up, a machine shutdown, and a bidirectional SQL studio that still had to keep its JOIN seed green after GROUP BY.</p>
     <p class="lede">The failures are the product. A victory lap would hide the only evidence that matters: where autonomy broke, what a human had to say, and what the agent almost concluded wrongly.</p>
     <dl class="meta">
@@ -190,7 +190,7 @@
       <dt>This file</dt>
       <dd><code>development_journey.html</code> at repo root. Customer-facing docs in this repo are HTML. The invoked skill defaults to <code>DEVELOPMENT-JOURNEY.md</code>; the filename follows the user request.</dd>
       <dt>First prompt, quoted</dt>
-      <dd>“please work in the folder ~/Downloads/cursor_origin”</dd>
+      <dd>“please work in the folder &lt;local-repo&gt;” <span class="recon">(machine path redacted)</span></dd>
       <dt>Product brief, quoted</dt>
       <dd>“Please suggest a list of token-heavy projects that showcase Cursor coding abilities and distinguish Cursor from Codex and Claude. Ask me if questions”</dd>
       <dt>This document’s brief, quoted</dt>
@@ -218,7 +218,8 @@
     <section id="brief">
       <h2>1. The brief — two briefs, weeks apart</h2>
       <p>The repo did not start as a bake-off. It started as an empty folder and a request to learn Cursor.</p>
-      <blockquote>please work in the folder ~/Downloads/cursor_origin</blockquote>
+      <blockquote>please work in the folder &lt;local-repo&gt;</blockquote>
+      <p class="recon">The original prompt named a machine-local directory. That path is redacted here.</p>
       <p>Then: “walk me through the best practices of starting a Cursor coding project.” The agent interpreted that as onboarding, not as “build a product.” That interpretation was correct. The user never named an app that night. The agent offered to write <code>.gitignore</code> and <code>AGENTS.md</code> and never did it in that chat.</p>
       <p>Seven days later the real product brief arrived in a different chat titled “Token-heavy Cursor projects”:</p>
       <blockquote>Please suggest a list of token-heavy projects that showcase Cursor coding abilities and distinguish Cursor from Codex and Claude. Ask me if questions</blockquote>
@@ -276,7 +277,7 @@
 
     <section id="cold">
       <h2>3. Cold start — empty folder, then a week of silence</h2>
-      <p>Environment at minute zero, Aug 31 2026: Windows 10, Git 2.55, folder <code>C:\Users\simon\Downloads\cursor_origin</code> empty, no remotes, no Origin CLI on PATH. The first <code>move_agent_to_root</code> aborted. Retry bound the chat. The empty-window copy of the same prompt died with <code>"User aborted request"</code>.</p>
+      <p>Environment at minute zero, Aug 31 2026: native Windows, Git 2.55, local <code>cursor_origin</code> folder empty, no remotes, no Origin CLI on PATH. The first <code>move_agent_to_root</code> aborted. Retry bound the chat. The empty-window copy of the same prompt died with <code>"User aborted request"</code>.</p>
       <p>What the agent reused instead of inventing: Cursor skills <code>origin</code>, <code>new-repo</code>, <code>create-rule</code>, <code>update-cursor-settings</code>, plus four background <code>cursor-guide</code> subagents. Official docs beat forum folklore except when the UI did not match the docs (no chevron next to the terminal <code>+</code>).</p>
       <p>The only file edit that night was Cursor user settings: default terminal profile PowerShell → Git Bash at <code>C:\Program Files\Git\bin\bash.exe</code>. The user ran <code>git init</code> themselves. The agent said “Don’t add a remote yet.”</p>
       <p>Commit <code>3e58d97</code> on 2026-08-31 added <code>.gitignore</code> and a short <code>AGENTS.md</code>. That commit is <strong>not</strong> in the onboarding transcript. Someone — user or a later unlogged action — finished the bootstrap the agent only described. Between Aug 31 11:21 PM and Sep 7 6:33 AM there is no agent transcript for this repo. That gap is a finding: the “entire project since the very first prompt” is not one continuous agent run.</p>
@@ -458,7 +459,7 @@
         <li><strong>Overstated New Chat advice.</strong> Walkthrough said start a new chat on every mode switch. User asked why, if a mode already starts new context. Agent retracted after re-reading docs.</li>
         <li><strong>Git Bash UI mismatch.</strong> Docs assumed a chevron next to <code>+</code>. User: “there is no v next to +.” Command Palette profiles; then agent wrote settings.json.</li>
         <li><strong>Plan mode blocked the briefing.</strong> “Plan mode can only edit Markdown.” Switch rejected twice. User switched. HTML appeared on the second implement pass. User had already said “i do not see any html.”</li>
-        <li><strong>Origin on Windows.</strong> Origin CLI is not supported on native Windows. Install went through WSL: curl, HTTP/1.1 tarball from <code>downloads.cursor.com</code>, extract to <code>~/.local/bin/origin</code>, <code>origin auth login</code>, browser deep link. Push pattern: Windows <code>git push origin main</code>, then <code>wsl -e bash -lc 'cd /mnt/c/Users/simon/Downloads/cursor_origin &amp;&amp; git push cursor main'</code>.</li>
+        <li><strong>Origin on Windows.</strong> Origin CLI is not supported on native Windows. Install went through WSL: curl, HTTP/1.1 tarball from <code>downloads.cursor.com</code>, extract to <code>~/.local/bin/origin</code>, <code>origin auth login</code>, browser deep link. Push pattern: Windows <code>git push origin main</code>, then WSL <code>git push cursor main</code> from the local repo mount.</li>
         <li><strong>WSL dirty-tree hallucination.</strong> After Origin pushes, WSL <code>git status</code> lists dozens of <code>M mini-linear/**</code> files. Windows <code>git status</code> is clean. CRLF. Do not commit that noise. Windows status is source of truth.</li>
         <li><strong>Four builders died mid-flight</strong> with <code>Connection failed repeatedly</code>, usually during browser/MCP verify. Two of those deaths left incomplete products. Audit + parent rescue.</li>
         <li><strong>saas-shell:</strong> missing <code>js/app.js</code>. <code>IC.render</code> never defined. Parent wrote it (~400 lines) and wired the router.</li>
