@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calendar Engine</title>
+
+  <!-- IBM Plex Sans + Mono from Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+  <!-- ── App header ───────────────────────────────────────────────────── -->
+  <header class="app-header">
+    <a href="../" class="hub-link">← Hub</a>
+    <span class="app-name">Calendar Engine</span>
+
+    <div class="toolbar">
+      <!-- View toggle -->
+      <div class="view-toggle">
+        <button data-view="month" class="active">Month</button>
+        <button data-view="week">Week</button>
+        <button data-view="day">Day</button>
+      </div>
+
+      <!-- Date navigation -->
+      <div class="date-nav">
+        <button id="btn-prev" title="Previous" aria-label="Previous period">‹</button>
+        <button id="btn-today">Today</button>
+        <button id="btn-next" title="Next" aria-label="Next period">›</button>
+      </div>
+
+      <span id="date-label"></span>
+
+      <!-- Timezone -->
+      <div class="tz-select">
+        <select id="tz-picker" title="Display timezone" aria-label="Display timezone">
+          <option value="America/Los_Angeles">Los Angeles (PT)</option>
+          <option value="UTC">UTC</option>
+        </select>
+      </div>
+
+      <!-- Actions -->
+      <div class="hdr-actions">
+        <button id="btn-import" title="Import ICS file">Import ICS</button>
+        <button id="btn-export" title="Export all events as ICS">Export ICS</button>
+        <button id="btn-reset" class="danger" title="Reset to seed events">Reset</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Calendar root ─────────────────────────────────────────────────── -->
+  <main id="calendar-root" role="main" aria-label="Calendar"></main>
+
+  <!-- ── Create / Edit event modal ─────────────────────────────────────── -->
+  <div id="modal-overlay" class="modal-overlay hidden" role="dialog"
+       aria-modal="true" aria-labelledby="modal-heading">
+    <div id="modal-card" class="modal-card">
+      <div class="modal-header">
+        <h2 id="modal-heading">New Event</h2>
+        <button id="modal-close-btn" class="modal-close" aria-label="Close">✕</button>
+      </div>
+
+      <form id="event-form" novalidate>
+        <div class="modal-body">
+
+          <!-- Title -->
+          <div class="field-group">
+            <input type="text" id="ev-title" placeholder="Add title" autocomplete="off" required>
+          </div>
+
+          <!-- Start / End date + time -->
+          <div class="field-group">
+            <label>Start</label>
+            <div class="field-row">
+              <label style="display:none"></label>
+              <input type="date" id="ev-start-date" required>
+              <input type="time" id="ev-start-time" required>
+            </div>
+          </div>
+          <div class="field-group">
+            <label>End</label>
+            <div class="field-row">
+              <label style="display:none"></label>
+              <input type="date" id="ev-end-date" required>
+              <input type="time" id="ev-end-time" required>
+            </div>
+          </div>
+
+          <!-- Timezone -->
+          <div class="field-group">
+            <label for="ev-tz">Timezone</label>
+            <select id="ev-tz">
+              <option value="America/Los_Angeles">America/Los_Angeles (PT)</option>
+              <option value="UTC">UTC</option>
+            </select>
+          </div>
+
+          <!-- Recurrence -->
+          <div class="field-group">
+            <label for="ev-freq">Repeat</label>
+            <select id="ev-freq">
+              <option value="">No repeat</option>
+              <option value="DAILY">Daily</option>
+              <option value="WEEKLY">Weekly</option>
+            </select>
+          </div>
+
+          <!-- RRULE options (hidden unless freq set) -->
+          <div id="rrule-section" class="rrule-section hidden">
+
+            <!-- BYDAY (weekly only) -->
+            <div id="byday-row" class="field-group" style="display:none">
+              <label>On days</label>
+              <div class="byday-checks">
+                <label><input type="checkbox" name="byday" value="SU"> Su</label>
+                <label><input type="checkbox" name="byday" value="MO"> Mo</label>
+                <label><input type="checkbox" name="byday" value="TU"> Tu</label>
+                <label><input type="checkbox" name="byday" value="WE"> We</label>
+                <label><input type="checkbox" name="byday" value="TH"> Th</label>
+                <label><input type="checkbox" name="byday" value="FR"> Fr</label>
+                <label><input type="checkbox" name="byday" value="SA"> Sa</label>
+              </div>
+            </div>
+
+            <!-- Interval -->
+            <div class="field-group">
+              <label>Every</label>
+              <div class="field-row triple" style="grid-template-columns:auto 80px 1fr">
+                <label style="display:none"></label>
+                <input type="number" id="ev-interval" value="1" min="1" max="99">
+                <span id="ev-interval-unit" style="color:var(--col-text-muted);font-size:13px;padding-left:4px">day(s)</span>
+              </div>
+            </div>
+
+            <!-- End condition -->
+            <div class="field-group">
+              <label for="ev-ends">Ends</label>
+              <select id="ev-ends">
+                <option value="never">Never</option>
+                <option value="count">After N occurrences</option>
+                <option value="until">On date</option>
+              </select>
+            </div>
+
+            <div id="count-row" class="field-group hidden">
+              <label for="ev-count">Occurrences</label>
+              <input type="number" id="ev-count" value="10" min="1" max="999">
+            </div>
+
+            <div id="until-row" class="field-group hidden">
+              <label for="ev-until">Until date</label>
+              <input type="date" id="ev-until">
+            </div>
+
+          </div><!-- /rrule-section -->
+        </div><!-- /modal-body -->
+
+        <div class="modal-footer">
+          <button type="button" id="btn-delete-ev" class="btn-danger hidden">Delete</button>
+          <div class="modal-actions">
+            <button type="button" id="btn-cancel-modal" class="btn-secondary">Cancel</button>
+            <button type="submit" class="btn-primary">Save event</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── Recurring action confirm ──────────────────────────────────────── -->
+  <div id="recur-confirm-overlay" class="recur-confirm-overlay hidden"
+       role="dialog" aria-modal="true" aria-label="Recurring event action">
+    <div class="recur-card">
+      <strong id="rc-event-name">Event</strong>
+      <p>This is a recurring event. Which occurrences do you want to change?</p>
+      <div class="recur-card-actions">
+        <button id="rc-this">Edit this occurrence</button>
+        <button id="rc-all">Edit all occurrences</button>
+        <button id="rc-cancel-btn" class="rc-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden file input for ICS import -->
+  <input type="file" id="file-input" accept=".ics,text/calendar" style="display:none" aria-hidden="true">
+
+  <!-- ── Scripts (order matters: deps first) ──────────────────────────── -->
+  <script src="js/rrule.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/ics.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/modal.js"></script>
+  <script src="js/drag.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
