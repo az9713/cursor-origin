@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Language Workbench · Nit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Sans:wght@400;600&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+  <!-- ── Header ── -->
+  <header class="top">
+    <h1>Language Workbench</h1>
+    <span class="lang-badge">Nit</span>
+    <button id="btn-reset" class="reset-btn">↺ Reset</button>
+    <a href="../">← Hub</a>
+  </header>
+
+  <!-- ── Work area ── -->
+  <div class="work">
+
+    <!-- Left sidebar: File tree + Outline -->
+    <div class="sidebar">
+      <div class="sb-section grow">
+        <div class="sb-head">Files</div>
+        <div class="sb-body" id="file-tree"></div>
+      </div>
+      <div class="sb-section" style="height:195px;flex-shrink:0">
+        <div class="sb-head">Outline</div>
+        <div class="sb-body" id="outline"></div>
+      </div>
+    </div>
+
+    <!-- Center: Tabs + Editor -->
+    <div class="center">
+      <div class="tabs" id="tabs"></div>
+      <div class="editor-area">
+        <!-- Syntax-highlighted layer (pointer-events:none, synced scroll) -->
+        <div class="editor-hl" id="editor-hl" aria-hidden="true"></div>
+        <!-- Editable textarea on top (transparent text, visible caret) -->
+        <textarea
+          class="editor-ta" id="editor-ta"
+          spellcheck="false"
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          data-gramm="false"
+        ></textarea>
+        <!-- Shown when no file is open -->
+        <div class="no-file-msg" id="no-file">← Open a file from the tree</div>
+      </div>
+    </div>
+
+    <!-- Right panel: Diagnostics + Actions -->
+    <div class="rpanel">
+      <div class="rp-section" style="height:210px;flex-shrink:0">
+        <div class="rp-head">Diagnostics</div>
+        <div class="rp-body" id="diag-list"></div>
+      </div>
+      <div class="rp-section grow">
+        <div class="rp-head">Actions</div>
+        <div class="rp-body">
+          <div class="actions-body">
+            <button class="act-btn" id="btn-goto">⌥ Go to Definition  <em style="float:right;opacity:.45">F12</em></button>
+            <button class="act-btn" id="btn-refs">⌥ Find References  <em style="float:right;opacity:.45">Alt+R</em></button>
+            <!-- Results panel for go-to-def / find-refs -->
+            <div class="act-results" id="act-result"></div>
+            <div class="act-sep">Rename symbol</div>
+            <div class="rename-row">
+              <input
+                class="rename-input" type="text"
+                id="rename-in"
+                placeholder="New name…"
+                autocomplete="off" spellcheck="false">
+              <button class="rename-btn" id="btn-rename" title="Rename across all files">→</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- .work -->
+
+  <!-- ── Status bar ── -->
+  <div class="statusbar">
+    <span id="sb-file">No file open</span>
+    <span id="sb-pos">Ln 1, Col 1</span>
+    <span id="sb-diag"></span>
+  </div>
+
+  <!-- ── Scripts (order matters: lexer → parser → analyzer → workspace → app) ── -->
+  <script src="js/lexer.js"></script>
+  <script src="js/parser.js"></script>
+  <script src="js/analyzer.js"></script>
+  <script src="js/workspace.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
