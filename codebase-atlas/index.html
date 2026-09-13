@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Codebase Atlas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/tokens.css" />
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+
+<!-- ── Header ──────────────────────────────────────────────── -->
+<header class="header">
+  <span class="header-brand">Codebase Atlas</span>
+  <span class="header-sep">·</span>
+  <span id="hd-count" style="font-size:12px;color:rgba(255,255,255,0.4)"></span>
+  <div class="header-spacer"></div>
+  <button class="h-btn" id="btn-palette" title="Search files and symbols (Ctrl+K / Ctrl+P)">
+    Search <span class="kbd">⌘K</span>
+  </button>
+  <button class="h-btn h-btn-reset" id="btn-reset" title="Reset to seed data">Reset seed</button>
+  <a class="h-link" href="../" title="Back to hub">← Hub</a>
+</header>
+
+<!-- ── Three-column layout ─────────────────────────────────── -->
+<div class="layout">
+
+  <!-- Left: file tree -->
+  <div class="pane tree-pane">
+    <div class="pane-hd"><span id="tree-hd">Files</span></div>
+    <div class="pane-body">
+      <div id="file-tree" class="tree-list"></div>
+    </div>
+  </div>
+
+  <!-- Center: editor -->
+  <div class="pane editor-pane">
+    <div class="editor-hd">
+      <span class="editor-path" id="editor-path">
+        <em style="color:var(--text-faint)">No file open</em>
+      </span>
+      <div class="editor-acts" id="editor-acts" style="display:none">
+        <button class="btn" id="btn-edit">Edit</button>
+        <button class="btn btn-primary hidden" id="btn-save">Save</button>
+        <button class="btn hidden" id="btn-cancel">Cancel</button>
+      </div>
+    </div>
+    <div class="editor-body" id="editor-body">
+      <div class="editor-empty" id="editor-empty">
+        <div class="editor-empty-glyph">⌘</div>
+        <div>Open a file or press <strong>Ctrl+K</strong> to search</div>
+      </div>
+      <pre id="code-display" class="hidden"></pre>
+      <textarea id="code-edit" class="hidden" spellcheck="false"></textarea>
+    </div>
+  </div>
+
+  <!-- Right: outline + call graph -->
+  <div class="right-pane">
+
+    <!-- Outline -->
+    <div class="outline-pane pane">
+      <div class="pane-hd"><span id="outline-hd">Outline</span></div>
+      <div class="pane-body" id="outline-body">
+        <div style="padding:10px 12px;color:var(--text-faint);font-size:12px;font-style:italic">
+          Open a file to see its symbols
+        </div>
+      </div>
+    </div>
+
+    <!-- Call Graph -->
+    <div class="callgraph-pane pane">
+      <div class="pane-hd"><span id="cg-hd">Call Graph</span></div>
+      <div class="pane-body" id="cg-body">
+        <div style="padding:10px 12px;color:var(--text-faint);font-size:12px;font-style:italic">
+          Click a symbol in the outline
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Command palette ──────────────────────────────────────── -->
+<div class="pal-overlay hidden" id="pal-overlay">
+  <div class="pal-box">
+    <div class="pal-search">
+      <span class="pal-search-icon">⌕</span>
+      <input type="text" id="pal-input" placeholder="Search files or symbols…"
+             autocomplete="off" spellcheck="false" />
+    </div>
+    <div class="pal-results" id="pal-results"></div>
+    <div class="pal-hint">
+      <span><kbd>↑↓</kbd> navigate</span>
+      <span><kbd>↵</kbd> open</span>
+      <span><kbd>Esc</kbd> close</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── Rename dialog ────────────────────────────────────────── -->
+<div class="ren-overlay hidden" id="ren-overlay">
+  <div class="ren-box">
+    <div class="ren-title">Rename Symbol</div>
+    <div class="ren-desc" id="ren-desc">Rename across all files in the codebase.</div>
+    <div class="ren-label">New name</div>
+    <input type="text" id="ren-input" autocomplete="off" spellcheck="false" />
+    <div class="ren-foot">
+      <span class="ren-count" id="ren-count"></span>
+      <button class="btn" id="ren-cancel">Cancel</button>
+      <button class="btn btn-primary" id="ren-confirm">Rename</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/seed.js"></script>
+<script src="js/index.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

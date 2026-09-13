@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Motion Editor</title>
+
+  <!-- IBM Plex fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+  <!-- ── Header ── -->
+  <header>
+    <span class="header-title">Motion Editor</span>
+    <a href="../" class="hub-link">Hub ↗</a>
+  </header>
+
+  <!-- ── Workspace: stage + side panel ── -->
+  <div class="workspace">
+
+    <!-- Stage -->
+    <div class="stage-panel">
+      <div id="stage">
+        <!-- .stage-node elements inserted by app.js -->
+      </div>
+    </div>
+
+    <!-- Side panel -->
+    <div class="side-panel">
+
+      <!-- Node list -->
+      <div class="node-list">
+        <div class="panel-label">Nodes</div>
+        <div id="nodeListItems"></div>
+      </div>
+
+      <!-- Keyframe controls -->
+      <div class="kf-panel">
+        <div class="panel-label">Keyframe</div>
+
+        <div class="kf-actions">
+          <button class="btn" id="addKfBtn" title="Add keyframe at playhead for selected node">
+            + Add at playhead
+          </button>
+          <button class="btn" id="delKfBtn" disabled title="Delete selected keyframe">
+            − Delete
+          </button>
+        </div>
+
+        <div class="kf-row">
+          <span class="kf-row-label">Ease</span>
+          <select id="easeSelect" class="ease-select" disabled>
+            <option value="linear">Linear</option>
+            <option value="easeIn">Ease In</option>
+            <option value="easeOut">Ease Out</option>
+            <option value="easeInOut">Ease In-Out</option>
+          </select>
+        </div>
+
+        <div class="kf-info" id="kfInfo">No keyframe selected</div>
+      </div>
+
+    </div><!-- /side-panel -->
+  </div><!-- /workspace -->
+
+  <!-- ── Timeline section ── -->
+  <div class="timeline-section">
+
+    <!-- Timeline toolbar -->
+    <div class="tl-toolbar">
+      <button class="btn btn-play" id="playBtn" title="Play / Pause (Space)">▶</button>
+      <span class="time-display" id="timeDisplay">0.000 s</span>
+      <input type="range" id="scrubRange" min="0" max="1000" value="0" step="1"
+             title="Scrub playhead">
+      <div class="tl-sep"></div>
+      <button class="btn" id="resetBtn" title="Reset to default clip">Reset</button>
+      <button class="btn" id="exportBtn" title="Export clip as JSON">Export JSON</button>
+      <label class="btn import-label" title="Import clip from JSON file">
+        Import JSON
+        <input type="file" id="importFile" accept=".json" style="display:none">
+      </label>
+    </div>
+
+    <!-- Timeline canvas — drawn entirely by app.js -->
+    <canvas id="timeline"></canvas>
+
+  </div><!-- /timeline-section -->
+
+  <!-- ── Scripts (order matters: sample before app) ── -->
+  <script src="js/sample.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>

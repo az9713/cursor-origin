@@ -1,0 +1,44 @@
+/* ── Codebase Atlas — Design Tokens ─────────────────────────── */
+:root {
+  /* Brand colors */
+  --paper:        #ebe4d6;
+  --paper-light:  #fffdf8;
+  --rust:         #b4451a;
+  --rust-dark:    #8f3314;
+  --rust-dim:     rgba(180, 69, 26, 0.12);
+  --header-bg:    #2a251f;
+  --header-text:  #f0e8da;
+
+  /* Text */
+  --text:         #2a251f;
+  --text-muted:   #6b6358;
+  --text-faint:   #9e9080;
+
+  /* Borders */
+  --border:       #cfc6b8;
+  --border-light: #e0d9ce;
+
+  /* Syntax tokens */
+  --tok-keyword:  #b4451a;
+  --tok-string:   #5a7d3a;
+  --tok-comment:  #8a7e72;
+  --tok-fn:       #1a5b8f;
+  --tok-number:   #7b4c9e;
+
+  /* Typography */
+  --font-sans:    'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono:    'IBM Plex Mono', 'Courier New', monospace;
+  --size-xs:      11px;
+  --size-sm:      12px;
+  --size-base:    13px;
+  --size-md:      14px;
+
+  /* Layout */
+  --header-h:     44px;
+  --tree-w:       264px;
+  --panel-w:      292px;
+
+  /* Misc */
+  --radius:       4px;
+  --shadow:       0 4px 20px rgba(42,37,31,0.14);
+}

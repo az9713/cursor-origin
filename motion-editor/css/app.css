@@ -1,0 +1,285 @@
+/* app.css — layout and components for Motion Editor */
+
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── Body ── */
+body {
+  background: var(--paper-0);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Header ── */
+header {
+  flex: 0 0 44px;
+  background: var(--header-bg);
+  color: var(--paper-0);
+  padding: 0 var(--s4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.header-title {
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.03em;
+}
+
+.hub-link {
+  color: var(--paper-0);
+  opacity: 0.55;
+  text-decoration: none;
+  font-size: 12px;
+  transition: opacity 0.15s;
+}
+.hub-link:hover { opacity: 1; }
+
+/* ── Workspace (stage + side panel) ── */
+.workspace {
+  flex: 1 1 0;
+  display: flex;
+  min-height: 0;
+}
+
+/* ── Stage panel ── */
+.stage-panel {
+  flex: 0 0 auto;
+  background: var(--paper-0);
+  border-right: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--s3);
+}
+
+#stage {
+  position: relative;
+  width: 380px;
+  height: 260px;
+  background: var(--paper-1);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* Grid overlay for the stage */
+#stage::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.stage-node {
+  position: absolute;
+  border-radius: 2px;
+  cursor: pointer;
+  /* ⚠ NO CSS transitions — JS sample() is source of truth */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.stage-node.selected {
+  outline: 2px solid var(--rust);
+  outline-offset: 2px;
+  z-index: 10;
+}
+
+/* ── Side panel ── */
+.side-panel {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 200px;
+  overflow-y: auto;
+}
+
+.panel-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: var(--s1);
+}
+
+/* Node list */
+.node-list {
+  padding: var(--s2) var(--s3);
+  border-bottom: 1px solid var(--border);
+}
+
+.node-item {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+  padding: 5px var(--s1);
+  border-radius: var(--r);
+  cursor: pointer;
+  margin-bottom: 2px;
+  font-size: 12px;
+}
+.node-item:hover { background: rgba(0,0,0,0.04); }
+.node-item.selected {
+  background: rgba(180, 69, 26, 0.1);
+  color: var(--rust);
+  font-weight: 500;
+}
+
+.node-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  border: 1px solid rgba(0,0,0,0.15);
+}
+
+/* Keyframe panel */
+.kf-panel {
+  padding: var(--s2) var(--s3);
+  border-bottom: 1px solid var(--border);
+}
+
+.kf-actions {
+  display: flex;
+  gap: var(--s1);
+  margin-bottom: var(--s1);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.kf-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+  margin-bottom: var(--s1);
+}
+
+.kf-row-label {
+  font-size: 11px;
+  color: var(--muted);
+  width: 32px;
+  flex-shrink: 0;
+}
+
+.ease-select {
+  background: var(--paper-0);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  padding: 3px 6px;
+  cursor: pointer;
+}
+.ease-select:disabled { opacity: 0.4; cursor: default; }
+
+.kf-info {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  min-height: 16px;
+  word-break: break-all;
+}
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--paper-0);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  color: var(--text);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  padding: 4px 10px;
+  white-space: nowrap;
+  transition: background 0.1s;
+  line-height: 1;
+}
+.btn:hover  { background: #d8d0c4; }
+.btn:active { background: #cdc4b8; }
+.btn:disabled,
+.btn[disabled] { opacity: 0.38; cursor: default; pointer-events: none; }
+
+.btn-play {
+  font-size: 15px;
+  padding: 4px 9px;
+  min-width: 34px;
+}
+
+/* ── Timeline section ── */
+.timeline-section {
+  flex: 0 0 auto;
+  border-top: 1px solid var(--border);
+  background: var(--paper-1);
+}
+
+/* Timeline toolbar */
+.tl-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+  padding: 0 var(--s3);
+  height: 40px;
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.time-display {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text);
+  opacity: 0.75;
+  min-width: 72px;
+}
+
+#scrubRange {
+  flex: 1 1 60px;
+  min-width: 40px;
+  accent-color: var(--rust);
+  cursor: pointer;
+}
+
+.tl-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+/* The import label looks like a button */
+.import-label {
+  cursor: pointer;
+}
+
+/* Timeline canvas */
+#timeline {
+  display: block;
+  width: 100%;
+  cursor: crosshair;
+  user-select: none;
+  -webkit-user-select: none;
+}

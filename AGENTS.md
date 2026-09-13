@@ -16,6 +16,15 @@ Current sub-projects:
 - `shader-studio/` — Project 9: WebGL2 shader studio
 - `knowledge-graph/` — Project 10: computing-history graph
 - `query-studio/` — Project 11: bidirectional SQL studio (text ↔ visual builder)
+- `language-workbench/` — Project 12: Nit workbench (tabs, diagnostics, rename)
+- `block-editor/` — Project 13: nested blocks / slash menu
+- `calendar-engine/` — Project 14: recurrences + ICS
+- `auto-layout/` — Project 15: hug/fill layout solver
+- `structured-merge/` — Project 16: three-way JSON merge
+- `codebase-atlas/` — Project 17: in-memory 350-file atlas
+- `motion-editor/` — Project 18: keyframe timeline
+- `spec-hunter/` — Project 19: planted-bug issue tracker
+- `crdt-notes/` — Project 20: two-peer CRDT notes
 
 ## How to run
 

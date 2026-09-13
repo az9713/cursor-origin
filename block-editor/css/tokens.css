@@ -1,0 +1,44 @@
+/* Block Editor — design tokens */
+:root {
+  /* Palette */
+  --paper:       #ebe4d6;
+  --paper-light: #fffdf8;
+  --rust:        #b4451a;
+  --rust-light:  #e86b3a;
+  --header:      #2a251f;
+  --text:        #2a251f;
+  --text-muted:  #8a7d6e;
+  --border:      #d4c5b0;
+  --hover-bg:    rgba(180, 69, 26, 0.06);
+  --active-bg:   rgba(180, 69, 26, 0.12);
+  --highlight-bg:#fff3a0;
+
+  /* Typography */
+  --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+
+  /* Layout */
+  --sidebar-w:  240px;
+  --editor-max: 720px;
+  --header-h:   48px;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+
+  /* Radii */
+  --r-sm: 3px;
+  --r-md: 6px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(42,37,31,0.10);
+  --shadow-md: 0 3px 10px rgba(42,37,31,0.15);
+
+  /* Transitions */
+  --t-fast: 100ms ease;
+  --t-base: 180ms ease;
+}

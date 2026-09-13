@@ -1,0 +1,25 @@
+/* tokens.css — design tokens for Motion Editor */
+:root {
+  /* Palette */
+  --paper-0:   #ebe4d6;
+  --paper-1:   #fffdf8;
+  --rust:      #b4451a;
+  --header-bg: #2a251f;
+  --muted:     #8b7d6b;
+  --text:      #1e1a16;
+  --border:    rgba(42, 37, 31, 0.18);
+
+  /* Typography */
+  --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+
+  /* Spacing */
+  --s0: 4px;
+  --s1: 8px;
+  --s2: 12px;
+  --s3: 16px;
+  --s4: 24px;
+
+  /* Misc */
+  --r: 3px;
+}

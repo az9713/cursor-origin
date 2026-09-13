@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Structured Merge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+  <!-- ── Header ──────────────────────────────────────────────────────── -->
+  <header class="app-header">
+    <a href="../" class="hub-link">← Hub</a>
+    <div class="h-sep"></div>
+    <h1 class="app-title">Structured Merge</h1>
+    <div class="h-sep"></div>
+    <select id="fixture-select" class="fixture-select" aria-label="Fixture"></select>
+    <div class="spacer"></div>
+
+    <!-- Conflict count pill -->
+    <div class="conflict-pill" id="conflict-pill" aria-live="polite">
+      <span id="pill-count">0</span>&nbsp;conflict<span id="pill-s"></span>
+    </div>
+
+    <button class="btn btn-ghost" id="btn-reset"  title="Reset to fresh merge">Reset</button>
+    <button class="btn btn-primary" id="btn-export" title="Download result as JSON">Export JSON</button>
+  </header>
+
+  <!-- ── Main ────────────────────────────────────────────────────────── -->
+  <main class="app-main">
+
+    <!-- Section: Inputs (base / ours / theirs) -->
+    <p class="section-label">Inputs</p>
+    <div class="pane-row">
+
+      <div class="pane-card">
+        <div class="pane-hdr pane-hdr-base">
+          <div class="pane-dot pane-dot-base"></div>
+          Base
+        </div>
+        <div class="pane-body">
+          <pre id="pane-base" class="code-block"></pre>
+        </div>
+      </div>
+
+      <div class="pane-card">
+        <div class="pane-hdr pane-hdr-ours">
+          <div class="pane-dot pane-dot-ours"></div>
+          Ours
+        </div>
+        <div class="pane-body">
+          <pre id="pane-ours" class="code-block"></pre>
+        </div>
+      </div>
+
+      <div class="pane-card">
+        <div class="pane-hdr pane-hdr-theirs">
+          <div class="pane-dot pane-dot-theirs"></div>
+          Theirs
+        </div>
+        <div class="pane-body">
+          <pre id="pane-theirs" class="code-block"></pre>
+        </div>
+      </div>
+
+    </div><!-- /pane-row -->
+
+    <!-- Section: Changes (auto-merged + conflicts) -->
+    <p class="section-label">Changes</p>
+    <div class="changes-row">
+
+      <!-- Auto-merged hunks -->
+      <div class="changes-card">
+        <div class="changes-hdr">
+          Auto-merged
+          <span class="badge badge-auto" id="auto-badge">0</span>
+        </div>
+        <div class="changes-body">
+          <div id="auto-list"></div>
+        </div>
+      </div>
+
+      <!-- Conflict resolution -->
+      <div class="changes-card">
+        <div class="changes-hdr">
+          Conflicts
+          <span class="badge badge-conflict" id="conflict-badge">0</span>
+        </div>
+        <div class="changes-body">
+          <div id="conflict-list"></div>
+        </div>
+      </div>
+
+    </div><!-- /changes-row -->
+
+    <!-- Section: Result -->
+    <p class="section-label">Result</p>
+    <div class="result-card">
+      <div class="result-hdr">
+        <div class="pane-dot pane-dot-result"></div>
+        <span style="color:var(--rust);font-weight:600;">Result</span>
+        <span class="result-hdr-sub">— always valid JSON</span>
+      </div>
+      <div class="result-body">
+        <pre id="pane-result" class="code-block"></pre>
+      </div>
+    </div>
+
+  </main><!-- /app-main -->
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

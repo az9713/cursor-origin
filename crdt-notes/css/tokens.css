@@ -1,0 +1,41 @@
+/* tokens.css — design tokens for crdt-notes */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap');
+
+:root {
+  /* Palette */
+  --paper-light:   #fffdf8;
+  --paper:         #ebe4d6;
+  --rust:          #b4451a;
+  --rust-hover:    #923716;
+  --header-bg:     #2a251f;
+  --ink:           #1a1714;
+  --ink-muted:     #6b5e4e;
+  --ink-faint:     #b0a899;
+  --border:        #d4c9b8;
+
+  /* Conflict card colours */
+  --conflict-bg:   #fff4ef;
+  --conflict-border:#e07050;
+
+  /* Offline badge */
+  --offline-bg:    #f5e8d0;
+  --offline-border:#c9a86a;
+
+  /* Spacing */
+  --space-xs:  4px;
+  --space-s:   8px;
+  --space-m:  16px;
+  --space-l:  24px;
+  --space-xl: 40px;
+
+  /* Typography */
+  --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+
+  /* Radius */
+  --radius-s: 4px;
+  --radius-m: 8px;
+
+  /* Shadow */
+  --shadow-card: 0 1px 3px rgba(42,37,31,.12), 0 1px 8px rgba(42,37,31,.06);
+}

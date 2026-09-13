@@ -1,0 +1,64 @@
+/**
+ * sample.js — Keyframe interpolation engine.
+ *
+ * This is the ONLY source of truth for node position at a given time.
+ * CSS transitions are never used for preview positioning.
+ *
+ * Model:
+ *   node.track = [{ t, x, y, ease }]   t is 0..1
+ *   ease: 'linear' | 'easeIn' | 'easeOut' | 'easeInOut'
+ *   Interpolation uses the LEFT keyframe's ease function.
+ */
+
+/**
+ * Apply an easing function to a raw 0..1 progress value.
+ * @param {number} t     - Raw linear progress 0..1
+ * @param {string} type  - Easing type
+ * @returns {number}       Eased progress 0..1
+ */
+function easeValue(t, type) {
+  switch (type) {
+    case 'easeIn':
+      return t * t;
+    case 'easeOut':
+      return 1 - (1 - t) * (1 - t);
+    case 'easeInOut':
+      return t < 0.5
+        ? 2 * t * t
+        : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    default: // 'linear'
+      return t;
+  }
+}
+
+/**
+ * Sample node position at normalised playhead time p (0..1).
+ *
+ * @param {object} node - Clip node with .track array
+ * @param {number} p    - Normalised time 0..1
+ * @returns {{ x: number, y: number }}
+ */
+function sample(node, p) {
+  // Sort a shallow copy so we don't mutate clip data
+  const kfs = node.track.slice().sort((a, b) => a.t - b.t);
+
+  if (kfs.length === 0) return { x: node.x, y: node.y };
+  if (p <= kfs[0].t)   return { x: kfs[0].x, y: kfs[0].y };
+
+  const last = kfs[kfs.length - 1];
+  if (p >= last.t)     return { x: last.x, y: last.y };
+
+  // Find left keyframe (highest index where kf.t <= p)
+  let i = 0;
+  while (i < kfs.length - 2 && kfs[i + 1].t <= p) i++;
+
+  const a   = kfs[i];
+  const b   = kfs[i + 1];
+  const raw = (p - a.t) / (b.t - a.t);   // 0..1 within this segment
+  const et  = easeValue(raw, a.ease);     // apply left-keyframe easing
+
+  return {
+    x: a.x + (b.x - a.x) * et,
+    y: a.y + (b.y - a.y) * et,
+  };
+}

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auto-layout Playground — cursor_origin</title>
+  <meta name="description" content="Session A: boxes with padding, gap, hug/fill, wrap. JS solver is source of truth.">
+
+  <!-- IBM Plex fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+  <!-- ── Header ──────────────────────────────────────────────────────────── -->
+  <header>
+    <a href="../" class="hub-link">← Hub</a>
+    <h1 class="app-title">Auto-layout Playground</h1>
+    <span class="session-badge">Session A</span>
+  </header>
+
+  <!-- ── Toolbar ─────────────────────────────────────────────────────────── -->
+  <div class="toolbar">
+    <span class="toolbar-label">Fixture</span>
+
+    <div class="fixture-group">
+      <button class="fixture-btn" data-fixture="row-hug">Row Hug</button>
+      <button class="fixture-btn" data-fixture="col-fill">Col Fill</button>
+      <button class="fixture-btn" data-fixture="wrap">Wrap</button>
+    </div>
+
+    <button class="reset-btn" id="reset-btn" title="Reset current fixture to defaults">Reset</button>
+
+    <span id="status-line" class="status-line"></span>
+  </div>
+
+  <!-- ── Main ────────────────────────────────────────────────────────────── -->
+  <main>
+    <!-- Canvas -->
+    <section class="canvas-panel" id="canvas-panel">
+      <svg id="canvas"
+           xmlns="http://www.w3.org/2000/svg"
+           preserveAspectRatio="xMidYMid meet">
+      </svg>
+    </section>
+
+    <!-- Inspector -->
+    <aside class="inspector-panel" id="inspector">
+      <!-- populated by app.js -->
+    </aside>
+  </main>
+
+  <!-- ES module entry point -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
