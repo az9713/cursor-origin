@@ -52,7 +52,7 @@ Then visit `http://localhost:8080/` or a folder such as `http://localhost:8080/s
 - Ask before adding dependencies
 - use gh cli to create/push the repo `github.com/az9713/cursor-origin`
 - always have a README.md at repo root
-- if any main html exists, make it a GitHub page and render it live in README.md
+- if any main html exists, make it a GitHub page and link it from README.md (GitHub strips iframes in README)
 - Customer-facing docs: HTML. Do not ship Markdown as the customer-facing surface.
 - Process record for the whole hub: `development_journey.html`
 - Internal docs (plans, agent notes, specs for the agent): Markdown is fine.

@@ -8,171 +8,318 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
   <style>
-    :root { --ink: #1a1612; --paper: #f3eee4; --rule: #d9d0c1; --rust: #b4451a; --muted: #5e564c; }
+    :root { --ink: #1a1612; --paper: #f3eee4; --rule: #d9d0c1; --rust: #b4451a; --muted: #5e564c; --card: #fffdf8; }
     * { box-sizing: border-box; }
     body {
       margin: 0;
       min-height: 100vh;
       background: var(--paper);
       color: var(--ink);
-      font: 17px/1.5 "IBM Plex Sans", sans-serif;
+      font: 16px/1.45 "IBM Plex Sans", sans-serif;
     }
-    main { max-width: 42rem; padding: 3.5rem 6vw 4rem; }
+    main { max-width: 58rem; padding: 2.75rem 5vw 3.5rem; }
     .kicker {
       font-family: "IBM Plex Mono", ui-monospace, monospace;
       font-size: 0.75rem;
       letter-spacing: 0.12em;
       text-transform: uppercase;
       color: var(--rust);
+      margin: 0;
     }
-    h1 { font-family: Fraunces, Georgia, serif; font-size: 2.4rem; line-height: 1.15; margin: 0.4rem 0 1rem; }
-    p { color: var(--muted); max-width: 42ch; }
+    h1 { font-family: Fraunces, Georgia, serif; font-size: 2.2rem; line-height: 1.15; margin: 0.4rem 0 0.7rem; }
+    .lede { color: var(--muted); max-width: 52ch; margin: 0 0 2rem; }
+    section { margin-bottom: 1.75rem; }
+    h2 {
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 0 0 0.55rem;
+      padding-bottom: 0.35rem;
+      border-bottom: 1px solid var(--rule);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.55rem 0.7rem;
+    }
     a.card {
-      display: block;
-      margin-top: 1.5rem;
-      padding: 1.1rem 1.2rem;
+      display: grid;
+      grid-template-columns: 2.1rem 1fr;
+      column-gap: 0.55rem;
+      align-items: baseline;
+      padding: 0.55rem 0.7rem;
       border: 1px solid var(--rule);
-      background: #fffdf8;
+      background: var(--card);
       text-decoration: none;
       color: var(--ink);
     }
     a.card:hover { border-color: var(--rust); }
-    a.card strong { display: block; font-size: 1.1rem; }
-    a.card span { color: var(--muted); font-size: 0.92rem; }
-    nav { margin-top: 2rem; font-size: 0.95rem; }
+    a.card .n {
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: 0.72rem;
+      color: var(--rust);
+    }
+    a.card strong { font-size: 0.95rem; font-weight: 500; }
+    a.card span { display: block; color: var(--muted); font-size: 0.8rem; margin-top: 0.12rem; }
+    nav { margin-top: 0.5rem; font-size: 0.95rem; }
     nav a { color: var(--rust); }
+    @media (max-width: 720px) {
+      .grid { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
   <main>
     <p class="kicker">az9713/cursor-origin</p>
     <h1>Cursor stress-test hub</h1>
-    <p>Each sub-project is its own folder. This page is the directory, not the app.</p>
-    <a class="card" href="./mini-linear/">
-      <strong>1. Mini Linear</strong>
-      <span>Clean app after Session C. Board, list, localStorage, hash routes.</span>
-    </a>
-    <a class="card" href="./mini-linear/messy.html">
-      <strong>1b. Mini Linear (Session A)</strong>
-      <span>The 60–100 file messy build. Same product, duplicated CSS and copy-pasted components.</span>
-    </a>
-    <a class="card" href="./spreadsheet/">
-      <strong>2. Spreadsheet</strong>
-      <span>Grid with SUM, AVERAGE, IF, cell refs, cycles, fill handle, undo, CSV.</span>
-    </a>
-    <a class="card" href="./vector-editor/">
-      <strong>3. Vector editor</strong>
-      <span>Artboard, select/move/resize, layers, undo, SVG export.</span>
-    </a>
-    <a class="card" href="./desktop-os/">
-      <strong>4. Desktop OS</strong>
-      <span>Windows, taskbar, Notes, Finder, fake-VFS Terminal.</span>
-    </a>
-    <a class="card" href="./compiler/">
-      <strong>5. Compiler playground</strong>
-      <span>Lexer, parser, bytecode VM, stepper for a toy language.</span>
-    </a>
-    <a class="card" href="./page-clone/">
-      <strong>6. Page + inspector</strong>
-      <span>Original dense page with a live copy/color inspector.</span>
-    </a>
-    <a class="card" href="./simulation/">
-      <strong>7. Ant simulation</strong>
-      <span>Canvas agents, sliders, pause/step, population chart.</span>
-    </a>
-    <a class="card" href="./saas-shell/">
-      <strong>8. SaaS shell</strong>
-      <span>Incident Commander: 8 views, tokens, keyboard shortcuts.</span>
-    </a>
-    <a class="card" href="./shader-studio/">
-      <strong>9. Shader studio</strong>
-      <span>Live GLSL, presets, uniforms, WebGL2 error overlay.</span>
-    </a>
-    <a class="card" href="./knowledge-graph/">
-      <strong>10. Knowledge graph</strong>
-      <span>History of computing: search, type filters, deep links.</span>
-    </a>
-    <a class="card" href="./query-studio/">
-      <strong>11. Query studio</strong>
-      <span>SQL text and visual builder stay in lockstep over in-memory tables.</span>
-    </a>
-    <a class="card" href="./language-workbench/">
-      <strong>12. Language workbench</strong>
-      <span>Nit files, tabs, diagnostics, rename, extract function.</span>
-    </a>
-    <a class="card" href="./block-editor/">
-      <strong>13. Block editor</strong>
-      <span>Nested blocks, slash menu, code blocks, markdown, deep links.</span>
-    </a>
-    <a class="card" href="./calendar-engine/">
-      <strong>14. Calendar engine</strong>
-      <span>Month/week/day, daily/weekly/monthly recurrences, DST, ICS.</span>
-    </a>
-    <a class="card" href="./auto-layout/">
-      <strong>15. Auto-layout</strong>
-      <span>Hug/fill solver, absolute children, fixtures — not CSS flex as truth.</span>
-    </a>
-    <a class="card" href="./structured-merge/">
-      <strong>16. Structured merge</strong>
-      <span>Three-way JSON merge, conflict cards, move detection.</span>
-    </a>
-    <a class="card" href="./codebase-atlas/">
-      <strong>17. Codebase atlas</strong>
-      <span>350-file fake repo: search, graph, rename, extract module.</span>
-    </a>
-    <a class="card" href="./motion-editor/">
-      <strong>18. Motion editor</strong>
-      <span>Keyframes, easing, stagger, playhead, JS sampler as truth.</span>
-    </a>
-    <a class="card" href="./spec-hunter/">
-      <strong>19. Spec hunter</strong>
-      <span>Issue tracker whose SPEC is the truth. Find the mismatches.</span>
-    </a>
-    <a class="card" href="./crdt-notes/">
-      <strong>20. CRDT notes</strong>
-      <span>Three fake peers, offline queue, conflict cards, snapshots.</span>
-    </a>
-    <a class="card" href="./regex-studio/">
-      <strong>21. Regex studio</strong>
-      <span>Pattern ↔ builder, named groups, haystack captures, roundtrip chip.</span>
-    </a>
-    <a class="card" href="./git-theatre/">
-      <strong>22. Git theatre</strong>
-      <span>Blobs/trees/commits, merge, rebase, cherry-pick, DAG, cat-file.</span>
-    </a>
-    <a class="card" href="./circuit-lab/">
-      <strong>23. Circuit lab</strong>
-      <span>Schematic ↔ HDL, XOR/XNOR, DFF step, truth table.</span>
-    </a>
-    <a class="card" href="./packet-forge/">
-      <strong>24. Packet forge</strong>
-      <span>Ethernet / IPv4 / TCP / UDP / ICMP form ↔ hex. Checksums recompute.</span>
-    </a>
-    <a class="card" href="./ledger-books/">
-      <strong>25. Ledger books</strong>
-      <span>Personal and business books, trial balance that foots, reverse with audit trail.</span>
-    </a>
-    <a class="card" href="./constraint-sketch/">
-      <strong>26. Constraint sketch</strong>
-      <span>Points, lines, circles, equal-length, a real solver — not drag-only.</span>
-    </a>
-    <a class="card" href="./path-studio/">
-      <strong>27. Path studio</strong>
-      <span>Paint tiles, A* / Dijkstra / flow field, portals, heatmap, stepping agent.</span>
-    </a>
-    <a class="card" href="./css-cascade/">
-      <strong>28. CSS cascade</strong>
-      <span>HTML + CSS, @layer, specificity math, cascade trace, iframe is the renderer.</span>
-    </a>
-    <a class="card" href="./audio-tracker/">
-      <strong>29. Audio tracker</strong>
-      <span>Piano roll, BPM, 16th swing, mixer, playhead that agrees with notes.</span>
-    </a>
-    <a class="card" href="./board-rules/">
-      <strong>30. Board rules</strong>
-      <span>Chess + Chess960, board ↔ PGN, takeback, material eval. No engine library.</span>
-    </a>
+    <p class="lede">Thirty vanilla apps, grouped by domain. Each folder is the product; this page is only the directory.</p>
+
+    <section>
+      <h2>Apps &amp; shells</h2>
+      <div class="grid">
+        <a class="card" href="./mini-linear/">
+          <span class="n">1</span>
+          <div>
+            <strong>Mini Linear</strong>
+            <span>Board, list, hash routes.</span>
+          </div>
+        </a>
+        <a class="card" href="./desktop-os/">
+          <span class="n">4</span>
+          <div>
+            <strong>Desktop OS</strong>
+            <span>Windows, taskbar, Notes, Finder, fake-VFS Terminal.</span>
+          </div>
+        </a>
+        <a class="card" href="./saas-shell/">
+          <span class="n">8</span>
+          <div>
+            <strong>SaaS shell</strong>
+            <span>Incident Commander: eight views, tokens, shortcuts.</span>
+          </div>
+        </a>
+        <a class="card" href="./spec-hunter/">
+          <span class="n">19</span>
+          <div>
+            <strong>Spec hunter</strong>
+            <span>Issue tracker whose SPEC is the truth. Find the mismatches.</span>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <section>
+      <h2>Editors &amp; layout</h2>
+      <div class="grid">
+        <a class="card" href="./vector-editor/">
+          <span class="n">3</span>
+          <div>
+            <strong>Vector editor</strong>
+            <span>Artboard, select/move/resize, layers, SVG export.</span>
+          </div>
+        </a>
+        <a class="card" href="./page-clone/">
+          <span class="n">6</span>
+          <div>
+            <strong>Page + inspector</strong>
+            <span>Dense page with a live copy/color inspector.</span>
+          </div>
+        </a>
+        <a class="card" href="./block-editor/">
+          <span class="n">13</span>
+          <div>
+            <strong>Block editor</strong>
+            <span>Nested blocks, slash menu, code blocks, markdown.</span>
+          </div>
+        </a>
+        <a class="card" href="./auto-layout/">
+          <span class="n">15</span>
+          <div>
+            <strong>Auto-layout</strong>
+            <span>Hug/fill solver — not CSS flex as truth.</span>
+          </div>
+        </a>
+        <a class="card" href="./motion-editor/">
+          <span class="n">18</span>
+          <div>
+            <strong>Motion editor</strong>
+            <span>Keyframes, easing, stagger, playhead as truth.</span>
+          </div>
+        </a>
+        <a class="card" href="./constraint-sketch/">
+          <span class="n">26</span>
+          <div>
+            <strong>Constraint sketch</strong>
+            <span>Points, lines, equal-length, a real solver.</span>
+          </div>
+        </a>
+        <a class="card" href="./css-cascade/">
+          <span class="n">28</span>
+          <div>
+            <strong>CSS cascade</strong>
+            <span>Specificity, @layer, iframe is the renderer.</span>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <section>
+      <h2>Language &amp; data</h2>
+      <div class="grid">
+        <a class="card" href="./spreadsheet/">
+          <span class="n">2</span>
+          <div>
+            <strong>Spreadsheet</strong>
+            <span>Formulas, fill handle, undo, CSV.</span>
+          </div>
+        </a>
+        <a class="card" href="./compiler/">
+          <span class="n">5</span>
+          <div>
+            <strong>Compiler</strong>
+            <span>Lexer, parser, bytecode VM, stepper.</span>
+          </div>
+        </a>
+        <a class="card" href="./query-studio/">
+          <span class="n">11</span>
+          <div>
+            <strong>Query studio</strong>
+            <span>SQL text and visual builder in lockstep.</span>
+          </div>
+        </a>
+        <a class="card" href="./language-workbench/">
+          <span class="n">12</span>
+          <div>
+            <strong>Language workbench</strong>
+            <span>Nit files, tabs, diagnostics, rename.</span>
+          </div>
+        </a>
+        <a class="card" href="./structured-merge/">
+          <span class="n">16</span>
+          <div>
+            <strong>Structured merge</strong>
+            <span>Three-way JSON merge, conflict cards.</span>
+          </div>
+        </a>
+        <a class="card" href="./codebase-atlas/">
+          <span class="n">17</span>
+          <div>
+            <strong>Codebase atlas</strong>
+            <span>350-file fake repo: search, graph, rename.</span>
+          </div>
+        </a>
+        <a class="card" href="./regex-studio/">
+          <span class="n">21</span>
+          <div>
+            <strong>Regex studio</strong>
+            <span>Pattern ↔ builder, named groups, roundtrip.</span>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <section>
+      <h2>Systems &amp; protocols</h2>
+      <div class="grid">
+        <a class="card" href="./crdt-notes/">
+          <span class="n">20</span>
+          <div>
+            <strong>CRDT notes</strong>
+            <span>Three fake peers, offline queue, snapshots.</span>
+          </div>
+        </a>
+        <a class="card" href="./git-theatre/">
+          <span class="n">22</span>
+          <div>
+            <strong>Git theatre</strong>
+            <span>Objects, merge, rebase, cherry-pick, DAG.</span>
+          </div>
+        </a>
+        <a class="card" href="./circuit-lab/">
+          <span class="n">23</span>
+          <div>
+            <strong>Circuit lab</strong>
+            <span>Schematic ↔ HDL, XNOR, DFF, truth table.</span>
+          </div>
+        </a>
+        <a class="card" href="./packet-forge/">
+          <span class="n">24</span>
+          <div>
+            <strong>Packet forge</strong>
+            <span>Ethernet / IPv4 / TCP / UDP / ICMP ↔ hex.</span>
+          </div>
+        </a>
+        <a class="card" href="./ledger-books/">
+          <span class="n">25</span>
+          <div>
+            <strong>Ledger books</strong>
+            <span>Double-entry, personal and business books.</span>
+          </div>
+        </a>
+        <a class="card" href="./path-studio/">
+          <span class="n">27</span>
+          <div>
+            <strong>Path studio</strong>
+            <span>A* / Dijkstra / flow field, portals, heatmap.</span>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <section>
+      <h2>Worlds &amp; media</h2>
+      <div class="grid">
+        <a class="card" href="./simulation/">
+          <span class="n">7</span>
+          <div>
+            <strong>Ant simulation</strong>
+            <span>Canvas agents, sliders, population chart.</span>
+          </div>
+        </a>
+        <a class="card" href="./shader-studio/">
+          <span class="n">9</span>
+          <div>
+            <strong>Shader studio</strong>
+            <span>Live GLSL, presets, WebGL2 error overlay.</span>
+          </div>
+        </a>
+        <a class="card" href="./knowledge-graph/">
+          <span class="n">10</span>
+          <div>
+            <strong>Knowledge graph</strong>
+            <span>History of computing: search, filters, deep links.</span>
+          </div>
+        </a>
+        <a class="card" href="./calendar-engine/">
+          <span class="n">14</span>
+          <div>
+            <strong>Calendar engine</strong>
+            <span>Month/week/day, recurrences, DST, ICS.</span>
+          </div>
+        </a>
+        <a class="card" href="./audio-tracker/">
+          <span class="n">29</span>
+          <div>
+            <strong>Audio tracker</strong>
+            <span>Piano roll, BPM, 16th swing, playhead.</span>
+          </div>
+        </a>
+        <a class="card" href="./board-rules/">
+          <span class="n">30</span>
+          <div>
+            <strong>Board rules</strong>
+            <span>Chess + Chess960, board ↔ PGN.</span>
+          </div>
+        </a>
+      </div>
+    </section>
+
     <nav>
+      <a href="./mini-linear/messy.html">Mini Linear Session A</a>
+      ·
       <a href="./token-heavy-projects.html">Why these projects</a>
       ·
       <a href="./development_journey.html">Development journey</a>

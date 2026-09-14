@@ -2,11 +2,7 @@
 
 Hub repo for vanilla HTML/CSS/JS apps that stress Cursor’s agentic IDE loop — freeze a spec, implement, click the broken control, keep old flows green. Thirty sibling products through Session C, plus a [warts-and-all development journey](https://az9713.github.io/cursor-origin/development_journey.html). No backends, no build step.
 
-Live hub: https://az9713.github.io/cursor-origin/
-
-<iframe src="https://az9713.github.io/cursor-origin/" width="100%" height="640" style="border:1px solid #d7cfc0; background:#f2ece1;"></iframe>
-
-Apps live next to the hub (`<folder>/`). The directory below is grouped by domain, not bake-off order.
+**[Live hub](https://az9713.github.io/cursor-origin/)** — each app is a sibling folder with its own `index.html`. Grouped by domain, not bake-off order.
 
 ## Apps & shells
 
