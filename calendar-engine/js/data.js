@@ -6,8 +6,8 @@
    All times stored as UTC ISO strings. Display always goes through
    getLocalParts(utcMs, displayTz) from rrule.js.
 
-   Seed: 7 events — 1 daily, 2 weekly, 1 weekly multi-day, 1 with exdate,
-   1 count-limited daily, 2 one-offs. All seeded in America/Los_Angeles.
+   Seed: 8 events — 1 daily, 2 weekly, 1 weekly multi-day, 1 with exdate,
+   1 count-limited daily, 2 one-offs, 1 monthly. All seeded in America/Los_Angeles.
 ──────────────────────────────────────────────────────────────────────────── */
 
 const STORAGE_KEY = 'calendar-engine-v1';
@@ -128,6 +128,18 @@ function makeSeedEvents() {
       rrule: '',
       exdates: [],
       color: EVENT_COLORS[6],
+    },
+
+    // ── 8. Monthly — Rent Due (Session C seed) ────────────────────────
+    {
+      id: 'seed-rent',
+      title: 'Rent Due',
+      startISO: iso('2026-09-01', 9, 0),   // 1st of month, 9am
+      endISO:   iso('2026-09-01', 9, 30),
+      tz,
+      rrule: 'FREQ=MONTHLY;BYMONTHDAY=1',
+      exdates: [],
+      color: EVENT_COLORS[3],   // purple
     },
   ];
 }

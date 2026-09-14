@@ -5,9 +5,14 @@
  * CSS transitions are never used for preview positioning.
  *
  * Model:
- *   node.track = [{ t, x, y, ease }]   t is 0..1
+ *   node.track    = [{ t, x, y, ease }]   t is 0..1
+ *   node.staggerMs (optional, default 0)  — delay before this node starts
  *   ease: 'linear' | 'easeIn' | 'easeOut' | 'easeInOut'
  *   Interpolation uses the LEFT keyframe's ease function.
+ *
+ * Stagger:
+ *   effectiveP = clamp((p * durationMs - staggerMs) / durationMs, 0, 1)
+ *   Pass clip.durationMs as the third argument so stagger is applied correctly.
  */
 
 /**
@@ -34,11 +39,19 @@ function easeValue(t, type) {
 /**
  * Sample node position at normalised playhead time p (0..1).
  *
- * @param {object} node - Clip node with .track array
- * @param {number} p    - Normalised time 0..1
+ * @param {object} node       - Clip node with .track array and optional .staggerMs
+ * @param {number} p          - Normalised time 0..1
+ * @param {number} [durationMs] - Clip duration in ms (required for stagger to apply)
  * @returns {{ x: number, y: number }}
  */
-function sample(node, p) {
+function sample(node, p, durationMs) {
+  // Apply stagger: delay this node's animation start by staggerMs.
+  // effectiveP = clamp((p * durationMs - staggerMs) / durationMs, 0, 1)
+  const staggerMs = node.staggerMs || 0;
+  if (staggerMs > 0 && durationMs && durationMs > 0) {
+    p = Math.max(0, Math.min(1, (p * durationMs - staggerMs) / durationMs));
+  }
+
   // Sort a shallow copy so we don't mutate clip data
   const kfs = node.track.slice().sort((a, b) => a.t - b.t);
 

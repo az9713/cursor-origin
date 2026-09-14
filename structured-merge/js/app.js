@@ -10,6 +10,12 @@ import { threeWayDiff, buildResult, setAtPath, deleteAtPath } from './diff.js';
  * Fixture 2 — "todo-list" (array element changes)
  *   Auto-merges : items[1].done (ours), items[2].text (theirs)
  *   Conflict    : status  (ours='review'  vs  theirs='done')
+ *
+ * Fixture 3 — "reorder-todos" (move detection)
+ *   Moves       : ours moves id:3 from items[2] to items[0]
+ *                 → items[0] and items[1] also shift  (3 move hunks, 1 array replace)
+ *   Auto-merges : title (theirs renames to 'Backlog v2')
+ *   Conflicts   : none
  */
 const FIXTURES = {
   'feature-flags': {
@@ -61,6 +67,34 @@ const FIXTURES = {
         { id: 1, text: 'Write tests',   done: true  },
         { id: 2, text: 'Fix bug',       done: false },
         { id: 3, text: 'Deploy to prod', done: false }, // theirs renames task
+      ],
+    },
+  },
+
+  'reorder-todos': {
+    label: 'Reorder Todos (move detection)',
+    base: {
+      title: 'Backlog',
+      items: [
+        { id: 1, text: 'Design mockups', priority: 'high' },
+        { id: 2, text: 'Write tests',    priority: 'low'  },
+        { id: 3, text: 'Ship it',        priority: 'high' },
+      ],
+    },
+    ours: {
+      title: 'Backlog',
+      items: [
+        { id: 3, text: 'Ship it',        priority: 'high' }, // id:3 moved to front
+        { id: 1, text: 'Design mockups', priority: 'high' },
+        { id: 2, text: 'Write tests',    priority: 'low'  },
+      ],
+    },
+    theirs: {
+      title: 'Backlog v2',                                   // theirs renames → auto-merge
+      items: [
+        { id: 1, text: 'Design mockups', priority: 'high' },
+        { id: 2, text: 'Write tests',    priority: 'low'  },
+        { id: 3, text: 'Ship it',        priority: 'high' },
       ],
     },
   },
@@ -147,12 +181,25 @@ function renderAutoMerged() {
   for (const h of list) {
     const row = document.createElement('div');
     row.className = 'auto-hunk';
-    row.innerHTML = `
-      <span class="hunk-path" title="${h.pathStr}">${h.pathStr}</span>
-      <span class="hunk-kind kind-${h.kind}">${h.kind}</span>
-      <span class="hunk-side side-${h.side}">${h.side}</span>
-      <code class="hunk-val" title="${fmtInline(h.val)}">${fmtInline(h.val)}</code>
-    `;
+
+    if (h.kind === 'move') {
+      // Move hunk: show fromPath → toPath and the object's id value
+      const label  = `${h.fromPathStr} → ${h.toPathStr}`;
+      const idDisp = h.idVal !== undefined ? `id:${fmtInline(h.idVal)}` : '';
+      row.innerHTML = `
+        <span class="hunk-path hunk-path-move" title="${label}">${label}</span>
+        <span class="hunk-kind kind-move">move</span>
+        <span class="hunk-side side-${h.side}">${h.side}</span>
+        <code class="hunk-val">${idDisp}</code>
+      `;
+    } else {
+      row.innerHTML = `
+        <span class="hunk-path" title="${h.pathStr}">${h.pathStr}</span>
+        <span class="hunk-kind kind-${h.kind}">${h.kind}</span>
+        <span class="hunk-side side-${h.side}">${h.side}</span>
+        <code class="hunk-val" title="${fmtInline(h.val)}">${fmtInline(h.val)}</code>
+      `;
+    }
     autoList.appendChild(row);
   }
 }
@@ -284,16 +331,30 @@ function loadFixture(fixtureId, forceReset = false) {
   // Compact summary of auto-merged hunks (serialisable)
   state.autoHunks = hunks
     .filter(h => h.kind !== 'conflict')
-    .map(h => ({
-      id:      h.id,
-      pathStr: h.pathStr,
-      kind:    h.kind,
-      side:    h.side,
-      // Store null explicitly for 'remove' (undefined is not JSON-serialisable)
-      val:     h.side === 'ours'
-                 ? (h.oursVal   !== undefined ? h.oursVal   : null)
-                 : (h.theirsVal !== undefined ? h.theirsVal : null),
-    }));
+    .map(h => {
+      if (h.kind === 'move') {
+        return {
+          id:          h.id,
+          kind:        'move',
+          side:        h.side,
+          pathStr:     h.pathStr,
+          fromPathStr: h.fromPathStr,
+          toPathStr:   h.toPathStr,
+          // Serialise the id value of the moved object for display
+          idVal:       h.baseVal != null ? h.baseVal.id : undefined,
+        };
+      }
+      return {
+        id:      h.id,
+        pathStr: h.pathStr,
+        kind:    h.kind,
+        side:    h.side,
+        // Store null explicitly for 'remove' (undefined is not JSON-serialisable)
+        val:     h.side === 'ours'
+                   ? (h.oursVal   !== undefined ? h.oursVal   : null)
+                   : (h.theirsVal !== undefined ? h.theirsVal : null),
+      };
+    });
 
   saveState();
   setHash(fixtureId);

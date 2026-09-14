@@ -259,6 +259,15 @@ pre.code-block {
 .kind-add    { background: var(--green-bg);            color: var(--green); }
 .kind-remove { background: var(--rust-bg);             color: var(--rust); }
 .kind-change { background: rgba(42,37,31,.07);         color: var(--text-muted); }
+/* Move hunks — amber to stand apart from add/remove/change */
+.kind-move   { background: rgba(138,98,0,.10);         color: #7a5800; }
+
+/* Move path label is wider (shows "a.b → c.d") — allow a bit more room */
+.hunk-path-move {
+  min-width: 0;
+  flex: 1;
+  font-size: .70rem;
+}
 
 .side-ours   { background: var(--green-bg);  color: var(--green); }
 .side-theirs { background: var(--blue-bg);   color: var(--blue); }

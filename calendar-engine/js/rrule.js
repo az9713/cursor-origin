@@ -1,6 +1,7 @@
 'use strict';
 /* ── Calendar Engine — RRULE + DST wall-clock helpers ──────────────────────
-   Implements FREQ=DAILY|WEEKLY, INTERVAL, COUNT, UNTIL, BYDAY (weekly).
+   Implements FREQ=DAILY|WEEKLY|MONTHLY, INTERVAL, COUNT, UNTIL,
+   BYDAY (weekly), BYMONTHDAY (monthly).
    DST wall-clock: recurring events keep the same local hour even across
    spring-forward / fall-back boundaries (America/Los_Angeles ↔ UTC offset
    changes). Uses Intl.DateTimeFormat for timezone conversions — no moment.js.
@@ -232,6 +233,58 @@ function expandEvent(event, rangeStartMs, rangeEndMs) {
       }
       occIdx++;
       cur = addCalDays(cur, ivl);
+    }
+  }
+
+  // ── MONTHLY ───────────────────────────────────────────────────────────
+  else if (freq === 'MONTHLY') {
+    // BYMONTHDAY: comma-separated day-of-month numbers (1–31).
+    // Default: the start date's day-of-month (RFC 5545 implicit rule).
+    const byMonthDay = p.BYMONTHDAY
+      ? p.BYMONTHDAY.split(',').map(s => parseInt(s.trim(), 10)).filter(n => n >= 1 && n <= 31)
+      : [baseLp.day];
+
+    let curYear  = baseLp.year;
+    let curMonth = baseLp.month;  // 1–12
+
+    outer:
+    for (let i = 0; i < MAX_ITER; i++) {
+      // Days in curYear/curMonth (e.g. 28 for Feb non-leap)
+      const daysInMonth = new Date(Date.UTC(curYear, curMonth, 0)).getUTCDate();
+
+      for (const dom of byMonthDay) {
+        if (dom > daysInMonth) continue; // skip non-existent days (e.g. Feb 30)
+
+        const sMs = localToUTC(curYear, curMonth, dom, hour, minute, second, tz);
+        if (sMs < bStartMs - 1000) continue; // before series start
+        const eMs = sMs + duration;
+
+        if (until !== null && sMs > until) break outer;
+        if (cnt   !== null && occIdx >= cnt) break outer;
+        if (sMs > rangeEndMs) break outer;
+
+        if (eMs >= rangeStartMs && !isExcluded(event, sMs, tz)) {
+          results.push({
+            ...event,
+            startISO: new Date(sMs).toISOString(),
+            endISO:   new Date(eMs).toISOString(),
+            _occKey:  event.id + ':' + occIdx,
+            _isRecurring: true,
+            _occStartMs: sMs,
+          });
+        }
+        occIdx++;
+      }
+
+      // Advance by INTERVAL months
+      curMonth += ivl;
+      while (curMonth > 12) { curMonth -= 12; curYear++; }
+
+      // Early bail: if the entire next month is beyond rangeEndMs (no COUNT/UNTIL cap)
+      if (cnt === null && until === null) {
+        const firstOfNext = localToUTC(curYear, curMonth, 1, 0, 0, 0, tz);
+        if (firstOfNext > rangeEndMs) break;
+      }
     }
   }
 

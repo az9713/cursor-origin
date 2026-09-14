@@ -11,8 +11,8 @@
 // ── DOM refs (set once on DOMContentLoaded) ────────────────────────────────
 let modal, overlay, form;
 let fTitle, fStartDate, fStartTime, fEndDate, fEndTime, fTz, fFreq;
-let fInterval, fIntervalUnit, fEnds, fCount, fUntil;
-let rruleSection, bydayRow, countRow, untilRow;
+let fInterval, fIntervalUnit, fEnds, fCount, fUntil, fByMonthDay;
+let rruleSection, bydayRow, byMonthdayRow, countRow, untilRow;
 let btnDelete, modalHeading;
 
 // State for current edit session
@@ -35,10 +35,12 @@ function initModal() {
   fEnds        = document.getElementById('ev-ends');
   fCount       = document.getElementById('ev-count');
   fUntil       = document.getElementById('ev-until');
-  rruleSection = document.getElementById('rrule-section');
-  bydayRow     = document.getElementById('byday-row');
-  countRow     = document.getElementById('count-row');
-  untilRow     = document.getElementById('until-row');
+  rruleSection    = document.getElementById('rrule-section');
+  bydayRow        = document.getElementById('byday-row');
+  byMonthdayRow   = document.getElementById('bymonthday-row');
+  countRow        = document.getElementById('count-row');
+  untilRow        = document.getElementById('until-row');
+  fByMonthDay     = document.getElementById('ev-bymonthday');
   btnDelete    = document.getElementById('btn-delete-ev');
   modalHeading = document.getElementById('modal-heading');
 
@@ -97,6 +99,7 @@ function openCreateModal(defaults = {}) {
   fEnds.value       = 'never';
   fUntil.value      = '';
   fCount.value      = '10';
+  fByMonthDay.value = String(defDate.getDate()); // default to start date's day
   uncheckAllByday();
   onFreqChange();
 
@@ -141,6 +144,8 @@ function openEditModal(eventId, occStartISO) {
       if (cb) cb.checked = true;
     });
   }
+  // BYMONTHDAY: use explicit value, or default to start date's day-of-month
+  fByMonthDay.value = p.BYMONTHDAY ? p.BYMONTHDAY.split(',')[0].trim() : String(sLp.day);
   if (p.UNTIL) {
     fEnds.value  = 'until';
     fUntil.value = icsDateToInputDate(p.UNTIL);
@@ -172,8 +177,16 @@ function onFreqChange() {
   const freq = fFreq.value;
   const hasRRule = freq !== '';
   rruleSection.classList.toggle('hidden', !hasRRule);
-  bydayRow.style.display = freq === 'WEEKLY' ? 'flex' : 'none';
-  fIntervalUnit.textContent = freq === 'WEEKLY' ? 'week(s)' : 'day(s)';
+  bydayRow.style.display      = freq === 'WEEKLY'  ? 'flex'  : 'none';
+  byMonthdayRow.style.display = freq === 'MONTHLY' ? 'flex'  : 'none';
+  fIntervalUnit.textContent   = freq === 'WEEKLY'  ? 'week(s)'
+                              : freq === 'MONTHLY' ? 'month(s)'
+                              : 'day(s)';
+  // Auto-fill BYMONTHDAY from current start date when switching to Monthly
+  if (freq === 'MONTHLY' && fStartDate.value) {
+    const startDay = parseInt(fStartDate.value.split('-')[2], 10);
+    if (!isNaN(startDay)) fByMonthDay.value = String(startDay);
+  }
   onEndsChange();
 }
 
@@ -345,6 +358,11 @@ function buildRRule() {
     const checked = [...document.querySelectorAll('input[name="byday"]:checked')]
       .map(cb => cb.value);
     if (checked.length > 0) parts.push('BYDAY=' + checked.join(','));
+  }
+
+  if (freq === 'MONTHLY') {
+    const dom = parseInt(fByMonthDay.value, 10);
+    if (dom >= 1 && dom <= 31) parts.push('BYMONTHDAY=' + dom);
   }
 
   const ends = fEnds.value;

@@ -22,7 +22,7 @@
 <!-- ── TOOLBAR ──────────────────────────────────────────────────────── -->
 <div class="toolbar">
   <span style="font-size:12px;color:var(--ink-muted);font-weight:500;">
-    Two simulated peers · local-only · hash route <code style="font-size:11px;">#/n/&lt;id&gt;</code>
+    Three simulated peers · local-only · hash route <code style="font-size:11px;">#/n/&lt;id&gt;</code>
   </span>
 </div>
 
@@ -144,6 +144,64 @@
       <button id="snap-restore-B" class="btn btn-ghost btn-sm">↩ Restore</button>
     </div>
   </div><!-- /peer-B -->
+
+  <!-- ══ PEER C ══════════════════════════════════════════════════════ -->
+  <div class="peer-pane" id="peer-C">
+    <!-- Peer header -->
+    <div class="peer-header">
+      <span class="peer-label">Peer C</span>
+      <span class="peer-status" id="status-C">Online</span>
+      <span class="queue-badge" id="queue-badge-C">0 queued</span>
+      <button class="btn btn-ghost btn-sm peer-toggle" id="toggle-C">Go Offline</button>
+    </div>
+
+    <!-- Conflict cards -->
+    <div class="conflict-zone" id="conflict-zone-C"></div>
+
+    <!-- Peer body: note list + editor -->
+    <div class="peer-pane-body">
+      <!-- Note list -->
+      <div class="note-list-panel">
+        <div class="note-list-header">
+          <span>Notes</span>
+          <button id="new-note-C" class="btn btn-primary btn-sm" style="margin-left:auto;">+ New</button>
+        </div>
+        <div class="note-list" id="note-list-C"></div>
+      </div>
+
+      <!-- Editor -->
+      <div class="editor-panel">
+        <div class="editor-empty" id="editor-empty-C">
+          Select or create a note
+        </div>
+        <div id="editor-main-C" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+          <div class="editor-title-wrap">
+            <input
+              type="text"
+              class="editor-title"
+              id="editor-title-C"
+              placeholder="Note title…"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </div>
+          <textarea
+            class="editor-body"
+            id="editor-body-C"
+            placeholder="Start writing…"
+            spellcheck="false"
+          ></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Snapshot bar -->
+    <div class="snapshot-zone">
+      <span class="snapshot-info" id="snapshot-info-C">No snapshot</span>
+      <button id="snap-save-C" class="btn btn-ghost btn-sm">💾 Save snapshot</button>
+      <button id="snap-restore-C" class="btn btn-ghost btn-sm">↩ Restore</button>
+    </div>
+  </div><!-- /peer-C -->
 
 </div><!-- /workspace -->
 

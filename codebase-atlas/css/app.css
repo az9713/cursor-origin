@@ -200,6 +200,16 @@ body {
 .sym-row:hover .sym-rename-btn { display: block; }
 .sym-rename-btn:hover { background: var(--rust); color: #fff; border-color: var(--rust); }
 
+.sym-extract-btn {
+  display: none; padding: 0 5px; font-size: 10px;
+  border: 1px solid var(--border); border-radius: 2px;
+  background: transparent; color: var(--text-muted);
+  font-family: var(--font-sans); cursor: pointer; flex-shrink: 0;
+  line-height: 18px;
+}
+.sym-row:hover .sym-extract-btn { display: block; }
+.sym-extract-btn:hover { background: #1a7ab4; color: #fff; border-color: #1a7ab4; }
+
 /* Call graph */
 .cg-section { padding: 10px 12px; }
 .cg-section + .cg-section { border-top: 1px solid var(--border-light); }
@@ -319,6 +329,46 @@ body {
 #ren-input:focus { border-color: var(--rust); }
 .ren-foot { display: flex; align-items: center; gap: 8px; }
 .ren-count { flex: 1; font-size: var(--size-xs); color: var(--text-muted); }
+
+/* ── Extract dialog ──────────────────────────────────────────── */
+.ext-overlay {
+  position: fixed; inset: 0; z-index: 600;
+  background: rgba(42,37,31,0.4);
+  display: flex; align-items: center; justify-content: center;
+}
+.ext-overlay.hidden { display: none; }
+.ext-box {
+  width: 500px; background: var(--paper-light);
+  border: 1px solid var(--border); border-radius: 8px;
+  box-shadow: var(--shadow); padding: 22px;
+}
+.ext-title { font-weight: 600; font-size: var(--size-md); margin-bottom: 6px; }
+.ext-desc { font-size: var(--size-sm); color: var(--text-muted); margin-bottom: 12px; }
+.ext-preview-label {
+  font-size: var(--size-xs); font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--text-muted); margin-bottom: 5px;
+}
+.ext-preview {
+  font-family: var(--font-mono); font-size: 11px; color: var(--text-muted);
+  background: var(--paper); border: 1px solid var(--border-light);
+  border-radius: var(--radius); padding: 8px 10px; margin-bottom: 16px;
+  max-height: 110px; overflow: auto; white-space: pre;
+}
+.ext-label {
+  font-size: var(--size-xs); font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--text-muted); margin-bottom: 5px;
+}
+#ext-path {
+  width: 100%;
+  font-family: var(--font-mono); font-size: var(--size-sm);
+  padding: 7px 10px; border: 1px solid var(--border);
+  border-radius: var(--radius); background: var(--paper);
+  color: var(--text); outline: none; margin-bottom: 14px;
+}
+#ext-path:focus { border-color: #1a7ab4; }
+.ext-foot { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
 
 /* ── Scrollbars ──────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 5px; height: 5px; }

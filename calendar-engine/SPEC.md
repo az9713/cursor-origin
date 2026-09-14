@@ -16,6 +16,8 @@ Lives at `calendar-engine/index.html`.
 
 Session A `rrule` subset: `FREQ=DAILY|WEEKLY`, `INTERVAL`, `COUNT` or `UNTIL`, `BYDAY` (weekly).
 
+Session C adds: `FREQ=MONTHLY`, `BYMONTHDAY` (defaults to the start date's day-of-month when omitted).
+
 Times stored as ISO with offset. Display in a chosen timezone (`America/Los_Angeles` and `UTC` must both work). A weekly event that crosses a US DST boundary must keep local wall-clock hour.
 
 ## Session A must
@@ -28,7 +30,17 @@ Times stored as ISO with offset. Display in a chosen timezone (`America/Los_Ange
 - Hash `#/d/YYYY-MM-DD` for the focused day
 - Reset seed
 
-## Out of scope (later sessions)
+## Session C must
+
+- `FREQ=MONTHLY` recurrence with `BYMONTHDAY` (day-of-month; defaults to start date's day when omitted)
+- `INTERVAL`, `COUNT`, and `UNTIL` supported for monthly series
+- DST wall-clock behavior preserved (same local hour across DST transitions)
+- Modal "Repeat" includes "Monthly"; reveals "Day of month" field pre-filled from start date
+- Seed: `seed-rent` ("Rent Due", 1st of each month — `FREQ=MONTHLY;BYMONTHDAY=1`)
+- Non-existent days silently skipped (e.g. `BYMONTHDAY=31` skips months with fewer days)
+- ICS export/import: `BYMONTHDAY` round-trips correctly
+
+## Out of scope
 
 Working-hours layers, multiple calendars, invitees.
 

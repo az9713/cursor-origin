@@ -36,6 +36,7 @@ const DEFAULT_CLIP = {
       label: 'Label',
       x: 40, y: 160, w: 120, h: 34,
       fill: '#2a251f',
+      staggerMs: 200,
       track: [
         { t: 0.00, x: 40,  y: 160, ease: 'linear'     },
         { t: 0.40, x: 150, y: 90,  ease: 'easeIn'     },
@@ -111,6 +112,7 @@ const addKfBtn      = document.getElementById('addKfBtn');
 const delKfBtn      = document.getElementById('delKfBtn');
 const easeSelect    = document.getElementById('easeSelect');
 const kfInfoEl      = document.getElementById('kfInfo');
+const staggerInput  = document.getElementById('staggerInput');
 const tlCanvas      = document.getElementById('timeline');
 const tlCtx         = tlCanvas.getContext('2d');
 
@@ -140,7 +142,7 @@ function renderStage() {
   for (const node of clip.nodes) {
     const el = stageEl.querySelector(`[data-id="${node.id}"]`);
     if (!el) continue;
-    const pos = sample(node, playhead);
+    const pos = sample(node, playhead, clip.durationMs);
     el.style.left = pos.x + 'px';
     el.style.top  = pos.y + 'px';
     el.classList.toggle('selected', node.id === selectedNodeId);
@@ -166,6 +168,19 @@ function renderNodeList() {
     item.addEventListener('click', () => selectNode(node.id));
     nodeListEl.appendChild(item);
   }
+}
+
+// ─── Node inspector (stagger) ─────────────────────────────────────────────────
+
+function renderNodeInspector() {
+  const node = clip.nodes.find(n => n.id === selectedNodeId);
+  if (!node) {
+    staggerInput.disabled = true;
+    staggerInput.value    = 0;
+    return;
+  }
+  staggerInput.disabled = false;
+  staggerInput.value    = node.staggerMs || 0;
 }
 
 // ─── Keyframe panel ───────────────────────────────────────────────────────────
@@ -213,6 +228,7 @@ function selectKf(nodeId, sortedKfIdx) {
 /** Full re-render of all reactive UI. */
 function refresh() {
   renderNodeList();
+  renderNodeInspector();
   renderStage();
   renderKfPanel();
   drawTimeline();
@@ -491,7 +507,7 @@ function addKeyframe() {
     return;
   }
 
-  const pos = sample(node, playhead);
+  const pos = sample(node, playhead, clip.durationMs);
   node.track.push({ t, x: Math.round(pos.x), y: Math.round(pos.y), ease: easeSelect.value });
   node.track.sort((a, b) => a.t - b.t);
 
@@ -561,6 +577,7 @@ function importJSON(file) {
       if (!data.fps)        data.fps        = 60;
       // Ensure every keyframe has the required fields
       for (const node of data.nodes) {
+        if (typeof node.staggerMs !== 'number') node.staggerMs = 0;
         node.track = (node.track || []).map(k => ({
           t: +k.t || 0,
           x: +k.x || 0,
@@ -610,6 +627,7 @@ function applyHashPlayhead() {
 function fullInit() {
   buildStageNodes();
   renderNodeList();
+  renderNodeInspector();
   renderKfPanel();
   resizeTimeline();
   drawTimeline();
@@ -639,6 +657,17 @@ importFile.addEventListener('change', e => {
 addKfBtn.addEventListener('click', addKeyframe);
 delKfBtn.addEventListener('click', deleteKeyframe);
 easeSelect.addEventListener('change', applyEaseChange);
+
+staggerInput.addEventListener('change', () => {
+  if (!selectedNodeId) return;
+  const node = clip.nodes.find(n => n.id === selectedNodeId);
+  if (!node) return;
+  const val = Math.max(0, parseInt(staggerInput.value, 10) || 0);
+  node.staggerMs   = val;
+  staggerInput.value = val;
+  persist();
+  renderStage();
+});
 
 tlCanvas.addEventListener('mousedown', tlOnMouseDown);
 window.addEventListener('mousemove', tlOnMouseMove);

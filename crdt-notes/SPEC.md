@@ -4,7 +4,7 @@ Internal spec for Wave 2 project 20. Vanilla HTML/CSS/JS. Persist to `localStora
 
 ## Product
 
-Local-first notes with **two simulated peers** on one page. Conflict cards, offline queue, snapshot restore. No network.
+Local-first notes with **three simulated peers** on one page. Conflict cards, offline queue, snapshot restore. No network.
 
 Lives at `crdt-notes/index.html`.
 
@@ -16,7 +16,7 @@ Each note: `{ id, title, body, lamport, peer }`. Sync is last-write-wins on titl
 op: { peer, lamport, noteId, type: ins|del, index, ch? }
 ```
 
-Apply ops in (lamport, peer) order. Concurrent inserts at the same index: peer id tie-break (`A` before `B`).
+Apply ops in (lamport, peer) order. Concurrent inserts at the same index: peer id tie-break (string order: `A` before `B` before `C`).
 
 Offline: a peer can be toggled offline; its ops queue until Online, then flush.
 
@@ -28,11 +28,28 @@ Offline: a peer can be toggled offline; its ops queue until Online, then flush.
 - Concurrent title edit → conflict card: keep A / keep B
 - Snapshot restore: save snapshot, edit, restore
 - Hash `#/n/<noteId>`
-- Reset seed (one shared note “Hello”)
+- Reset seed (one shared note "Hello")
 
-## Out of scope (later sessions)
+## Session B must
 
-Rich text, presence cursors, third peer.
+- `dispatch` online: applies op once to shared state and calls `save()`
+- `dispatch` offline: applies op only to that peer's `localState` — does **not** call `save()`
+- `flushQueue`: applies each queued op once to shared state, then calls `save()`
+- Seed body characters live in `bodyLog` so replay is the source of truth
+- Snapshot restore resets `lastBody` + forces editor values to restored state
+
+## Session C must
+
+- **Third peer C**: peer pane added alongside A and B (3-column layout)
+- All hardcoded `['A','B']` loops replaced with `PEER_IDS = ['A','B','C']`
+- Tie-break for concurrent body inserts at same index: peer id string order (A < B < C)
+- Conflict cards work for any peer pair — show the two conflicting peer IDs and titles
+- `resolveConflict` updates `lastSeenTitle` and removes conflict cards for **all** peers
+- Snapshot restore and Reset generalised to loop over all `PEER_IDS`
+
+## Out of scope
+
+Rich text, presence cursors.
 
 ## Visual
 

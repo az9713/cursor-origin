@@ -34,9 +34,13 @@ Identifiers `[A-Za-z_][A-Za-z0-9_]*`. `--` comments. One file is one program. Cr
 - Hash `#/f/<filename>`
 - Reset seed button
 
+## Session C must
+
+- Extract Function: user selects statements in the editor textarea and clicks **Extract Function**; creates a new top-level `fn extracted_N(params) { <selection> }` after the last top-level fn in the active file, and replaces the selection with `extracted_N(params);`; params = free identifiers in the selection that are not locals declared inside it (via `let`); if the selection is empty or not inside a `{…}` block, show a status message and do nothing.
+
 ## Out of scope (later sessions)
 
-Extract-function, new identifier rules, LSP server, syntax highlight beyond a cheap token paint.
+New identifier rules, LSP server, syntax highlight beyond a cheap token paint.
 
 ## Visual
 

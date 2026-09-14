@@ -41,4 +41,14 @@
   /* Transitions */
   --t-fast: 100ms ease;
   --t-base: 180ms ease;
+  /* Code block */
+  --code-bg:       #e6dfd4;
+  --code-border:   #c9b99e;
+
+  /* Syntax highlight tokens */
+  --hl-comment:    #8a7d6e;    /* warm gray  */
+  --hl-str:        #b4451a;    /* rust       */
+  --hl-kw:         #4a6fa5;    /* muted blue */
+  --hl-num:        #5d8a42;    /* muted green*/
+  --hl-cls:        #7c4a9e;    /* soft purple*/
 }

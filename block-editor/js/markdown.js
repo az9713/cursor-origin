@@ -22,10 +22,15 @@ const Markdown = (() => {
         case 'bullet': lines.push(`${pad}- ${b.text}`);                  break;
         case 'todo':   lines.push(`${pad}- [${b.checked ? 'x' : ' '}] ${b.text}`); break;
         case 'page':   lines.push(`- 📄 [${b.text}](#/p/${b.id})`);     break;
+        case 'code':
+          lines.push('```' + (b.lang || 'js'));
+          if (b.text) lines.push(b.text);
+          lines.push('```');
+          break;
       }
 
-      // Recurse into children (for nested bullets)
-      if (b.type !== 'page') {
+      // Recurse into children (for nested bullets); code blocks are leaf nodes
+      if (b.type !== 'page' && b.type !== 'code') {
         b.children.forEach(cid => exportBlock(cid, depth + 1));
       }
     }
@@ -72,32 +77,58 @@ const Markdown = (() => {
       blocks.push(block);
     }
 
-    for (const raw of lines) {
-      const line = raw;
+    // Index loop so fenced code blocks can consume multiple lines at once
+    let i = 0;
+    while (i < lines.length) {
+      const line = lines[i];
 
-      // Headings
+      // ── Fenced code block ─────────────────────────────────────────
+      const fence = line.match(/^```(\w*)\s*$/);
+      if (fence) {
+        const lang = fence[1].trim() || 'js';
+        const codeLines = [];
+        i++;
+        while (i < lines.length && !/^```\s*$/.test(lines[i])) {
+          codeLines.push(lines[i]);
+          i++;
+        }
+        if (i < lines.length) i++; // skip closing ```
+        attachRoot({
+          id:       Store.uid(),
+          type:     'code',
+          text:     codeLines.join('\n'),
+          lang,
+          children: [],
+          checked:  false,
+          parentId: null,
+        });
+        continue; // i already advanced past closing ```
+      }
+
+      // ── Headings ──────────────────────────────────────────────────
       const h1 = line.match(/^#\s+(.+)/);
-      if (h1) { attachRoot(mkBlock('h1', h1[1])); continue; }
+      if (h1) { attachRoot(mkBlock('h1', h1[1])); i++; continue; }
 
       const h2 = line.match(/^##\s+(.+)/);
-      if (h2) { attachRoot(mkBlock('h2', h2[1])); continue; }
+      if (h2) { attachRoot(mkBlock('h2', h2[1])); i++; continue; }
 
-      // Todos (must come before plain bullet)
+      // ── Todos (must come before plain bullet) ─────────────────────
       const todoX = line.match(/^[\s]*-\s+\[x\]\s+(.+)/i);
-      if (todoX) { attachNestable(mkBlock('todo', todoX[1], true), indentOf(line)); continue; }
+      if (todoX) { attachNestable(mkBlock('todo', todoX[1], true), indentOf(line)); i++; continue; }
 
       const todoO = line.match(/^[\s]*-\s+\[\s?\]\s+(.+)/i);
-      if (todoO) { attachNestable(mkBlock('todo', todoO[1], false), indentOf(line)); continue; }
+      if (todoO) { attachNestable(mkBlock('todo', todoO[1], false), indentOf(line)); i++; continue; }
 
-      // Bullet
+      // ── Bullet ────────────────────────────────────────────────────
       const bullet = line.match(/^[\s]*-\s+(.+)/);
-      if (bullet) { attachNestable(mkBlock('bullet', bullet[1]), indentOf(line)); continue; }
+      if (bullet) { attachNestable(mkBlock('bullet', bullet[1]), indentOf(line)); i++; continue; }
 
-      // Blank lines → skip
-      if (!line.trim()) continue;
+      // ── Blank lines → skip ────────────────────────────────────────
+      if (!line.trim()) { i++; continue; }
 
-      // Everything else → paragraph
+      // ── Everything else → paragraph ───────────────────────────────
       attachRoot(mkBlock('p', line));
+      i++;
     }
 
     return blocks;

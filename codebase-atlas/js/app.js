@@ -17,7 +17,8 @@
     index:          { defs: {}, refs: {} },
     palResults:     [],          // current palette results
     palSel:         0,           // selected index
-    renTarget:      null         // symbol being renamed
+    renTarget:      null,        // symbol being renamed
+    extTarget:      null         // symbol being extracted
   };
 
   /* ── Storage ────────────────────────────────────────────────── */
@@ -354,19 +355,31 @@
       renBtn.className = 'sym-rename-btn';
       renBtn.textContent = 'rename';
       renBtn.setAttribute('data-sym', sym.name);
+      renBtn.title = 'Rename symbol everywhere';
+
+      var extBtn = document.createElement('button');
+      extBtn.className = 'sym-extract-btn';
+      extBtn.textContent = 'extract';
+      extBtn.setAttribute('data-sym', sym.name);
+      extBtn.title = 'Extract function into a new file';
 
       div.appendChild(icoSpan);
       div.appendChild(nameSpan);
       div.appendChild(lineSpan);
+      div.appendChild(extBtn);
       div.appendChild(renBtn);
 
       div.addEventListener('click', function (e) {
-        if (e.target === renBtn) return;
+        if (e.target === renBtn || e.target === extBtn) return;
         selectSymbol(sym.name);
       });
       renBtn.addEventListener('click', function (e) {
         e.stopPropagation();
         openRename(sym.name);
+      });
+      extBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        openExtract(sym.name);
       });
 
       frag.appendChild(div);
@@ -633,6 +646,105 @@
     console.info('[Atlas] Renamed "' + oldName + '" → "' + newName + '" in ' + changedCount + ' file(s)');
   }
 
+  /* ── Extract module ──────────────────────────────────────────── */
+  function openExtract(symName) {
+    var file = S.files.get(S.activeFile);
+    if (!file) { alert('Open a file first.'); return; }
+
+    var body = window.SymbolParser.getFunctionBody(file.text, symName);
+    if (!body) { alert('Could not locate body for: ' + symName); return; }
+
+    S.extTarget = symName;
+
+    // Default dest path: same directory as source, named after the function
+    var parts   = S.activeFile.split('/');
+    var dir     = parts.slice(0, -1).join('/');
+    var defDest = dir ? dir + '/' + symName + '.js' : symName + '.js';
+
+    var overlay   = document.getElementById('ext-overlay');
+    var descEl    = document.getElementById('ext-desc');
+    var previewEl = document.getElementById('ext-preview');
+    var pathEl    = document.getElementById('ext-path');
+
+    // Show only the first line (signature) in the preview to keep it compact
+    var firstLine = body.split('\n')[0];
+    descEl.textContent    = 'Extract "' + symName + '" from ' + S.activeFile;
+    previewEl.textContent = firstLine + '\n  // … ' +
+      (body.split('\n').length - 1) + ' more lines';
+    pathEl.value = defDest;
+
+    overlay.classList.remove('hidden');
+    pathEl.focus();
+    pathEl.select();
+  }
+
+  function closeExtract() {
+    S.extTarget = null;
+    document.getElementById('ext-overlay').classList.add('hidden');
+  }
+
+  function doExtract() {
+    var symName  = S.extTarget;
+    var destPath = document.getElementById('ext-path').value.trim();
+
+    if (!symName || !destPath) { closeExtract(); return; }
+
+    var file = S.files.get(S.activeFile);
+    if (!file) { closeExtract(); return; }
+
+    // Retrieve the exact function body text
+    var body = window.SymbolParser.getFunctionBody(file.text, symName);
+    if (!body) {
+      alert('Could not locate function body for: ' + symName);
+      return;
+    }
+
+    // Confirm overwrite if dest already exists
+    if (S.files.has(destPath)) {
+      if (!confirm('"' + destPath + '" already exists. Overwrite?')) return;
+    }
+
+    // Detect style: ES modules if file uses import/export; else CommonJS
+    var useESM = /^import\s/m.test(file.text) || /^export\s+(?:default\s+)?function/m.test(file.text);
+    var stub;
+    if (useESM) {
+      stub = "import { " + symName + " } from './" + symName + ".js'; // extracted";
+    } else {
+      stub = "const { " + symName + " } = require('./" + symName + "'); // extracted";
+    }
+
+    // Remove function body from source, insert stub in its place
+    var bodyIdx = file.text.indexOf(body);
+    var newSourceText;
+    if (bodyIdx >= 0) {
+      newSourceText = file.text.slice(0, bodyIdx) + stub + file.text.slice(bodyIdx + body.length);
+    } else {
+      // Fallback: prepend stub and leave body (should not happen with well-formed seed code)
+      newSourceText = stub + '\n\n' + file.text;
+    }
+    // Collapse triple+ blank lines that may result from the removal
+    newSourceText = newSourceText.replace(/\n{3,}/g, '\n\n');
+
+    // Build destination file text
+    var destText = '// Extracted from ' + S.activeFile + '\n\n' + body + '\n';
+
+    // Mutate in-memory store
+    S.files.set(S.activeFile, Object.assign({}, file, { text: newSourceText }));
+    S.files.set(destPath, { path: destPath, language: file.language || 'js', text: destText });
+
+    // If the active symbol was the extracted one, clear it (it's gone from this file)
+    if (S.activeSymbol === symName) S.activeSymbol = null;
+
+    closeExtract();
+    saveFiles();
+    rebuildIndex();
+
+    console.info('[Atlas] Extracted "' + symName + '" → ' + destPath);
+
+    // Navigate to the new dest file (satisfies #/f/<urlencoded-dest-path>)
+    openFile(destPath);
+  }
+
   /* ── Reset seed ──────────────────────────────────────────────── */
   function resetSeed() {
     if (!confirm('Reset to original seed? All edits will be lost.')) return;
@@ -669,6 +781,7 @@
     if (e.key === 'Escape') {
       closePalette();
       closeRename();
+      closeExtract();
       return;
     }
 
@@ -720,6 +833,14 @@
       if (e.key === 'Escape') closeRename();
     });
 
+    // Wire extract dialog
+    document.getElementById('ext-confirm').addEventListener('click', doExtract);
+    document.getElementById('ext-cancel').addEventListener('click', closeExtract);
+    document.getElementById('ext-path').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter')  doExtract();
+      if (e.key === 'Escape') closeExtract();
+    });
+
     // Wire palette
     document.getElementById('pal-input').addEventListener('input', function (e) {
       updatePalette(e.target.value);
@@ -734,6 +855,9 @@
     });
     document.getElementById('ren-overlay').addEventListener('click', function (e) {
       if (e.target === e.currentTarget) closeRename();
+    });
+    document.getElementById('ext-overlay').addEventListener('click', function (e) {
+      if (e.target === e.currentTarget) closeExtract();
     });
 
     // Global keyboard

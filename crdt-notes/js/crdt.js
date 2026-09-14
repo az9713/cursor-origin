@@ -7,7 +7,7 @@
  *
  * Title: last-write-wins (LWW) by (lamport, peer)
  * Body:  character-level log; ops applied in (lamport, peer) order;
- *        concurrent insert at same index: peer-id tie-break (A before B).
+ *        concurrent insert at same index: peer-id string tie-break (A < B < C).
  */
 
 'use strict';

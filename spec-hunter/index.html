@@ -148,6 +148,44 @@
       cursor: pointer;
     }
 
+    .label-chip {
+      display: inline-block;
+      padding: 0.08rem 0.4rem;
+      border-radius: 999px;
+      background: #efe6d6;
+      color: var(--text-muted);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.64rem;
+      letter-spacing: 0.02em;
+    }
+    .label-chip-btn {
+      border: none;
+      cursor: pointer;
+    }
+    .label-chip-btn:hover { background: #e4d8c4; color: var(--rust); }
+    .label-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      align-items: center;
+    }
+    .label-add {
+      display: flex;
+      gap: 0.35rem;
+      margin-top: 0.45rem;
+    }
+    .label-add input {
+      flex: 1;
+      min-width: 0;
+      padding: 0.3rem 0.5rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--paper);
+      font-family: inherit;
+      font-size: 0.8rem;
+      color: var(--text);
+    }
+
     /* ── Issue list ──────────────────────────────────── */
     .list-header {
       padding: 0.5rem 1rem;
@@ -443,6 +481,12 @@
           <option value="priority">Priority</option>
         </select>
       </div>
+      <div class="sort-row">
+        <label for="label-filter">Label:</label>
+        <select id="label-filter">
+          <option value="">All labels</option>
+        </select>
+      </div>
     </div>
     <div class="list-header">
       <span class="list-count" id="list-count">0 issues</span>
@@ -463,28 +507,28 @@ const STORAGE_KEY = 'spec-hunter-data'; // intentionally not 'spec-hunter-v1'
 const SEED = [
   { id:1, title:'Login page flickers on load',
     body:'A brief white flash appears before styles apply. Reproducible on slow connections and in Chrome incognito mode.',
-    status:'open', priority:'P1', assignee:'Ada', created:'2024-03-01' },
+    status:'open', priority:'P1', assignee:'Ada', created:'2024-03-01', labels:['ui','frontend'] },
   { id:2, title:'Password reset emails not delivered',
     body:'Multiple users report never receiving the reset link. SMTP logs show 5xx errors intermittently from the relay.',
-    status:'done', priority:'P1', assignee:'Lee', created:'2024-03-02' },
+    status:'done', priority:'P1', assignee:'Lee', created:'2024-03-02', labels:['email'] },
   { id:3, title:'iOS Safari nav menu unresponsive',
     body:'Hamburger button on iPhone 15 Pro does not respond to tap. Confirmed on iOS 17.3, not reproducible on Android.',
-    status:'open', priority:'P2', assignee:'Sam', created:'2024-03-05' },
+    status:'open', priority:'P2', assignee:'Sam', created:'2024-03-05', labels:['ui','ios'] },
   { id:4, title:'Dark mode preference not persisting',
     body:'Toggling dark mode and then refreshing reverts to light. Suspect a localStorage key mismatch.',
-    status:'todo', priority:'P2', assignee:'Ada', created:'2024-03-07' },
+    status:'todo', priority:'P2', assignee:'Ada', created:'2024-03-07', labels:['ui'] },
   { id:5, title:'Rate limit errors from weather API',
     body:'Production environment hits 429s from the weather data provider approximately every two hours under normal load.',
-    status:'open', priority:'P1', assignee:'Lee', created:'2024-03-09' },
+    status:'open', priority:'P1', assignee:'Lee', created:'2024-03-09', labels:['api'] },
   { id:6, title:'Typo in onboarding step 2 header',
     body:"Step 2 reads 'Welcone to the platform' — should be 'Welcome'. Affects all new-user onboarding flows.",
-    status:'done', priority:'P3', assignee:'Sam', created:'2024-03-11' },
+    status:'done', priority:'P3', assignee:'Sam', created:'2024-03-11', labels:[] },
   { id:7, title:'CSV export truncates final column',
     body:'The rightmost data column is cut off in all exported files. Affects every user who has more than 8 columns configured.',
-    status:'open', priority:'P2', assignee:'Ada', created:'2024-03-12' },
+    status:'open', priority:'P2', assignee:'Ada', created:'2024-03-12', labels:['export'] },
   { id:8, title:'Session timeout too aggressive',
     body:'Users are logged out after just 5 minutes of inactivity. The stated requirement in the spec is 30 minutes.',
-    status:'todo', priority:'P3', assignee:'Lee', created:'2024-03-14' },
+    status:'todo', priority:'P3', assignee:'Lee', created:'2024-03-14', labels:['auth'] },
 ];
 
 let issues = [];
@@ -505,6 +549,9 @@ function loadData() {
   } catch (_) {
     issues = JSON.parse(JSON.stringify(SEED));
   }
+  for (const issue of issues) {
+    if (!Array.isArray(issue.labels)) issue.labels = [];
+  }
 }
 
 function saveData() {
@@ -515,6 +562,40 @@ function saveData() {
 let activeFilter = 'all';
 let activeSort   = 'default';
 let searchQuery  = '';
+let activeLabel  = '';
+
+function issueLabels(issue) {
+  return Array.isArray(issue.labels) ? issue.labels : [];
+}
+
+function allKnownLabels() {
+  const set = new Set();
+  for (const issue of issues) {
+    for (const lab of issueLabels(issue)) set.add(lab);
+  }
+  return [...set].sort();
+}
+
+function applyLabelFilter(list) {
+  if (!activeLabel) return list;
+  return list.filter(i => issueLabels(i).includes(activeLabel));
+}
+
+function refreshLabelFilterOptions() {
+  const sel = document.getElementById('label-filter');
+  if (!sel) return;
+  const prev = activeLabel;
+  const labels = allKnownLabels();
+  sel.innerHTML = '<option value="">All labels</option>' +
+    labels.map(l => `<option value="${esc(l)}">${esc(l)}</option>`).join('');
+  if (prev && labels.includes(prev)) {
+    sel.value = prev;
+    activeLabel = prev;
+  } else {
+    sel.value = '';
+    activeLabel = '';
+  }
+}
 
 // ── Filtering & sorting ───────────────────────────────────────────────────────
 function getVisible() {
@@ -572,7 +653,8 @@ function go(path) {
 
 // ── Render sidebar list ───────────────────────────────────────────────────────
 function renderList() {
-  const visible = getVisible();
+  refreshLabelFilterOptions();
+  const visible = applyLabelFilter(getVisible());
   const currentId = activeIssueId();
 
   // Show total count, not filtered count
@@ -597,6 +679,7 @@ function renderList() {
         <div class="issue-row-meta">
           <span class="badge badge-${esc(issue.status)}">${esc(issue.status)}</span>
           <span class="badge badge-${issue.priority.toLowerCase()}">${esc(issue.priority)}</span>
+          ${issueLabels(issue).map(l => `<span class="label-chip">${esc(l)}</span>`).join('')}
           <span class="issue-assignee-label">${esc(issue.assignee || '—')}</span>
         </div>
       </div>`;
@@ -637,6 +720,20 @@ function renderDetail(id) {
         <div class="detail-field">
           <label>Priority</label>
           <div class="field-val">${esc(issue.priority)}</div>
+        </div>
+      </div>
+      <div class="detail-field" style="margin-bottom:1.25rem">
+        <label>Labels</label>
+        <div class="label-row" id="detail-labels">
+          ${issueLabels(issue).length
+            ? issueLabels(issue).map(l =>
+                `<button type="button" class="label-chip label-chip-btn" onclick="removeLabel(${issue.id}, '${esc(l)}')">${esc(l)} ×</button>`
+              ).join('')
+            : '<span class="field-val">none</span>'}
+        </div>
+        <div class="label-add">
+          <input id="f-label" type="text" placeholder="Add label…" autocomplete="off" />
+          <button class="btn btn-ghost" type="button" onclick="addLabel(${issue.id})">Add</button>
         </div>
       </div>
       <div class="detail-actions">
@@ -723,6 +820,7 @@ function submitIssue() {
     priority: document.getElementById('f-priority').value,
     assignee: document.getElementById('f-assignee').value,
     created:  today,
+    labels:   [],
   };
 
   issues.push(issue);
@@ -761,7 +859,7 @@ function route() {
 function syncDetailVisibility() {
   const id = activeIssueId();
   if (id == null) return;
-  const visible = getVisible();
+  const visible = applyLabelFilter(getVisible());
   const panel = document.getElementById('main-panel');
   if (!visible.some(i => i.id === id)) {
     panel.innerHTML = '<div class="welcome">Select an issue or create a new one.</div>';
@@ -790,6 +888,34 @@ document.getElementById('sort-select').addEventListener('change', e => {
   activeSort = e.target.value;
   renderList();
 });
+
+document.getElementById('label-filter').addEventListener('change', e => {
+  activeLabel = e.target.value;
+  renderList();
+  syncDetailVisibility();
+});
+
+function addLabel(id) {
+  const issue = issues.find(i => i.id === id);
+  const input = document.getElementById('f-label');
+  if (!issue || !input) return;
+  const lab = input.value.trim().toLowerCase();
+  if (!lab) return;
+  if (!Array.isArray(issue.labels)) issue.labels = [];
+  if (!issue.labels.includes(lab)) issue.labels.push(lab);
+  saveData();
+  renderList();
+  renderDetail(id);
+}
+
+function removeLabel(id, lab) {
+  const issue = issues.find(i => i.id === id);
+  if (!issue || !Array.isArray(issue.labels)) return;
+  issue.labels = issue.labels.filter(l => l !== lab);
+  saveData();
+  renderList();
+  renderDetail(id);
+}
 
 document.getElementById('new-btn').addEventListener('click', () => go('/new'));
 

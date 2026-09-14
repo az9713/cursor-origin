@@ -8,6 +8,8 @@
  *     align:   'start'|'center'|'end'|'stretch',
  *     sizingX: 'hug'|'fill'|'fixed',
  *     sizingY: 'hug'|'fill'|'fixed',
+ *     position: 'flow'|'absolute',   // Session C — default 'flow'
+ *     absX, absY,                    // Session C — offset from parent inner-top-left
  *     children: [] }
  *
  * Output: mutates every node in-place, writing:
@@ -16,7 +18,10 @@
  *
  * Two-phase algorithm:
  *   Phase 1 (bottom-up)  – compute intrinsic (natural) sizes; fill → 0.
+ *                          Absolute children are excluded from parent sizing.
  *   Phase 2 (top-down)   – resolve fill sizes; assign absolute positions.
+ *                          Absolute children placed at parent._x+pad.l+absX,
+ *                          parent._y+pad.t+absY; sized against parent inner box.
  */
 
 export function solve(root) {
@@ -43,20 +48,23 @@ function computeIntrinsic(node) {
     return;
   }
 
+  // Session C: absolute children do NOT contribute to parent's intrinsic size
+  const flow = ch.filter(c => (c.position || 'flow') !== 'absolute');
+
   if (dir === 'row') {
     // Main axis: sum widths + gaps (skip fill children)
     // Cross axis: max height (skip fill children)
-    const cntW = ch.reduce((s, c, i) =>
+    const cntW = flow.reduce((s, c, i) =>
       s + (c.sizingX !== 'fill' ? c._iw : 0) + (i > 0 ? gap : 0), 0);
-    const cntH = ch.reduce((m, c) =>
+    const cntH = flow.reduce((m, c) =>
       Math.max(m, c.sizingY !== 'fill' ? c._ih : 0), 0);
     node._iw = intrinsicDim(node.sizingX, node.w, pad.l + cntW + pad.r);
     node._ih = intrinsicDim(node.sizingY, node.h, pad.t + cntH + pad.b);
   } else {
     // col: main = Y, cross = X
-    const cntW = ch.reduce((m, c) =>
+    const cntW = flow.reduce((m, c) =>
       Math.max(m, c.sizingX !== 'fill' ? c._iw : 0), 0);
-    const cntH = ch.reduce((s, c, i) =>
+    const cntH = flow.reduce((s, c, i) =>
       s + (c.sizingY !== 'fill' ? c._ih : 0) + (i > 0 ? gap : 0), 0);
     node._iw = intrinsicDim(node.sizingX, node.w, pad.l + cntW + pad.r);
     node._ih = intrinsicDim(node.sizingY, node.h, pad.t + cntH + pad.b);
@@ -89,12 +97,25 @@ function layoutNode(node, avW, avH) {
   const iw = node._w - pad.l - pad.r; // inner width
   const ih = node._h - pad.t - pad.b; // inner height
 
+  // Session C: separate flow children from absolute children
+  const flow = ch.filter(c => (c.position || 'flow') !== 'absolute');
+  const abs  = ch.filter(c => (c.position || 'flow') === 'absolute');
+
   if (dir === 'row' && wrap) {
-    wrapRow(node, ch, pad, gap, iw, ih, just, algn);
+    wrapRow(node, flow, pad, gap, iw, ih, just, algn);
   } else if (dir === 'row') {
-    rowLayout(node, ch, pad, gap, iw, ih, just, algn);
+    rowLayout(node, flow, pad, gap, iw, ih, just, algn);
   } else {
-    colLayout(node, ch, pad, gap, iw, ih, just, algn);
+    colLayout(node, flow, pad, gap, iw, ih, just, algn);
+  }
+
+  // Session C: place absolute children at parent inner-top-left + offset
+  for (const c of abs) {
+    c._w = dimResolve(c.sizingX, c.w, c._iw, iw);
+    c._h = dimResolve(c.sizingY, c.h, c._ih, ih);
+    c._x = node._x + pad.l + (c.absX || 0);
+    c._y = node._y + pad.t + (c.absY || 0);
+    layoutNode(c, c._w, c._h); // recurse: absolute child may itself be a container
   }
 }
 

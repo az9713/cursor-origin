@@ -1,5 +1,5 @@
 /**
- * Auto-layout Playground — Session A
+ * Auto-layout Playground — Session C
  * Manages state, SVG canvas rendering, inspector panel, and fixture routing.
  */
 
@@ -39,6 +39,17 @@ const GOLDEN = {
     'item-6': { x: 228, y: 80, w: 100, h:  60 },
     'item-7': { x: 336, y: 80, w: 100, h:  60 },
   },
+  // Session C — abs-overlay golden
+  // root:   fixed 400×300, col, pad=16, gap=8, align:stretch
+  // photo:  flow fill×fixed h:160  → x=16,y=16,  w=368,h=160
+  // footer: flow fill×fixed h:56   → x=16,y=184, w=368,h=56
+  // badge:  absolute absX=8,absY=8 → x=24,y=24,  w=72, h=28
+  'abs-overlay': {
+    root:   { x:  0, y:   0, w: 400, h: 300 },
+    photo:  { x: 16, y:  16, w: 368, h: 160 },
+    footer: { x: 16, y: 184, w: 368, h:  56 },
+    badge:  { x: 24, y:  24, w:  72, h:  28 },
+  },
 };
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -57,6 +68,7 @@ function makeNode(fields) {
     sizingX: 'fixed', sizingY: 'fixed',
     w: 0, h: 0, padding: 0, gap: 0,
     justify: 'start', align: 'start',
+    position: 'flow', absX: 0, absY: 0, // Session C
     children: [],
     ...fields,
   };
@@ -94,6 +106,20 @@ function defaultFixtures() {
       children: Array.from({ length: 8 }, (_, i) =>
         makeNode({ id: `item-${i}`, name: `Item ${i + 1}`, w: 100, h: 60 })
       ),
+    }),
+
+    // Session C — absolute-inside-auto-layout demo
+    // A card frame (col) with two flow children + one absolute badge overlay
+    'abs-overlay': makeNode({
+      id: 'root', name: 'Abs Overlay',
+      direction: 'col', sizingX: 'fixed', sizingY: 'fixed',
+      w: 400, h: 300, padding: 16, gap: 8, align: 'stretch',
+      children: [
+        makeNode({ id: 'photo',  name: 'Photo',  sizingX: 'fill', sizingY: 'fixed', h: 160 }),
+        makeNode({ id: 'footer', name: 'Footer', sizingX: 'fill', sizingY: 'fixed', h:  56 }),
+        makeNode({ id: 'badge',  name: 'Badge',  sizingX: 'fixed', sizingY: 'fixed',
+                   w: 72, h: 28, position: 'absolute', absX: 8, absY: 8 }),
+      ],
     }),
   };
 }
@@ -158,7 +184,11 @@ function setHash(id) {
 
 function collectNodes(node, depth = 0) {
   const out = [{ node, depth }];
-  for (const c of node.children || []) out.push(...collectNodes(c, depth + 1));
+  // Session C: flow children before absolute children so absolutes render on top
+  const ch = node.children || [];
+  const flow = ch.filter(c => (c.position || 'flow') !== 'absolute');
+  const abs  = ch.filter(c => (c.position || 'flow') === 'absolute');
+  for (const c of [...flow, ...abs]) out.push(...collectNodes(c, depth + 1));
   return out;
 }
 
@@ -191,13 +221,16 @@ function renderCanvas() {
 
   for (const { node: n, depth } of items) {
     const isSelected = n.id === sel;
+    const isAbsolute = (n.position || 'flow') === 'absolute';
     const fill   = depthFill(depth);
     const stroke = isSelected ? '#b4451a' : '#2a251f';
     const sw     = isSelected ? 2 : 1;
+    // Session C: dashed stroke marks absolute-positioned nodes
+    const dash   = isAbsolute ? ' stroke-dasharray="5 3"' : '';
 
     markup += `<rect
       x="${n._x}" y="${n._y}" width="${Math.max(1, n._w)}" height="${Math.max(1, n._h)}"
-      fill="${fill}" stroke="${stroke}" stroke-width="${sw}" rx="3"
+      fill="${fill}" stroke="${stroke}" stroke-width="${sw}" rx="3"${dash}
       data-id="${escAttr(n.id)}" class="nr"/>`;
 
     // Label — only if enough room
@@ -247,10 +280,12 @@ function renderInspector() {
     return;
   }
 
-  const isRoot = node.id === root.id;
-  const parent = findParent(root, node.id);
-  const blockFillX = !!(parent && parent.sizingX === 'hug');
-  const blockFillY = !!(parent && parent.sizingY === 'hug');
+  const isRoot    = node.id === root.id;
+  const parent    = findParent(root, node.id);
+  const isAbsNode = (node.position || 'flow') === 'absolute'; // Session C
+  // Absolute children are exempt from the fill-in-hug restriction
+  const blockFillX = !isAbsNode && !!(parent && parent.sizingX === 'hug');
+  const blockFillY = !isAbsNode && !!(parent && parent.sizingY === 'hug');
   const hasFW  = node.sizingX === 'fixed';
   const hasFH  = node.sizingY === 'fixed';
 
@@ -305,6 +340,24 @@ function renderInspector() {
           </select>
         </div>
 
+        <div class="inspector-section">Position</div>
+        <div class="field-row">
+          <label>Mode</label>
+          <select id="f-pos">
+            <option value="flow"     ${sel(node.position||'flow','flow')}>Flow</option>
+            <option value="absolute" ${sel(node.position||'flow','absolute')}>Absolute</option>
+          </select>
+        </div>
+        ${isAbsNode ? `
+        <div class="field-row">
+          <label>Abs X</label>
+          <input id="f-absx" type="number" min="-9999" max="9999" value="${node.absX || 0}">
+        </div>
+        <div class="field-row">
+          <label>Abs Y</label>
+          <input id="f-absy" type="number" min="-9999" max="9999" value="${node.absY || 0}">
+        </div>` : ''}
+
         <div class="inspector-section">Sizing</div>
         <div class="field-row">
           <label>Width</label>
@@ -357,6 +410,9 @@ function renderInspector() {
   on('f-gap',  'gap',     v => Math.max(0, parseInt(v, 10) || 0));
   on('f-just', 'justify');
   on('f-algn', 'align');
+  on('f-pos',  'position'); // Session C
+  on('f-absx', 'absX', v => parseInt(v, 10) || 0); // Session C
+  on('f-absy', 'absY', v => parseInt(v, 10) || 0); // Session C
   on('f-sx',   'sizingX');
   on('f-sy',   'sizingY');
   on('f-w',    'w', v => Math.max(1, parseInt(v, 10) || 1));
@@ -430,7 +486,9 @@ function saveAndRender() {
 }
 
 function coerceFillInHug(node, parent) {
-  if (parent) {
+  // Session C: absolute children are exempt — their fill resolves against parent inner box
+  const isAbs = (node.position || 'flow') === 'absolute';
+  if (parent && !isAbs) {
     if (parent.sizingX === 'hug' && node.sizingX === 'fill') node.sizingX = 'hug';
     if (parent.sizingY === 'hug' && node.sizingY === 'fill') node.sizingY = 'hug';
   }
@@ -462,7 +520,7 @@ function init() {
   const saved    = loadSaved();
 
   // Merge saved trees with defaults (use saved if available and valid)
-  for (const id of ['row-hug', 'col-fill', 'wrap']) {
+  for (const id of ['row-hug', 'col-fill', 'wrap', 'abs-overlay']) {
     state.trees[id] = (saved?.trees?.[id]) ? saved.trees[id] : deepClone(defaults[id]);
   }
 

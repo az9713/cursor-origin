@@ -116,6 +116,22 @@
   </div>
 </div>
 
+<!-- ── Extract dialog ──────────────────────────────────────── -->
+<div class="ext-overlay hidden" id="ext-overlay">
+  <div class="ext-box">
+    <div class="ext-title">Extract Function</div>
+    <div class="ext-desc" id="ext-desc">Move function into a new in-memory file and add an import stub.</div>
+    <div class="ext-preview-label">Function signature</div>
+    <div class="ext-preview" id="ext-preview"></div>
+    <div class="ext-label">Destination path</div>
+    <input type="text" id="ext-path" autocomplete="off" spellcheck="false" />
+    <div class="ext-foot">
+      <button class="btn" id="ext-cancel">Cancel</button>
+      <button class="btn btn-primary" id="ext-confirm">Extract</button>
+    </div>
+  </div>
+</div>
+
 <script src="js/seed.js"></script>
 <script src="js/index.js"></script>
 <script src="js/app.js"></script>

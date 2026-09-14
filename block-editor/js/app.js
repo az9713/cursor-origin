@@ -8,6 +8,7 @@ const App = (() => {
     const id      = pageId || Store.state.currentPageId;
     const editorEl = document.getElementById('editor');
     editorEl.innerHTML = Blocks.renderPage(id);
+    _initCodeBlocks();
     Sidebar.render();
     renderBreadcrumb(id);
   }
@@ -25,6 +26,7 @@ const App = (() => {
       .map(cid => Blocks.renderBlock(cid, 0))
       .join('\n');
 
+    _initCodeBlocks();
     Sidebar.render();
   }
 
@@ -152,6 +154,14 @@ const App = (() => {
     } else {
       Router.navigate(Store.state.currentPageId);
     }
+  }
+
+  /* ── Init code block textarea heights ────────── */
+  function _initCodeBlocks() {
+    document.querySelectorAll('.code-textarea').forEach(ta => {
+      ta.style.height = 'auto';
+      ta.style.height = (ta.scrollHeight || 62) + 'px';
+    });
   }
 
   return { init, render, renderBlocks, highlightBlock };

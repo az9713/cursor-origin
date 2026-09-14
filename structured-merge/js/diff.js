@@ -30,6 +30,23 @@ function flattenLeaves(val, path = []) {
 }
 
 /**
+ * Read a value at a dot-array path inside a nested structure.
+ * Returns undefined if the path does not exist.
+ *
+ * @param {*}     root
+ * @param {Array} path
+ * @returns {*}
+ */
+function getAtPath(root, path) {
+  let node = root;
+  for (const key of path) {
+    if (node == null) return undefined;
+    node = node[key];
+  }
+  return node;
+}
+
+/**
  * Set a value at a dot-array path inside a mutable nested structure.
  * Creates intermediate objects/arrays as needed.
  *
@@ -69,15 +86,57 @@ function deleteAtPath(root, path) {
   else delete node[last];
 }
 
+// ─── Move detection helpers ────────────────────────────────────────────────────
+
+/**
+ * Walk `val` recursively. For every plain-object array element that has an
+ * `id` field, record  JSON.stringify(id) → pathToObject.
+ * Also recurses into plain-object property values so nested arrays are found.
+ *
+ * @param {*}     val
+ * @param {Array} path
+ * @returns {Map<string, Array>}   serialised id → path array
+ */
+function collectIdObjects(val, path = []) {
+  const m = new Map();
+  if (val === null || typeof val !== 'object') return m;
+
+  if (Array.isArray(val)) {
+    for (let i = 0; i < val.length; i++) {
+      const item     = val[i];
+      const itemPath = [...path, i];
+      // Record array elements that are plain objects with an `id` field
+      if (item !== null && typeof item === 'object' && !Array.isArray(item) && 'id' in item) {
+        m.set(JSON.stringify(item.id), itemPath);
+      }
+      // Recurse for nested structures inside this element
+      for (const [k, v] of collectIdObjects(item, itemPath)) {
+        if (!m.has(k)) m.set(k, v);
+      }
+    }
+  } else {
+    // Plain object — recurse into values to find nested arrays
+    for (const [k, v] of Object.entries(val)) {
+      for (const [idKey, childPath] of collectIdObjects(v, [...path, k])) {
+        if (!m.has(idKey)) m.set(idKey, childPath);
+      }
+    }
+  }
+
+  return m;
+}
+
 // ─── Three-way diff ────────────────────────────────────────────────────────────
 
 /**
  * Compute hunks from base, ours, theirs.
  *
  * @typedef {{ id: string, path: Array, pathStr: string,
- *             kind: 'add'|'remove'|'change'|'conflict',
+ *             kind: 'add'|'remove'|'change'|'conflict'|'move',
  *             side: 'ours'|'theirs'|null,
- *             baseVal: *, oursVal: *, theirsVal: * }} Hunk
+ *             baseVal: *, oursVal: *, theirsVal: *,
+ *             fromPath?: Array, toPath?: Array, fromPathStr?: string, toPathStr?: string,
+ *             arrayPath?: Array, sideArray?: Array }} Hunk
  *
  * @param {object} base
  * @param {object} ours
@@ -85,24 +144,90 @@ function deleteAtPath(root, path) {
  * @returns {Hunk[]}
  */
 function threeWayDiff(base, ours, theirs) {
+  let seq = 0;
+
+  // ── Step 1 : Move detection ───────────────────────────────────────────────
+  const baseIds   = collectIdObjects(base);
+  const oursIds   = collectIdObjects(ours);
+  const theirsIds = collectIdObjects(theirs);
+
+  const moveHunks            = [];
+  const suppressedArrayPaths = new Set(); // JSON-stringified array-path arrays
+
+  for (const [idKey, basePath] of baseIds) {
+    const oursPath   = oursIds.get(idKey);
+    const theirsPath = theirsIds.get(idKey);
+
+    const basePathStr = JSON.stringify(basePath);
+    const oursMoved   = oursPath   && JSON.stringify(oursPath)   !== basePathStr;
+    const theirsMoved = theirsPath && JSON.stringify(theirsPath) !== basePathStr;
+
+    if (!oursMoved && !theirsMoved) continue;
+
+    // When both sides moved, prefer ours (simple resolution)
+    const side    = oursMoved ? 'ours'   : 'theirs';
+    const toPath  = oursMoved ? oursPath : theirsPath;
+    const sideVal = oursMoved ? ours     : theirs;
+
+    // Parent array is one level up from the element path (e.g. ['items'] from ['items', 2])
+    const arrayPath    = basePath.slice(0, -1);
+    const arrayPathKey = JSON.stringify(arrayPath);
+    const sideArray    = getAtPath(sideVal, arrayPath);
+
+    if (!Array.isArray(sideArray)) continue; // guard against non-array parents
+
+    suppressedArrayPaths.add(arrayPathKey);
+
+    const oursObjPath   = oursIds.get(idKey)   ?? basePath;
+    const theirsObjPath = theirsIds.get(idKey) ?? basePath;
+
+    moveHunks.push({
+      id:          `h${seq++}`,
+      kind:        'move',
+      side,
+      // Canonical path for compatibility with existing code
+      path:        basePath,
+      pathStr:     basePath.map(String).join('.'),
+      // Move-specific fields
+      fromPath:    basePath,
+      toPath,
+      fromPathStr: basePath.map(String).join('.'),
+      toPathStr:   toPath.map(String).join('.'),
+      arrayPath,
+      sideArray:   JSON.parse(JSON.stringify(sideArray)),
+      baseVal:     getAtPath(base,   basePath),
+      oursVal:     getAtPath(ours,   oursObjPath),
+      theirsVal:   getAtPath(theirs, theirsObjPath),
+    });
+  }
+
+  // ── Step 2 : Leaf diff (suppressing paths inside moved arrays) ────────────
   const flatBase   = flattenLeaves(base);
   const flatOurs   = flattenLeaves(ours);
   const flatTheirs = flattenLeaves(theirs);
 
-  // Union of all leaf-path keys
   const allKeys = new Set([
     ...flatBase.keys(),
     ...flatOurs.keys(),
     ...flatTheirs.keys(),
   ]);
 
-  const hunks = [];
-  let seq = 0;
+  const leafHunks = [];
 
   for (const k of allKeys) {
     const bEntry = flatBase.get(k);
     const oEntry = flatOurs.get(k);
     const tEntry = flatTheirs.get(k);
+
+    const path = (bEntry ?? oEntry ?? tEntry).path;
+
+    // Skip leaf paths that live inside a moved array — the array replacement
+    // covers them wholesale; individual leaf hunks would be misleading.
+    const suppressed = [...suppressedArrayPaths].some(arrStr => {
+      const arr = JSON.parse(arrStr);
+      return arr.length < path.length && arr.every((seg, i) => path[i] === seg);
+    });
+    if (suppressed) continue;
 
     const bVal = bEntry !== undefined ? bEntry.val : undefined;
     const oVal = oEntry !== undefined ? oEntry.val : undefined;
@@ -115,7 +240,6 @@ function threeWayDiff(base, ours, theirs) {
     if (!oursChanged && !theirsChanged) continue;
 
     // Path array (from whichever side has it)
-    const path    = (bEntry ?? oEntry ?? tEntry).path;
     const pathStr = path.map(String).join('.');
 
     let kind, side;
@@ -141,7 +265,7 @@ function threeWayDiff(base, ours, theirs) {
       side = 'theirs';
     }
 
-    hunks.push({
+    leafHunks.push({
       id: `h${seq++}`,
       path,
       pathStr,
@@ -153,7 +277,8 @@ function threeWayDiff(base, ours, theirs) {
     });
   }
 
-  return hunks;
+  // Move hunks first (applied before leaf hunks in buildResult)
+  return [...moveHunks, ...leafHunks];
 }
 
 // ─── Build result ──────────────────────────────────────────────────────────────
@@ -161,20 +286,33 @@ function threeWayDiff(base, ours, theirs) {
 /**
  * Deep-clone base and apply all non-conflict hunks.
  * Conflict hunks are returned in a pending Map.
+ * Move hunks replace the entire parent array (once per unique array path).
  *
  * @param {object}  base
  * @param {Hunk[]}  hunks
  * @returns {{ result: object, pending: Map<string, Hunk> }}
  */
 function buildResult(base, hunks) {
-  const result  = JSON.parse(JSON.stringify(base));
-  const pending = new Map();
+  const result            = JSON.parse(JSON.stringify(base));
+  const pending           = new Map();
+  const appliedArrayPaths = new Set(); // prevent double-applying a move for the same array
 
   for (const h of hunks) {
     if (h.kind === 'conflict') {
       pending.set(h.id, h);
       continue;
     }
+
+    if (h.kind === 'move') {
+      // Replace the entire parent array from the moving side — once per array path
+      const key = JSON.stringify(h.arrayPath);
+      if (!appliedArrayPaths.has(key)) {
+        appliedArrayPaths.add(key);
+        setAtPath(result, h.arrayPath, JSON.parse(JSON.stringify(h.sideArray)));
+      }
+      continue;
+    }
+
     const applyVal = h.side === 'ours' ? h.oursVal : h.theirsVal;
     if (applyVal === undefined) {
       deleteAtPath(result, h.path);
@@ -186,4 +324,4 @@ function buildResult(base, hunks) {
   return { result, pending };
 }
 
-export { flattenLeaves, setAtPath, deleteAtPath, threeWayDiff, buildResult };
+export { flattenLeaves, getAtPath, setAtPath, deleteAtPath, threeWayDiff, buildResult };

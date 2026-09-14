@@ -96,6 +96,12 @@ const Editor = (() => {
   /* ── keydown ─────────────────────────────────── */
 
   function onKeyDown(e) {
+    // ── Code textarea: delegate to dedicated handler ────────────────
+    if (e.target.classList && e.target.classList.contains('code-textarea')) {
+      handleCodeKeyDown(e);
+      return;
+    }
+
     // Let slash menu handle arrow / Enter / Escape first
     if (SlashMenu.handleKey(e)) return;
 
@@ -211,6 +217,12 @@ const Editor = (() => {
   /* ── input ───────────────────────────────────── */
 
   function onInput(e) {
+    // ── Code textarea: sync store + refresh backdrop ────────────────
+    if (e.target.classList && e.target.classList.contains('code-textarea')) {
+      handleCodeInput(e);
+      return;
+    }
+
     // Page title
     const titleEl = e.target.closest('[data-page-title]');
     if (titleEl) {
@@ -263,6 +275,9 @@ const Editor = (() => {
     if (type === 'page') {
       // Convert this block to a page-type block
       Store.updateBlock(blockId, { type: 'page', text: cleanText || 'Untitled' });
+    } else if (type === 'code') {
+      // Code blocks get a lang field; discard any query text
+      Store.updateBlock(blockId, { type: 'code', text: '', lang: 'js' });
     } else {
       Store.updateBlock(blockId, { type, text: cleanText });
     }
@@ -272,8 +287,14 @@ const Editor = (() => {
     App.renderBlocks();
 
     requestAnimationFrame(() => {
-      const el = document.querySelector(`[data-id="${blockId}"]`);
-      if (el) { el.focus(); setCaretOffset(el, el.textContent.length); }
+      if (type === 'code') {
+        // Focus the textarea, not a contenteditable span
+        const ta = document.querySelector(`.code-textarea[data-id="${blockId}"]`);
+        if (ta) ta.focus();
+      } else {
+        const el = document.querySelector(`[data-id="${blockId}"]`);
+        if (el) { el.focus(); setCaretOffset(el, el.textContent.length); }
+      }
     });
   }
 
@@ -294,8 +315,111 @@ const Editor = (() => {
   /* ── blur — sync text ────────────────────────── */
 
   function onBlur(e) {
+    // ── Code lang input: persist language, refresh highlight ────────
+    if (e.target.classList && e.target.classList.contains('code-lang-input')) {
+      const langId = e.target.dataset.langId;
+      if (langId) {
+        const lang = e.target.value.trim() || 'js';
+        Store.updateBlock(langId, { lang });
+        const wrap = e.target.closest('.code-wrap');
+        if (wrap) {
+          const backdrop = wrap.querySelector('.code-backdrop code');
+          const ta       = wrap.querySelector('.code-textarea');
+          if (backdrop && ta) backdrop.innerHTML = Blocks.codeHighlight(ta.value, lang) + '\n';
+        }
+      }
+      return;
+    }
+    // ── Code textarea: sync text on blur ────────────────────────────
+    if (e.target.classList && e.target.classList.contains('code-textarea')) {
+      const id = e.target.dataset.id;
+      if (id) Store.updateBlock(id, { text: e.target.value });
+      return;
+    }
     const el = e.target.closest('[data-id][contenteditable="true"]');
     if (el) syncToStore(el);
+  }
+
+  /* ── Code block keyboard handler ─────────────── */
+
+  function handleCodeKeyDown(e) {
+    const ta      = e.target;
+    const blockId = ta.dataset.id;
+    const block   = Store.getBlock(blockId);
+    if (!block) return;
+
+    // Tab → insert 2 spaces (no indent/outdent for code blocks)
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const start = ta.selectionStart;
+      const end   = ta.selectionEnd;
+      ta.value = ta.value.slice(0, start) + '  ' + ta.value.slice(end);
+      ta.selectionStart = ta.selectionEnd = start + 2;
+      Store.updateBlock(blockId, { text: ta.value });
+      _syncCodeBackdrop(ta, block.lang || 'js');
+      return;
+    }
+
+    // Shift+Enter → exit code block, create new paragraph below
+    if (e.key === 'Enter' && e.shiftKey) {
+      e.preventDefault();
+      Store.updateBlock(blockId, { text: ta.value });
+      const newId = Store.createBlock('p', block.parentId, blockId);
+      App.renderBlocks();
+      requestAnimationFrame(() => {
+        const newEl = document.querySelector(`[data-id="${newId}"]`);
+        if (newEl) { newEl.focus(); setCaretOffset(newEl, 0); }
+      });
+      return;
+    }
+
+    // Backspace at position 0 — delete empty code block, merge with prev
+    if (e.key === 'Backspace') {
+      const pos = ta.selectionStart;
+      if (pos === 0 && ta.selectionEnd === 0) {
+        e.preventDefault();
+        if (ta.value === '') {
+          const result = Store.mergeWithPrev(blockId);
+          if (result) {
+            App.renderBlocks();
+            requestAnimationFrame(() => {
+              const prevEl = document.querySelector(`[data-id="${result.id}"]`);
+              if (prevEl) { prevEl.focus(); setCaretOffset(prevEl, result.caretPos); }
+            });
+          }
+        }
+        // Non-empty code at pos 0: swallow (nothing to merge into)
+        return;
+      }
+    }
+  }
+
+  /* ── Code block input handler ─────────────────── */
+
+  function handleCodeInput(e) {
+    const ta      = e.target;
+    const blockId = ta.dataset.id;
+    if (!blockId) return;
+    const block = Store.getBlock(blockId);
+    if (!block) return;
+
+    Store.updateBlock(blockId, { text: ta.value });
+    _syncCodeBackdrop(ta, block.lang || 'js');
+    _resizeTextarea(ta);
+  }
+
+  /* ── Helpers ──────────────────────────────────── */
+
+  function _syncCodeBackdrop(ta, lang) {
+    const wrap = ta.closest('.code-wrap');
+    if (!wrap) return;
+    const backdrop = wrap.querySelector('.code-backdrop code');
+    if (backdrop) backdrop.innerHTML = Blocks.codeHighlight(ta.value, lang) + '\n';
+  }
+
+  function _resizeTextarea(ta) {
+    ta.style.height = 'auto';
+    ta.style.height = ta.scrollHeight + 'px';
   }
 
   return { init, setCaretOffset, getCaretOffset };

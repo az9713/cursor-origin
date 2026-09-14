@@ -428,6 +428,182 @@ function doRename(oldName, newName) {
   renderAll();
 }
 
+// ── Extract Function helpers ──────────────────────────────────────────────────
+
+/**
+ * Count unmatched '{' braces before character `offset` in src,
+ * skipping over string literals and line comments so they don't skew depth.
+ */
+function braceDepthAt(src, offset) {
+  let depth = 0, i = 0;
+  while (i < offset && i < src.length) {
+    const c = src[i];
+    // Skip line comments  -- ...
+    if (c === '-' && src[i + 1] === '-') {
+      while (i < offset && i < src.length && src[i] !== '\n') i++;
+      continue;
+    }
+    // Skip string literals (single-line in Nit: " ... ")
+    if (c === '"') {
+      i++;
+      while (i < offset && i < src.length && src[i] !== '"' && src[i] !== '\n') i++;
+      if (i < src.length && src[i] === '"') i++;
+      continue;
+    }
+    if      (c === '{') depth++;
+    else if (c === '}') depth--;
+    i++;
+  }
+  return Math.max(0, depth);
+}
+
+/**
+ * Return free identifiers in `selText`:
+ * all IDENT tokens that are NOT declared by `let` inside the selection.
+ * Order follows first appearance.
+ */
+function inferParams(selText) {
+  const toks = tokenize(selText).filter(t => t.type !== TK.COMMENT && t.type !== TK.EOF);
+
+  // Collect names introduced by `let NAME`
+  const declared = new Set();
+  for (let i = 0; i < toks.length - 1; i++) {
+    if (toks[i].type === TK.LET && toks[i + 1].type === TK.IDENT) {
+      declared.add(toks[i + 1].value);
+    }
+  }
+
+  // Walk tokens in order; yield first occurrence of each free IDENT
+  const seen = new Set();
+  const params = [];
+  for (const t of toks) {
+    if (t.type === TK.IDENT && !declared.has(t.value) && !seen.has(t.value)) {
+      seen.add(t.value);
+      params.push(t.value);
+    }
+  }
+  return params;
+}
+
+/**
+ * Return the character offset immediately after the closing `}` of the last
+ * top-level fn in src.  Falls back to src.length if no fns exist.
+ */
+function findInsertionPoint(src) {
+  // Build line→byte-offset table
+  const lineOff = [0];
+  for (let i = 0; i < src.length; i++) {
+    if (src[i] === '\n') lineOff.push(i + 1);
+  }
+  const toCharOff = (line, col) => (lineOff[line - 1] || 0) + (col - 1);
+
+  const toks = tokenize(src).filter(t => t.type !== TK.COMMENT);
+  let lastRBOff = -1;
+  let depth     = 0;
+  let inTopFn   = false;
+
+  for (const t of toks) {
+    if (t.type === TK.EOF) break;
+    if (t.type === TK.FN  && depth === 0) inTopFn = true;
+    if (t.type === TK.LB) {
+      depth++;
+    } else if (t.type === TK.RB) {
+      depth--;
+      if (depth === 0 && inTopFn) {
+        lastRBOff = toCharOff(t.line, t.col) + 1; // byte right after the }
+        inTopFn   = false;
+      }
+    }
+  }
+
+  return lastRBOff >= 0 ? lastRBOff : src.length;
+}
+
+/**
+ * Strip the common leading whitespace from every non-blank line in `text`,
+ * then prepend `indent` to each line.
+ */
+function reindentLines(text, indent) {
+  const lines = text.split('\n');
+  let minInd = Infinity;
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    const m = line.match(/^(\s*)/);
+    if (m && m[1].length < minInd) minInd = m[1].length;
+  }
+  if (!isFinite(minInd)) minInd = 0;
+  return lines
+    .map(line => (line.trim() ? indent + line.slice(minInd) : ''))
+    .join('\n');
+}
+
+// ── Extract Function action ───────────────────────────────────────────────────
+byId('btn-extract').addEventListener('click', () => {
+  if (!st.activeFile) return showResult('No file open');
+
+  const src      = st.files[st.activeFile];
+  const selStart = elEditorTA.selectionStart;
+  const selEnd   = elEditorTA.selectionEnd;
+
+  // Guard: non-empty selection required
+  if (selStart === selEnd) return showResult('Select statements to extract first');
+
+  const selText = src.slice(selStart, selEnd);
+  if (!selText.trim()) return showResult('Selection is empty');
+
+  // Guard: selection must be inside a { } block (i.e. a function body)
+  if (braceDepthAt(src, selStart) === 0)
+    return showResult('Selection must be inside a function body { … }');
+
+  // Infer params = free identifiers not declared by let inside the selection
+  const params    = inferParams(selText);
+  const paramList = params.join(', ');
+
+  // Pick a unique name  extracted_N
+  const parsed = st.parsed[st.activeFile];
+  const existingNames = new Set((parsed ? parsed.fns : []).map(f => f.name));
+  let n = 1;
+  while (existingNames.has('extracted_' + n)) n++;
+  const fnName = 'extracted_' + n;
+
+  // Find insertion point (right after the last top-level fn's closing })
+  let insertOff = findInsertionPoint(src);
+  if (insertOff < selEnd) insertOff = src.length; // safety: should never trigger
+
+  // Build extracted function text
+  const bodyText = reindentLines(selText.trimEnd(), '  ');
+  const newFn    = '\nfn ' + fnName + '(' + paramList + ') {\n' + bodyText + '\n}\n';
+
+  // Call statement that replaces the selection
+  const callStmt = fnName + '(' + paramList + ');';
+
+  // Step 1: replace selection with call statement in a temporary copy
+  const afterReplace = src.slice(0, selStart) + callStmt + src.slice(selEnd);
+
+  // Step 2: adjust insertion offset for the length delta introduced by step 1
+  const insertOffAdj = insertOff + (callStmt.length - (selEnd - selStart));
+
+  // Step 3: splice the new function in at the adjusted offset
+  const newSrc = afterReplace.slice(0, insertOffAdj) + newFn + afterReplace.slice(insertOffAdj);
+
+  // Commit the change
+  st.files[st.activeFile] = newSrc;
+  st.dirty.add(st.activeFile);
+  reparseFile(st.activeFile);
+  analyzeAll();
+  renderAll();
+  schedSave();
+
+  // Restore cursor to the call site
+  requestAnimationFrame(() => {
+    elEditorTA.selectionStart = elEditorTA.selectionEnd = selStart;
+    elEditorTA.focus();
+    updatePos();
+  });
+
+  showResult('Extracted \u2192 fn ' + esc(fnName) + '(' + esc(paramList) + ')');
+});
+
 // ── Reset ─────────────────────────────────────────────────────────────────────
 byId('btn-reset').addEventListener('click', () => {
   if (!confirm('Reset workspace to seed files? All edits will be lost.')) return;

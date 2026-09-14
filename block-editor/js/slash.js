@@ -8,6 +8,7 @@ const SlashMenu = (() => {
     { type: 'p',      label: 'Paragraph',  icon: 'P',   hint: 'text' },
     { type: 'bullet', label: 'Bullet list',icon: '•',   hint: '-'    },
     { type: 'todo',   label: 'To-do',      icon: '☐',   hint: '[]'   },
+    { type: 'code',   label: 'Code',       icon: '</>',  hint: '```'  },
     { type: 'page',   label: 'Sub-page',   icon: '📄',  hint: 'page' },
   ];
 

@@ -1,10 +1,17 @@
 /**
- * app.js — UI controller for crdt-notes (Session A)
+ * app.js — UI controller for crdt-notes (Session C)
  *
- * Two peer panes (A, B) share one CRDT state in localStorage.
+ * Three peer panes (A, B, C) share one CRDT state in localStorage.
  * Each peer has an offline queue.  Title conflicts surface as cards.
  * Snapshot save/restore per-peer.
  * Hash routing: #/n/<noteId>
+ *
+ * Session C changes vs Session B:
+ *   - PEER_IDS = ['A','B','C'] — all hardcoded A/B loops generalised
+ *   - Conflict detection iterates all other peers (not just the one other)
+ *   - buildConflictCard shows dynamic peer labels from conflict.peerX / conflict.peerY
+ *   - resolveConflict updates lastSeenTitle + clears cards for ALL peers
+ *   - doSnapshotRestore and doReset loop over PEER_IDS
  */
 
 import {
@@ -17,45 +24,44 @@ import {
 'use strict';
 
 /* ═══════════════════════════════════════════════════════════════════════
+   PEER REGISTRY  (single source of truth for peer IDs)
+═══════════════════════════════════════════════════════════════════════ */
+
+const PEER_IDS = ['A', 'B', 'C'];
+
+/* ═══════════════════════════════════════════════════════════════════════
    STATE
 ═══════════════════════════════════════════════════════════════════════ */
 
-let state = load();         // shared CRDT state (both peers see same data)
+let state = load();         // shared CRDT state (all peers see same data)
 
-const peers = {
-  A: {
-    id: 'A',
+/**
+ * Build the initial peers map from PEER_IDS so adding a 4th peer later
+ * only requires changing PEER_IDS + HTML.
+ */
+function makePeerEntry(id) {
+  return {
+    id,
     online: true,
     queue: [],              // ops queued while offline
     snapshot: null,         // saved snapshot
     snapshotLabel: null,    // human-readable timestamp
     selectedNoteId: null,
-    conflicts: [],          // { noteId, peerA_value, peerB_value, lamportA, lamportB }
+    conflicts: [],          // { noteId, peerX, valueX, peerY, valueY }
     localState: null,       // offline fork — not written to shared storage
-    // DOM refs filled below
+    // DOM refs filled in DOMContentLoaded
     el: null, statusEl: null, toggleBtn: null, queueBadge: null,
     noteListEl: null, editorTitleEl: null, editorBodyEl: null,
     conflictZoneEl: null, snapshotInfoEl: null,
-  },
-  B: {
-    id: 'B',
-    online: true,
-    queue: [],
-    snapshot: null,
-    snapshotLabel: null,
-    selectedNoteId: null,
-    conflicts: [],
-    localState: null,
-    el: null, statusEl: null, toggleBtn: null, queueBadge: null,
-    noteListEl: null, editorTitleEl: null, editorBodyEl: null,
-    conflictZoneEl: null, snapshotInfoEl: null,
-  },
-};
+  };
+}
 
-/* Track last-seen title per peer so we can detect conflicts */
-const lastSeenTitle = { A: {}, B: {} };
+const peers = Object.fromEntries(PEER_IDS.map(id => [id, makePeerEntry(id)]));
+
+/* Track last-seen title per (peer, noteId) to detect conflicts */
+const lastSeenTitle = Object.fromEntries(PEER_IDS.map(id => [id, {}]));
 /* Track last body text per (peer, noteId) to diff against */
-const lastBody = { A: {}, B: {} };
+const lastBody      = Object.fromEntries(PEER_IDS.map(id => [id, {}]));
 
 /* ═══════════════════════════════════════════════════════════════════════
    HASH ROUTING
@@ -73,10 +79,9 @@ function navigateToNote(noteId) {
 
 window.addEventListener('hashchange', () => {
   const noteId = parseHash();
-  // Select that note in both panes
-  for (const p of ['A', 'B']) {
-    peers[p].selectedNoteId = noteId;
-    renderPeer(p);
+  for (const id of PEER_IDS) {
+    peers[id].selectedNoteId = noteId;
+    renderPeer(id);
   }
 });
 
@@ -85,17 +90,17 @@ window.addEventListener('hashchange', () => {
 ═══════════════════════════════════════════════════════════════════════ */
 
 document.addEventListener('DOMContentLoaded', () => {
-  for (const id of ['A', 'B']) {
+  for (const id of PEER_IDS) {
     const p = peers[id];
-    p.el           = document.getElementById(`peer-${id}`);
-    p.statusEl     = document.getElementById(`status-${id}`);
-    p.toggleBtn    = document.getElementById(`toggle-${id}`);
-    p.queueBadge   = document.getElementById(`queue-badge-${id}`);
-    p.noteListEl   = document.getElementById(`note-list-${id}`);
-    p.editorTitleEl= document.getElementById(`editor-title-${id}`);
-    p.editorBodyEl = document.getElementById(`editor-body-${id}`);
+    p.el            = document.getElementById(`peer-${id}`);
+    p.statusEl      = document.getElementById(`status-${id}`);
+    p.toggleBtn     = document.getElementById(`toggle-${id}`);
+    p.queueBadge    = document.getElementById(`queue-badge-${id}`);
+    p.noteListEl    = document.getElementById(`note-list-${id}`);
+    p.editorTitleEl = document.getElementById(`editor-title-${id}`);
+    p.editorBodyEl  = document.getElementById(`editor-body-${id}`);
     p.conflictZoneEl= document.getElementById(`conflict-zone-${id}`);
-    p.snapshotInfoEl = document.getElementById(`snapshot-info-${id}`);
+    p.snapshotInfoEl= document.getElementById(`snapshot-info-${id}`);
 
     // Toggle online/offline
     p.toggleBtn.addEventListener('click', () => toggleOnline(id));
@@ -124,8 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initial hash
   const noteId = parseHash();
   if (noteId) {
-    peers.A.selectedNoteId = noteId;
-    peers.B.selectedNoteId = noteId;
+    for (const id of PEER_IDS) peers[id].selectedNoteId = noteId;
   }
 
   renderAll();
@@ -136,8 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
 ═══════════════════════════════════════════════════════════════════════ */
 
 function renderAll() {
-  renderPeer('A');
-  renderPeer('B');
+  for (const id of PEER_IDS) renderPeer(id);
 }
 
 function renderPeer(id) {
@@ -231,6 +234,12 @@ function renderConflicts(id) {
   }
 }
 
+/**
+ * Build a conflict resolution card.
+ * conflict = { noteId, peerX, valueX, peerY, valueY }
+ *   peerX / peerY are peer IDs (e.g. 'A', 'B', 'C')
+ *   valueX / valueY are the two competing title strings
+ */
 function buildConflictCard(peerId, conflict) {
   const card = document.createElement('div');
   card.className = 'conflict-card';
@@ -238,13 +247,13 @@ function buildConflictCard(peerId, conflict) {
     <h4>⚠ Title conflict on "${escapeHTML(conflict.noteId)}"</h4>
     <p>Two peers edited this title at the same time.</p>
     <div class="conflict-options">
-      <button class="conflict-option" data-choice="A">
-        <span class="conflict-label">Peer A</span>
-        ${escapeHTML(conflict.valueA)}
+      <button class="conflict-option" data-choice="X">
+        <span class="conflict-label">Peer ${escapeHTML(conflict.peerX)}</span>
+        ${escapeHTML(conflict.valueX)}
       </button>
-      <button class="conflict-option" data-choice="B">
-        <span class="conflict-label">Peer B</span>
-        ${escapeHTML(conflict.valueB)}
+      <button class="conflict-option" data-choice="Y">
+        <span class="conflict-label">Peer ${escapeHTML(conflict.peerY)}</span>
+        ${escapeHTML(conflict.valueY)}
       </button>
     </div>
   `;
@@ -278,7 +287,10 @@ function toggleOnline(id) {
 
 /**
  * Flush queued ops from peer `id` into shared state,
- * then re-render both peers so the other side sees them.
+ * then re-render all peers so the others see them.
+ *
+ * Session B constraint: flushQueue applies each op once to shared state
+ * then calls save() exactly once at the end.
  */
 function flushQueue(id) {
   const p = peers[id];
@@ -298,7 +310,7 @@ function flushQueue(id) {
 ═══════════════════════════════════════════════════════════════════════ */
 
 /**
- * Apply an op to state.  Detect title conflicts.
+ * Apply an op to state.  Detect title conflicts across all peer pairs.
  * `fromPeer` = the peer that generated the op.
  */
 function applyOp(st, op, fromPeer) {
@@ -309,29 +321,41 @@ function applyOp(st, op, fromPeer) {
     case 'set-title': {
       const note = st.notes[op.noteId];
       if (note) {
-        // Conflict detection: if both peers have edited since last sync
-        // and the incoming op is concurrent (same lamport bracket)
-        const otherPeer = fromPeer === 'A' ? 'B' : 'A';
-        const otherLastSeen = lastSeenTitle[otherPeer][op.noteId];
-        // Conflict: the note's current title differs from what either peer last saw
-        // and both edits are "concurrent" (neither dominates because we haven't synced)
-        if (
-          note.title !== op.value &&
-          otherLastSeen !== undefined &&
-          otherLastSeen !== op.value &&
-          note.title !== otherLastSeen
-        ) {
-          // Surface conflict card on the OTHER peer's pane
-          const peerOther = peers[otherPeer];
-          const already = peerOther.conflicts.find(c => c.noteId === op.noteId);
-          if (!already) {
-            peerOther.conflicts.push({
-              noteId: op.noteId,
-              valueA: fromPeer === 'A' ? op.value : note.title,
-              valueB: fromPeer === 'B' ? op.value : note.title,
-              opA: fromPeer === 'A' ? op : null,
-              opB: fromPeer === 'B' ? op : null,
-            });
+        /*
+         * Conflict detection (generalised for N peers):
+         * For each peer Y ≠ fromPeer, check if Y has a competing edit.
+         *
+         * Conditions for a conflict between X (fromPeer) and Y:
+         *   1. State already has a different title than X's op  (concurrent edit in state)
+         *   2. Y has previously seen/edited this title (lastSeenTitle[Y] is defined)
+         *   3. Y's version differs from X's proposed value
+         *   4. Y's version differs from the current state title
+         *      (Y's lastSeen is a *pending* edit, not just what state already has)
+         *
+         * The conflict card is surfaced on peer Y's pane.
+         */
+        for (const otherId of PEER_IDS) {
+          if (otherId === fromPeer) continue;
+
+          const otherLastSeen = lastSeenTitle[otherId][op.noteId];
+          if (
+            note.title !== op.value &&
+            otherLastSeen !== undefined &&
+            otherLastSeen !== op.value &&
+            note.title !== otherLastSeen
+          ) {
+            const peerOther = peers[otherId];
+            // Only add once per (noteId) — don't stack duplicate cards
+            const already = peerOther.conflicts.find(c => c.noteId === op.noteId);
+            if (!already) {
+              peerOther.conflicts.push({
+                noteId: op.noteId,
+                peerX: fromPeer,
+                valueX: op.value,
+                peerY: otherId,
+                valueY: otherLastSeen,
+              });
+            }
           }
         }
       }
@@ -353,8 +377,11 @@ function applyOp(st, op, fromPeer) {
 
 /**
  * A peer dispatches an op.
- * - If online: apply immediately to shared state (both peers see it)
- * - If offline: push to queue
+ *
+ * Session B constraints:
+ *   - Online:  apply once to shared state, then save() — renderAll()
+ *   - Offline: push to queue; apply only to that peer's localState;
+ *              do NOT call save() on shared storage
  */
 function dispatch(peerId, op) {
   const p = peers[peerId];
@@ -387,9 +414,9 @@ function onTitleInput(peerId) {
   if (!p.selectedNoteId) return;
 
   const newTitle = p.editorTitleEl.value;
-  const noteId = p.selectedNoteId;
+  const noteId   = p.selectedNoteId;
 
-  // Record what this peer considers the current title
+  // Record what this peer considers the current title (used for conflict detection)
   lastSeenTitle[peerId][noteId] = newTitle;
 
   const res = setTitle(viewState(peerId), peerId, noteId, newTitle);
@@ -401,7 +428,7 @@ function onBodyInput(peerId) {
   if (!p.selectedNoteId) return;
 
   const noteId = p.selectedNoteId;
-  const st = viewState(peerId);
+  const st     = viewState(peerId);
   const oldBody = lastBody[peerId][noteId] ?? (st.notes[noteId]?.body ?? '');
   const newBody = p.editorBodyEl.value;
 
@@ -416,13 +443,20 @@ function onBodyInput(peerId) {
 }
 
 /* ── Snapshot ─────────────────────────────────────────────────────── */
+
 function doSnapshotSave(peerId) {
   const p = peers[peerId];
-  p.snapshot = takeSnapshot(state);
+  p.snapshot     = takeSnapshot(state);
   p.snapshotLabel = new Date().toLocaleTimeString();
   renderPeer(peerId);
 }
 
+/**
+ * Restore a snapshot.
+ *
+ * Session B constraint: snapshot restore resets lastBody + forces editor
+ * values to restored state for all peers.
+ */
 function doSnapshotRestore(peerId) {
   const p = peers[peerId];
   if (!p.snapshot) {
@@ -431,65 +465,75 @@ function doSnapshotRestore(peerId) {
   }
   state = restoreSnapshot(p.snapshot);
   save(state);
-  // Clear queues and conflicts on both sides after restore
-  for (const id of ['A', 'B']) {
-    peers[id].queue = [];
+
+  // Clear transient state on ALL peers after restore
+  for (const id of PEER_IDS) {
+    peers[id].queue     = [];
     peers[id].conflicts = [];
     peers[id].localState = null;
-    lastSeenTitle[id] = {};
-    lastBody[id] = {};
-    // Re-select note if it still exists
+    lastSeenTitle[id]   = {};
+    lastBody[id]        = {};
+    // Deselect if note no longer exists
     if (peers[id].selectedNoteId && !state.notes[peers[id].selectedNoteId]) {
       peers[id].selectedNoteId = null;
     }
   }
+
   renderAll();
-  // Force editor fields to match restored bodies even if a textarea has focus
-  for (const id of ['A', 'B']) {
+
+  // Force editor fields to match restored state even if a textarea had focus
+  for (const id of PEER_IDS) {
     syncEditorFromState(id);
   }
 }
 
 /* ── Conflict resolution ──────────────────────────────────────────── */
-function resolveConflict(peerId, conflict, choice) {
-  const p = peers[peerId];
-  const winnerValue = choice === 'A' ? conflict.valueA : conflict.valueB;
 
-  // Force the winner into state with a new tick (both peers agree)
+/**
+ * Resolve a title conflict by picking one of the two values.
+ * choice = 'X' → peerX wins, choice = 'Y' → peerY wins.
+ *
+ * Session C: update lastSeenTitle for ALL peers and clear conflict cards
+ * for this noteId from ALL peers (not just the two involved).
+ */
+function resolveConflict(peerId, conflict, choice) {
+  const winnerValue = choice === 'X' ? conflict.valueX : conflict.valueY;
+
+  // Write winner into shared state with a fresh lamport tick
   const res = setTitle(state, peerId, conflict.noteId, winnerValue);
   state = res.state;
-  // Update lastSeen for both peers to avoid re-triggering conflicts
-  lastSeenTitle['A'][conflict.noteId] = winnerValue;
-  lastSeenTitle['B'][conflict.noteId] = winnerValue;
+
+  // Sync all peers' lastSeenTitle so no re-triggering
+  for (const id of PEER_IDS) {
+    lastSeenTitle[id][conflict.noteId] = winnerValue;
+  }
   save(state);
 
-  // Remove from this peer's conflict list
-  p.conflicts = p.conflicts.filter(c => c !== conflict);
-  // Also remove from other peer
-  const otherId = peerId === 'A' ? 'B' : 'A';
-  peers[otherId].conflicts = peers[otherId].conflicts.filter(c =>
-    c.noteId !== conflict.noteId
-  );
+  // Remove all conflict cards for this noteId from every peer pane
+  for (const id of PEER_IDS) {
+    peers[id].conflicts = peers[id].conflicts.filter(c => c.noteId !== conflict.noteId);
+  }
 
   renderAll();
 }
 
 /* ── Reset ─────────────────────────────────────────────────────────── */
+
 function doReset() {
   if (!confirm('Reset to seed state? All notes will be lost.')) return;
   state = seedState();
   save(state);
 
-  for (const id of ['A', 'B']) {
-    peers[id].queue = [];
-    peers[id].conflicts = [];
-    peers[id].snapshot = null;
-    peers[id].snapshotLabel = null;
+  for (const id of PEER_IDS) {
+    peers[id].queue        = [];
+    peers[id].conflicts    = [];
+    peers[id].snapshot     = null;
+    peers[id].snapshotLabel= null;
     peers[id].selectedNoteId = null;
-    peers[id].online = true;
-    peers[id].localState = null;
-    lastSeenTitle[id] = {};
-    lastBody[id] = {};
+    peers[id].online       = true;
+    peers[id].localState   = null;
+    lastSeenTitle[id]      = {};
+    lastBody[id]           = {};
   }
 
   location.hash = '';
@@ -504,19 +548,27 @@ function cloneState(st) {
   return JSON.parse(JSON.stringify(st));
 }
 
+/**
+ * Return the authoritative state for a given peer.
+ * Offline peers see their localState fork; online peers see shared state.
+ */
 function viewState(peerId) {
   const p = peers[peerId];
   return (!p.online && p.localState) ? p.localState : state;
 }
 
+/**
+ * Force editor fields to match the current (post-restore) state,
+ * overriding any stale textarea value even if the field had focus.
+ */
 function syncEditorFromState(id) {
   const p = peers[id];
   const note = p.selectedNoteId ? viewState(id).notes[p.selectedNoteId] : null;
   if (!note) return;
   p.editorTitleEl.value = note.title;
-  p.editorBodyEl.value = note.body;
+  p.editorBodyEl.value  = note.body;
   lastSeenTitle[id][note.id] = note.title;
-  lastBody[id][note.id] = note.body;
+  lastBody[id][note.id]      = note.body;
 }
 
 function escapeHTML(str) {

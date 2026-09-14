@@ -102,7 +102,10 @@ const Store = (() => {
   /* ─── Block CRUD ────────────────────────────── */
   function createBlock(type, parentId, afterId = null) {
     const id = uid();
-    const block = { id, type, text: '', children: [], parentId, checked: false };
+    const block = {
+      id, type, text: '', children: [], parentId, checked: false,
+      lang: type === 'code' ? 'js' : '',
+    };
     state.blocks[id] = block;
 
     const parent = state.blocks[parentId];

@@ -31,9 +31,13 @@ Seed: 8 issues across statuses and priorities.
 
 Ship a demoable tracker that **looks** complete, plus `PLANTED.md` naming the 12 mismatches (file not linked from the UI). Hub card must not spoil the bugs.
 
+## Session C must
+
+Issue labels (additive). Each issue may have `labels: string[]`. Detail pane can add/remove chips. Sidebar has a label filter applied **after** the planted status/search/sort logic — do not change those 12 mismatches. New issues start with `labels: []`. Persistence still uses the planted storage key.
+
 ## Out of scope (later sessions)
 
-Fixing the 12 (that is a later agent eval). After fixes, one spec “later” feature.
+Fixing the 12 (that is a later agent eval).
 
 ## Visual
 

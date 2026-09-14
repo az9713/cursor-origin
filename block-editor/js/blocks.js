@@ -11,6 +11,38 @@ const Blocks = (() => {
       .replace(/"/g, '&quot;');
   }
 
+  /* ─── Code-safe escape (no " escape — needed for string regex) ── */
+  function codeEsc(text) {
+    return (text == null ? '' : String(text))
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  /* ─── Lightweight syntax highlighter (regex spans, no deps) ── */
+  //
+  // Single-pass tokenizer: each alternative is tried left-to-right.
+  // Tokens matched earlier shadow later patterns, so strings and
+  // comments are never keyword-highlighted inside them.
+  //
+  const _HL_RE = /(\/\/[^\n]*)|(\/\*[\s\S]*?\*\/)|("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`)|\b(abstract|as|async|await|break|case|catch|class|const|continue|debugger|default|delete|do|else|enum|export|extends|finally|for|from|function|if|implements|import|in|instanceof|interface|let|new|null|of|package|private|protected|public|return|static|super|switch|this|throw|true|false|try|typeof|undefined|var|void|while|with|yield)\b|\b(\d+\.?\d*(?:e[+\-]?\d+)?)\b|\b([A-Z][a-zA-Z0-9_]*)\b/g;
+
+  function codeHighlight(rawCode, lang) {
+    const code = codeEsc(rawCode);
+    if (!code) return '';
+    // Reset lastIndex (regex is stateful when reused)
+    _HL_RE.lastIndex = 0;
+    return code.replace(_HL_RE, (m, lineC, blockC, str, kw, num, cls) => {
+      if (lineC  !== undefined) return '<span class="hl-comment">' + m + '</span>';
+      if (blockC !== undefined) return '<span class="hl-comment">' + m + '</span>';
+      if (str    !== undefined) return '<span class="hl-str">'     + m + '</span>';
+      if (kw     !== undefined) return '<span class="hl-kw">'      + m + '</span>';
+      if (num    !== undefined) return '<span class="hl-num">'      + m + '</span>';
+      if (cls    !== undefined) return '<span class="hl-cls">'      + m + '</span>';
+      return m;
+    });
+  }
+
   /**
    * Render a single block recursively.
    * @param {string} blockId
@@ -27,6 +59,27 @@ const Blocks = (() => {
   <span class="drag-handle" data-drag="${b.id}" draggable="true" title="Drag to reorder">⠿</span>
   <div class="block-body">
     <a class="page-link" href="#/p/${b.id}">📄 ${esc(b.text)}</a>
+  </div>
+</div>`;
+    }
+
+    /* ── Code blocks ── */
+    if (b.type === 'code') {
+      const lang        = b.lang || 'js';
+      const highlighted = codeHighlight(b.text || '', lang);
+      return `<div class="block block-code" data-id="${b.id}" data-type="code" data-depth="${depth}">
+  <span class="drag-handle" data-drag="${b.id}" draggable="true" title="Drag to reorder">⠿</span>
+  <div class="block-body">
+    <div class="code-wrap">
+      <div class="code-header">
+        <input class="code-lang-input" type="text" value="${esc(lang)}" data-lang-id="${b.id}" maxlength="20" spellcheck="false" title="Language (e.g. js, py, css)">
+      </div>
+      <div class="code-stage">
+        <pre class="code-backdrop" aria-hidden="true"><code>${highlighted}
+</code></pre>
+        <textarea class="code-textarea" data-id="${b.id}" spellcheck="false" autocorrect="off" autocapitalize="off" autocomplete="off">${esc(b.text || '')}</textarea>
+      </div>
+    </div>
   </div>
 </div>`;
     }
@@ -79,5 +132,5 @@ const Blocks = (() => {
 <div id="blocks-container">${blocksHtml}</div>`;
   }
 
-  return { renderBlock, renderPage, esc };
+  return { renderBlock, renderPage, esc, codeHighlight };
 })();

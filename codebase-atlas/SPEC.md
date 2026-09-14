@@ -24,9 +24,42 @@ Each file: `{ path, language, text }`. Seed ≥ 350 files under `src/` with a Ni
 - Hash `#/f/<urlencoded-path>`
 - Reset seed (clears edits)
 
-## Out of scope (later sessions)
+## Session C must — Extract Module
 
-Extract-module, import-rule changes, real git.
+Trigger: hover a symbol row in the Outline → click **extract** button (or click a symbol to select it, then click extract).
+
+### Behaviour
+
+1. Opens the **Extract Function** dialog showing the function signature preview and a default destination path: `<source-dir>/<functionName>.js`.
+2. User may edit the dest path. Press **Extract** (or `Enter`) to confirm.
+3. **Source file** — function body replaced in-place with an import stub:
+   - ES module style (if source uses `import`/`export`): `import { fn } from './fn.js'; // extracted`
+   - CommonJS style (default for seed files): `const { fn } = require('./fn'); // extracted`
+4. **Dest file** — created in-memory: `// Extracted from <source>\n\n<functionBody>\n`
+5. `rebuildIndex()` runs; file tree, outline, call graph all refresh.
+6. App navigates to `#/f/<urlencoded-dest-path>`.
+
+### Dest path convention
+
+`<sourceDir>/<functionName>.js` — sibling to the source file, named after the extracted function.
+
+### 3-click A/B path
+
+| Step | Click |
+|------|-------|
+| 1 | Hover a sym row in the Outline → click **extract** |
+| 2 | (optionally edit dest path) → click **Extract** button |
+| 3 | App navigates to `#/f/<urlencoded-dest-path>`; new file is open |
+
+### Constraints
+
+- 100 % in-memory. No disk writes. File count grows by 1 per extraction.
+- `loadFiles` check (`arr.length >= 350`) still satisfied — seed starts at 373.
+- All existing features (tree, edit, Ctrl+K/P, outline, call graph, rename, reset) unaffected.
+
+## Out of scope
+
+Import-rule changes, real git.
 
 ## Visual
 

@@ -320,6 +320,14 @@ html, body {
 ::-webkit-scrollbar-thumb:hover { background: var(--ink-faint); }
 
 /* ── RESPONSIVE narrow ───────────────────────────────────────────────── */
+/* 3 panes: shrink note panels progressively */
+@media (max-width: 1300px) {
+  .note-list-panel { width: 180px; min-width: 150px; }
+}
+@media (max-width: 1100px) {
+  .note-list-panel { width: 150px; min-width: 120px; }
+}
 @media (max-width: 900px) {
-  .note-list-panel { width: 160px; min-width: 130px; }
+  .note-list-panel { width: 120px; min-width: 90px; }
+  .note-list-header span { display: none; } /* hide "Notes" label to save space */
 }
