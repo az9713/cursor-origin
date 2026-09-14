@@ -21,6 +21,20 @@ RS._maxGroup = function (node) {
   return m;
 };
 
+/* Assign capturing-group indexes left-to-right starting at startIndex. */
+RS._reindexGroups = function (node, startIndex) {
+  var n = startIndex;
+  function walk(n0) {
+    if (!n0) return;
+    if (n0.type === 'group') { n0.index = n++; }
+    if (n0.child) walk(n0.child);
+    if (n0.items) n0.items.forEach(walk);
+    if (n0.alts) n0.alts.forEach(walk);
+  }
+  walk(node);
+  return n;
+};
+
 /* Try to match `ast` starting at `startPos` in `str`.
  * Returns a match object or null. */
 RS._matchAt = function (ast, str, startPos) {

@@ -7,6 +7,25 @@ window.RS = window.RS || {};
 RS.STORE = 'regex-studio-v1';
 RS.syncing = false;
 
+/* JSON.stringify turns Infinity into null; revive on parse so + / * / {n,} survive builder edits. */
+RS._nodeToAttr = function (node) {
+  return JSON.stringify(node, function (_k, v) { return v === Infinity ? null : v; });
+};
+RS._reviveInf = function (node) {
+  if (!node || typeof node !== 'object') return;
+  if (node.quant && (node.quant.max === null || node.quant.max === undefined)) {
+    node.quant.max = Infinity;
+  }
+  if (node.child) RS._reviveInf(node.child);
+  if (node.items) node.items.forEach(RS._reviveInf);
+  if (node.alts) node.alts.forEach(RS._reviveInf);
+};
+RS._nodeFromAttr = function (json) {
+  var node = JSON.parse(json);
+  RS._reviveInf(node);
+  return node;
+};
+
 RS.PRESETS = [
   {
     id: 'digits',
@@ -155,7 +174,7 @@ RS._chipHtml = function (item, bi, ii) {
   var quantLabel = q ? RS._printQuant(q) : '';
 
   /* Use double-quote attribute delimiters; RS.esc escapes " → &quot; safely */
-  var nodeJson = RS.esc(JSON.stringify(item));
+  var nodeJson = RS.esc(RS._nodeToAttr(item));
 
   return '<div class="chip ' + typeClass + '" data-branch="' + bi + '" data-idx="' + ii + '" data-node="' + nodeJson + '">' +
     '<div class="chip-body" data-toggle-quant="1" title="Click to change quantifier">' +
@@ -190,7 +209,7 @@ RS.astFromBuilder = function () {
     var items = [];
     chips.forEach(function (chip) {
       try {
-        var node = JSON.parse(chip.getAttribute('data-node'));
+        var node = RS._nodeFromAttr(chip.getAttribute('data-node'));
         items.push(node);
       } catch (e) {}
     });
@@ -212,7 +231,7 @@ RS.closePopup = function () {
 
 RS.openQuantPopup = function (chip, nodeJson) {
   RS.closePopup();
-  var node = JSON.parse(nodeJson);
+  var node = RS._nodeFromAttr(nodeJson);
   /* unwrap quantified */
   var child = node, curQ = null;
   if (node.type === 'quantified') { child = node.child; curQ = node.quant; }
@@ -236,7 +255,7 @@ RS.openQuantPopup = function (chip, nodeJson) {
     if (isActive) btn.className = 'active';
     btn.onclick = function () {
       var newNode = opt.q ? { type: 'quantified', child: child, quant: opt.q } : child;
-      chip.setAttribute('data-node', JSON.stringify(newNode));
+      chip.setAttribute('data-node', RS._nodeToAttr(newNode));
       chip.querySelector('.chip-atom').textContent = RS.nodeSummary(child);
       chip.querySelector('.chip-quant').textContent = opt.q ? RS._printQuant(opt.q) : '';
       RS.closePopup();
@@ -264,7 +283,7 @@ RS.openQuantPopup = function (chip, nodeJson) {
     if (maxN !== Infinity && (isNaN(maxN) || maxN < minV)) return;
     var newQ = { min: minV, max: maxN, greedy: true };
     var newNode = { type: 'quantified', child: child, quant: newQ };
-    chip.setAttribute('data-node', JSON.stringify(newNode));
+    chip.setAttribute('data-node', RS._nodeToAttr(newNode));
     chip.querySelector('.chip-atom').textContent = RS.nodeSummary(child);
     chip.querySelector('.chip-quant').textContent = RS._printQuant(newQ);
     RS.closePopup();
@@ -543,8 +562,9 @@ RS.buildAtomFromForm = function () {
         var inner;
         try { inner = RS.parse(val); } catch (e) { alert('Invalid pattern: ' + e.message); return null; }
         if (type === 'group') {
-          /* find next group index */
+          /* find next group index; bump inner captures so they stay unique */
           var nextIdx = RS._maxGroup(RS.currentAst || { type: 'empty' }) + 1;
+          RS._reindexGroups(inner, nextIdx + 1);
           node = { type: 'group', index: nextIdx, child: inner };
         } else {
           node = { type: 'ncgroup', child: inner };

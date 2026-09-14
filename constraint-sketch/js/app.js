@@ -561,11 +561,18 @@ canvas.addEventListener('mousemove', e => {
     const sketch = currentSketch();
     if (!sketch) return;
     const p = getPoint(sketch, state.drag.pointId);
-    if (!p || p.fixed) return;
+    if (!p) return;
 
     p.x = x;
     p.y = y;
+    p.fixed = true;           // pin the dragged point; solver moves the rest
     const result = runSolver(sketch);
+    const p2 = getPoint(sketch, state.drag.pointId);
+    if (p2) {
+      p2.fixed = false;
+      p2.x = x;
+      p2.y = y;
+    }
     save();
     updateStatus(result);
     updateInspector();
@@ -596,8 +603,11 @@ canvas.addEventListener('mousedown', e => {
     if (hit) {
       state.selected = hit;
       if (hit.type === 'point') {
-        state.drag = { pointId: hit.id };
-        canvas.style.cursor = 'grabbing';
+        const pt = getPoint(sketch, hit.id);
+        if (pt && !pt.fixed) {
+          state.drag = { pointId: hit.id };
+          canvas.style.cursor = 'grabbing';
+        }
       }
     } else {
       state.selected = null;
@@ -1135,31 +1145,46 @@ function updateSketchSelect() {
     .join('');
 }
 
-function loadSeed(makeFn) {
+function loadSeed(makeFn, kind) {
   const W = canvas.width  || container.clientWidth  || 600;
   const H = canvas.height || container.clientHeight || 400;
   const id = uid('sk');
   const sketchData = makeFn(W / 2, H / 2);
-  state.sketches[id] = { ...sketchData, points: sketchData.points, lines: sketchData.lines,
-                          circles: sketchData.circles, constraints: sketchData.constraints };
+  state.sketches[id] = { ...sketchData, seedKind: kind };
   switchSketch(id);
 }
 
 function resetCurrentSketch() {
   const sketch = currentSketch();
   if (!sketch) return;
-  // Ask for confirmation
-  if (!confirm(`Reset "${sketch.name}"? All entities and constraints will be removed.`)) return;
-  sketch.points = [];
-  sketch.lines  = [];
-  sketch.circles = [];
-  sketch.constraints = [];
+  if (!confirm(`Reset "${sketch.name}"? Restore the seed geometry.`)) return;
+  const W = canvas.width  || container.clientWidth  || 600;
+  const H = canvas.height || container.clientHeight || 400;
+  let data = null;
+  if (sketch.seedKind === 'triangle' || sketch.name === 'Right Triangle') {
+    data = makeSeedTriangle(W / 2, H / 2);
+  } else if (sketch.seedKind === 'rect' || sketch.name === 'Rectangle') {
+    data = makeSeedRect(W / 2, H / 2);
+  }
+  if (data) {
+    sketch.points = data.points;
+    sketch.lines = data.lines;
+    sketch.circles = data.circles;
+    sketch.constraints = data.constraints;
+    sketch.seedKind = sketch.seedKind || (data.name === 'Right Triangle' ? 'triangle' : 'rect');
+  } else {
+    sketch.points = [];
+    sketch.lines = [];
+    sketch.circles = [];
+    sketch.constraints = [];
+  }
   state.selected = null;
   state.pending  = [];
   state.pendingMeta = [];
-  state.solveResult = null;
+  const result = data ? runSolver(sketch) : null;
+  state.solveResult = result;
   save();
-  updateStatus(null);
+  updateStatus(result);
   updateInspector();
   render();
 }
@@ -1222,10 +1247,10 @@ function wireDom() {
 
   // Seed sketch buttons
   document.getElementById('load-rect').addEventListener('click', () => {
-    loadSeed(makeSeedRect);
+    loadSeed(makeSeedRect, 'rect');
   });
   document.getElementById('load-triangle').addEventListener('click', () => {
-    loadSeed(makeSeedTriangle);
+    loadSeed(makeSeedTriangle, 'triangle');
   });
 
   // Sketch select dropdown
@@ -1265,7 +1290,7 @@ function init() {
     const H = container.clientHeight || 400;
     const id = uid('sk');
     const sketchData = makeSeedRect(W/2, H/2);
-    state.sketches[id] = { ...sketchData };
+    state.sketches[id] = { ...sketchData, seedKind: 'rect' };
     state.currentId = id;
     pushHash(id);
     save();

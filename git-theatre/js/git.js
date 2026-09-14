@@ -487,11 +487,11 @@
       const baseTarget = newHeadC ? treeToWorkingTree(store, newHeadC.tree) : {};
       const newTree    = { ...baseTarget };
 
-      // Apply additions / modifications
+      // Apply only the parent→commit diff so untouched files on the new
+      // base (e.g. README.md evolved on main) are not reverted.
       for (const [path, text] of Object.entries(commitTree)) {
-        newTree[path] = text;
+        if (baseTree[path] !== text) newTree[path] = text;
       }
-      // Apply deletions
       for (const path of Object.keys(baseTree)) {
         if (!(path in commitTree)) delete newTree[path];
       }
@@ -553,22 +553,30 @@
     return commits;
   }
 
+  function resolveSha(store, sha) {
+    sha = (sha || '').trim().toLowerCase();
+    if (!sha) return null;
+    if (store.objects[sha]) return sha;
+    if (sha.length < 4) return null;
+    const hits = Object.keys(store.objects).filter(h => h.startsWith(sha));
+    return hits.length === 1 ? hits[0] : null;
+  }
+
   /** Human-readable cat-file output for a given sha. */
   function catFile(store, sha) {
-    sha = (sha || '').trim();
-    if (!sha) return 'error: empty hash';
-    const obj = readObject(store, sha);
-    if (!obj) return `error: object not found\n${sha}`;
+    const resolved = resolveSha(store, sha);
+    if (!resolved) return `error: object not found\n${sha || ''}`.trim();
+    const obj = readObject(store, resolved);
 
     if (obj.type === 'tree') {
       const entries = deserializeTree(obj.payload);
       const body = entries
         .map(e => `${e.mode}  ${e.name.padEnd(24)}  ${e.hash}`)
         .join('\n');
-      return `type: tree\nsha:  ${sha}\n\n${body}`;
+      return `type: tree\nsha:  ${resolved}\n\n${body}`;
     }
 
-    return `type: ${obj.type}\nsha:  ${sha}\n\n${obj.payload}`;
+    return `type: ${obj.type}\nsha:  ${resolved}\n\n${obj.payload}`;
   }
 
   // ── Seed ─────────────────────────────────────────────────────────────────
@@ -673,7 +681,14 @@
   function resetToSeed() { save(buildSeed()); }
 
   function initIfEmpty() {
-    if (!localStorage.getItem(STORAGE_KEY)) resetToSeed();
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) { resetToSeed(); return; }
+    try {
+      const parsed = JSON.parse(raw);
+      if (!parsed || !parsed.objects || !Object.keys(parsed.objects).length) resetToSeed();
+    } catch {
+      resetToSeed();
+    }
   }
 
   // ── Public API ────────────────────────────────────────────────────────────

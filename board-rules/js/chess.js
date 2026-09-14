@@ -446,10 +446,14 @@ export class Chess {
     if (!mv) return null;
 
     const undo = this._applyMove(mv);
-    // Annotate with check/mate
+    // Annotate with check/mate. Keep pre-move SAN so disambiguation
+    // (Nbd2 vs Nd2) is not recomputed on an already-moved piece.
     mv.check = this._inCheck(this.turn);
     mv.checkmate = mv.check && this.moves().length === 0;
-    mv.san = this._toSAN(mv); // recalculate with check marks
+    const baseSan = (mv.san || '').replace(/[+#]+$/, '');
+    if (mv.checkmate) mv.san = baseSan + '#';
+    else if (mv.check) mv.san = baseSan + '+';
+    else mv.san = baseSan;
     undo.san = mv.san;
 
     this._history.push({ mv, undo });

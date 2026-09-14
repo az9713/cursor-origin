@@ -417,12 +417,13 @@ elPlayBtn.addEventListener('click', () => {
   if (engine.playing) return;
   elPlayBtn.disabled = true;
   elStopBtn.disabled = false;
+  elBpm.disabled = true;
 
   engine.start(song, TOTAL_BEATS, (beat) => {
     if (beat < 0) {
-      // Song ended or stopped
       elPlayBtn.disabled = false;
       elStopBtn.disabled = true;
+      elBpm.disabled = false;
       renderPlayhead(-1);
     } else {
       renderPlayhead(beat);
@@ -435,6 +436,7 @@ elStopBtn.addEventListener('click', () => {
 });
 
 elBpm.addEventListener('change', () => {
+  if (engine.playing) { elBpm.value = song.bpm; return; }
   const v = parseInt(elBpm.value, 10);
   if (v >= 20 && v <= 300) {
     song.bpm = v;

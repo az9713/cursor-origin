@@ -110,6 +110,11 @@ function CC_parseCSSRules(cssTexts) {
             const p = style[i];
             props[p] = style.getPropertyValue(p);
           }
+          // Keep shorthands too — longhands alone miss a `padding:` / `margin:` trace.
+          ['padding', 'margin', 'border', 'background', 'font'].forEach(sh => {
+            const v = style.getPropertyValue(sh);
+            if (v) props[sh] = v;
+          });
 
           // Split comma-separated selectors so each gets its own entry
           // (they may have different specificities for matching purposes)
@@ -153,24 +158,42 @@ function CC_parseCSSRules(cssTexts) {
  * The CASCADE WINNER is therefore the LAST element in the returned array.
  * Disabled rules are still included; the caller filters them visually.
  */
+function CC_declares(rule, property) {
+  if (property in rule.props) return true;
+  if (property === 'padding' || property === 'margin') {
+    return ['-top', '-right', '-bottom', '-left'].some(s => (property + s) in rule.props);
+  }
+  return false;
+}
+
+function CC_declValue(rule, property) {
+  if (property in rule.props) return rule.props[property];
+  if (property === 'padding' || property === 'margin') {
+    return ['-top', '-right', '-bottom', '-left']
+      .map(s => rule.props[property + s])
+      .filter(Boolean)
+      .join(' ') || '';
+  }
+  return '';
+}
+
 function CC_findMatchingRules(el, allRules, property) {
   if (!el || !property) return [];
 
   const matching = [];
 
   allRules.forEach(rule => {
-    // Must declare the target property
-    if (!(property in rule.props)) return;
+    if (!CC_declares(rule, property)) return;
 
-    // Must match the element
     try {
       if (!el.matches(rule.selector)) return;
     } catch (_) {
-      return; // Ignore invalid selectors
+      return;
     }
 
     matching.push({
       ...rule,
+      props: { ...rule.props, [property]: CC_declValue(rule, property) },
       specificity: CC_parseSpecificity(rule.selector),
     });
   });

@@ -434,6 +434,7 @@ function doImport(hexStr) {
     return;
   }
   state = Object.assign({}, DEFAULT_STATE, parsed, { lockChecksum: state.lockChecksum });
+  if (state.lockChecksum) snapshotChecksums();
   writeForm();
   updateSections();
   refresh();
@@ -484,6 +485,7 @@ function handleHash() {
     state = Object.assign({}, DEFAULT_STATE, PRESETS[m[1]]);
     writeForm();
     updateSections();
+    refresh();
   }
 }
 

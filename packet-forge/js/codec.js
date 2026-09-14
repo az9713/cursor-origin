@@ -268,6 +268,7 @@ function parsePacket(bytes) {
   s.ipFragOffset  = ff & 0x1fff;
   s.ipTtl         = bytes[22];
   s.ipProto       = bytes[23];
+  s.ipManualCksum = dv.getUint16(24);
   s.ipSrc         = Array.from(bytes.slice(26, 30)).join('.');
   s.ipDst         = Array.from(bytes.slice(30, 34)).join('.');
 
@@ -288,6 +289,7 @@ function parsePacket(bytes) {
     s.tcpFlagSyn = !!(flags & 0x02);
     s.tcpFlagFin = !!(flags & 0x01);
     s.tcpWindow  = dv.getUint16(tpStart + 14);
+    s.tcpManualCksum = dv.getUint16(tpStart + 16);
     s.tcpUrgent  = dv.getUint16(tpStart + 18);
     s.payload    = bytesToHex(bytes.slice(tpStart + dataOff));
 
@@ -295,6 +297,7 @@ function parsePacket(bytes) {
     // UDP
     s.udpSport   = dv.getUint16(tpStart + 0);
     s.udpDport   = dv.getUint16(tpStart + 2);
+    s.udpManualCksum = dv.getUint16(tpStart + 6);
     s.payload    = bytesToHex(bytes.slice(tpStart + 8));
   }
 
