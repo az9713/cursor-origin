@@ -32,6 +32,7 @@
     <button class="btn btn-ghost btn-sm" id="newBranchBtn"  title="Create a new branch">+ Branch</button>
     <button class="btn btn-ghost btn-sm" id="mergeBtn"      title="Merge a branch into current">Merge</button>
     <button class="btn btn-ghost btn-sm" id="rebaseBtn"     title="Rebase current branch onto another">Rebase</button>
+    <button class="btn btn-ghost btn-sm" id="cherryPickBtn" title="Cherry-pick a commit onto current HEAD">Cherry-pick</button>
     <button class="btn btn-ghost btn-sm" id="resetSeedBtn"  title="Reset to the seed state">Reset</button>
     <a class="hub-link" href="../" title="Back to hub">Hub →</a>
   </div>
@@ -186,6 +187,31 @@
     <div class="modal-actions">
       <button class="btn btn-ghost"   onclick="document.getElementById('rebaseModal').classList.remove('visible')">Cancel</button>
       <button class="btn btn-primary" id="rebaseConfirm">Rebase</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Cherry-pick -->
+<div class="modal-backdrop" id="cherryPickModal" role="dialog" aria-modal="true" aria-labelledby="cherryPickTitle">
+  <div class="modal">
+    <h3 id="cherryPickTitle">Cherry-pick onto current HEAD</h3>
+    <div class="modal-field">
+      <label for="cherryPickSelect">Commit (from DAG)</label>
+      <select id="cherryPickSelect"></select>
+    </div>
+    <div class="modal-field">
+      <label for="cherryPickSha">Or paste SHA</label>
+      <input type="text" id="cherryPickSha" placeholder="full or abbreviated SHA-1" spellcheck="false" autocomplete="off">
+    </div>
+    <p class="modal-note">
+      Applies that commit's parent→tree <strong>diff</strong> onto HEAD (does not copy the whole tree).
+      The new commit gets a <strong>new hash</strong>; the original object stays.
+      Conflicts use the same markers as merge — resolve, Stage All, Commit.
+    </p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost"   onclick="document.getElementById('cherryPickModal').classList.remove('visible')">Cancel</button>
+      <button class="btn btn-primary" id="cherryPickConfirm">Cherry-pick</button>
     </div>
   </div>
 </div>

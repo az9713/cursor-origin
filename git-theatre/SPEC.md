@@ -4,7 +4,7 @@ Internal spec for Wave 3 project 22. Vanilla HTML/CSS/JS. Persist to `localStora
 
 ## Product
 
-In-browser Git object store. Real blobs/trees/commits (content-addressed), branches, merge, rebase, reflog, DAG view, cat-file. No wasm git and no GitHub. Lives at `git-theatre/index.html`.
+In-browser Git object store. Real blobs/trees/commits (content-addressed), branches, merge, rebase, cherry-pick, reflog, DAG view, cat-file. No wasm git and no GitHub. Lives at `git-theatre/index.html`.
 
 Hashes **must** change when content changes and stay put when it does not.
 
@@ -28,7 +28,17 @@ Refs: `HEAD` (symbolic or detached), `refs/heads/<name>`. Working tree is a path
 
 ## Out of scope (later sessions)
 
-Cherry-pick, stash, remotes, packfiles, tags.
+Stash, remotes, packfiles, tags.
+
+## Session C must (completed)
+
+- Cherry-pick another commit onto current HEAD
+- Applies that commit's **parent→tree diff** onto HEAD (same apply-diff idea as rebase — does **not** copy the whole source tree, so files unique to HEAD such as main's README Features section are kept)
+- New commit object with a **new hash**; the original commit remains in the object store
+- Same-path conflicts use the same visible markers as merge (`<<<<<<< HEAD` / `=======` / `>>>>>>> <shortsha>`); user resolves, stages, commits (single parent, not a merge commit)
+- Reflog entry `cherry-pick <shortsha>: ...`
+- UI: Cherry-pick button; pick a commit SHA from the DAG dropdown or a text field (DAG selection prefills)
+- Seed hashes after Reset stay deterministic (seed timestamps/content unchanged)
 
 ## Visual
 

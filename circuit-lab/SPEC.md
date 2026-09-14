@@ -12,7 +12,7 @@ A wire that looks connected must toggle. Text ↔ schematic must not drop a pin.
 
 ```
 stmt ::= ident "=" "NOT" ident
-       | ident "=" ("AND"|"OR"|"XOR"|"NAND"|"NOR") ident ident
+       | ident "=" ("AND"|"OR"|"XOR"|"NAND"|"NOR"|"XNOR") ident ident
        | ident "=" "IN" INT          # numbered input switch
        | ident "=" "OUT" ident       # probe
        | ident "=" "DFF" ident       # rising-edge D flip-flop, clocked
@@ -33,9 +33,19 @@ Simulation: combinational settle (max 64 iterations; loop = error). Clock tick f
 - Reset seed
 - Hub link `../`
 
+## Session C must
+
+- New gate type `XNOR`: `ident = XNOR ident ident` (2-input; output 1 iff inputs equal)
+- `parseHDL` / `printHDL` / `checkRoundtrip` handle XNOR
+- Simulator combinational settle evaluates XNOR
+- Palette button + schematic drawing (same style as XOR / NAND)
+- Roundtrip chip still works for XOR seed and DFF seed
+- XOR seed truth table remains `0110`; DFF still latches only on Step
+- Optional third seed `#/c/xnor` (2-input XNOR with probes) — does not replace `xor` or `dff-reg`
+
 ## Out of scope (later sessions)
 
-Buses, new gate types beyond the grammar, multi-bit vectors.
+Buses, multi-bit vectors.
 
 ## Visual
 

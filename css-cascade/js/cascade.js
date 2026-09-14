@@ -70,8 +70,89 @@ function CC_fmtSpec(spec) {
 }
 
 /* ─────────────────────────────────────────────
+ * Cascade layers (@layer)
+ * ───────────────────────────────────────────── */
+
+/**
+ * True when `cssRule` is a CSSLayerBlockRule (`@layer name { ... }`).
+ * Prefers the CSSOM class; falls back to type 16 (LAYER_BLOCK_RULE).
+ */
+function CC_isLayerBlock(cssRule) {
+  if (!cssRule) return false;
+  try {
+    if (typeof CSSLayerBlockRule !== 'undefined' && cssRule instanceof CSSLayerBlockRule) {
+      return true;
+    }
+  } catch (_) { /* ignore */ }
+  return cssRule.type === 16 && typeof cssRule.name === 'string' && !!cssRule.cssRules;
+}
+
+/**
+ * Human-readable layer path for the trace.
+ * Empty path = unlayered. Anonymous segments render as "(anonymous)".
+ */
+function CC_layerLabel(layerPath) {
+  if (!layerPath || !layerPath.length) return '';
+  return layerPath.map(seg => seg || '(anonymous)').join('.');
+}
+
+/**
+ * Compare two layer rank tuples (first-seen sibling index at each nesting level).
+ * Empty / missing ranks mean unlayered at that level, which beats any sublayer.
+ * Top-level unlayered (empty array) beats every named layer.
+ * Returns positive if `a` wins over `b` (higher cascade priority).
+ */
+function CC_cmpLayerRanks(aRanks, bRanks) {
+  const a = (aRanks && aRanks.length) ? aRanks : [Infinity];
+  const b = (bRanks && bRanks.length) ? bRanks : [Infinity];
+  const n = Math.max(a.length, b.length);
+  for (let i = 0; i < n; i++) {
+    const av = i < a.length ? a[i] : Infinity;
+    const bv = i < b.length ? b[i] : Infinity;
+    if (av !== bv) return av - bv;
+  }
+  return 0;
+}
+
+/**
+ * Wrap inner CSS in `@layer` blocks matching `layerPath` (inside-out).
+ */
+function CC_wrapInLayers(css, layerPath) {
+  if (!layerPath || !layerPath.length) return css;
+  return layerPath.reduceRight((inner, seg) => {
+    const header = seg ? `@layer ${seg}` : '@layer';
+    return `${header} {\n${inner}\n}`;
+  }, css);
+}
+
+/* ─────────────────────────────────────────────
  * Rule parsing
  * ───────────────────────────────────────────── */
+
+function CC_collectStyleProps(style) {
+  const props = {};
+  for (let i = 0; i < style.length; i++) {
+    const p = style[i];
+    props[p] = style.getPropertyValue(p);
+  }
+  // Keep shorthands too — longhands alone miss a `padding:` / `margin:` trace.
+  ['padding', 'margin', 'border', 'background', 'font'].forEach(sh => {
+    const v = style.getPropertyValue(sh);
+    if (v) props[sh] = v;
+  });
+  return props;
+}
+
+function CC_enterLayerChild(parent, key, display) {
+  if (!parent.children.has(key)) {
+    parent.order.push(key);
+    parent.children.set(key, { children: new Map(), order: [], display });
+  }
+  return {
+    node: parent.children.get(key),
+    rank: parent.order.indexOf(key),
+  };
+}
 
 /**
  * Parse an array of CSS text strings (one per sheet) into rule objects.
@@ -81,17 +162,72 @@ function CC_fmtSpec(spec) {
  *   selector    — individual selector string (comma-splits are broken apart)
  *   props       — {propName: value} for every declaration in the rule
  *   sheetIndex  — 0-based index in cssTexts array
- *   ruleIndex   — index of the CSSStyleRule within the sheet
+ *   ruleIndex   — walk order of the CSSStyleRule (unique per sheet)
  *   selectorIndex — index within the comma-separated selector list
  *   sourceOrder — integer for cascade sort (higher = later = wins ties)
+ *   layerPath   — string[] of layer name segments; empty = unlayered
+ *   layerRanks  — sibling-index tuple used to compare layers
+ *   layerBlockId — identity of the enclosing CSSLayerBlockRule (or null)
  *
  * Uses a temporary <style> element in the current document to leverage
- * the browser's own CSS parser. Cleaned up immediately after.
+ * the browser's own CSS parser (including CSSLayerBlockRule). Cleaned up after.
  */
 function CC_parseCSSRules(cssTexts) {
   const rules = [];
   const tmp = document.createElement('style');
   document.head.appendChild(tmp);
+
+  const rootLayer = { children: new Map(), order: [] };
+  let anonSeq = 0;
+  let blockSeq = 0;
+
+  function walk(cssRules, sheetIdx, layerNode, layerRanks, layerPath, layerBlockId, seq) {
+    Array.from(cssRules || []).forEach(cssRule => {
+      if (CC_isLayerBlock(cssRule)) {
+        let node = layerNode;
+        const ranks = layerRanks.slice();
+        const path = layerPath.slice();
+        const raw = cssRule.name || '';
+        if (!raw) {
+          const step = CC_enterLayerChild(node, `#anon${anonSeq++}`, '');
+          node = step.node;
+          ranks.push(step.rank);
+          path.push('');
+        } else {
+          raw.split('.').filter(Boolean).forEach(seg => {
+            const step = CC_enterLayerChild(node, seg, seg);
+            node = step.node;
+            ranks.push(step.rank);
+            path.push(seg);
+          });
+        }
+        walk(cssRule.cssRules, sheetIdx, node, ranks, path, ++blockSeq, seq);
+        return;
+      }
+
+      if (cssRule.type !== CSSRule.STYLE_RULE) return;
+
+      const props = CC_collectStyleProps(cssRule.style);
+      const ruleIdx = seq.n++;
+      const selectorText = cssRule.selectorText;
+      const selectors = selectorText.split(',').map(s => s.trim());
+
+      selectors.forEach((selector, selIdx) => {
+        rules.push({
+          id: `${sheetIdx}_${ruleIdx}_${selIdx}`,
+          selector,
+          props: { ...props },
+          sheetIndex: sheetIdx,
+          ruleIndex: ruleIdx,
+          selectorIndex: selIdx,
+          sourceOrder: sheetIdx * 100000 + ruleIdx * 100 + selIdx,
+          layerPath: layerPath.slice(),
+          layerRanks: layerRanks.slice(),
+          layerBlockId,
+        });
+      });
+    });
+  }
 
   try {
     cssTexts.forEach((text, sheetIdx) => {
@@ -99,42 +235,7 @@ function CC_parseCSSRules(cssTexts) {
         tmp.textContent = text || '';
         const sheet = tmp.sheet;
         if (!sheet) return;
-
-        Array.from(sheet.cssRules || []).forEach((cssRule, ruleIdx) => {
-          if (cssRule.type !== CSSRule.STYLE_RULE) return;
-
-          // Collect all declared properties
-          const props = {};
-          const style = cssRule.style;
-          for (let i = 0; i < style.length; i++) {
-            const p = style[i];
-            props[p] = style.getPropertyValue(p);
-          }
-          // Keep shorthands too — longhands alone miss a `padding:` / `margin:` trace.
-          ['padding', 'margin', 'border', 'background', 'font'].forEach(sh => {
-            const v = style.getPropertyValue(sh);
-            if (v) props[sh] = v;
-          });
-
-          // Split comma-separated selectors so each gets its own entry
-          // (they may have different specificities for matching purposes)
-          const selectorText = cssRule.selectorText;
-          const selectors = selectorText.split(',').map(s => s.trim());
-
-          selectors.forEach((selector, selIdx) => {
-            rules.push({
-              id: `${sheetIdx}_${ruleIdx}_${selIdx}`,
-              selector,
-              props: { ...props },
-              sheetIndex: sheetIdx,
-              ruleIndex: ruleIdx,
-              selectorIndex: selIdx,
-              // Cascade source order: sheet index has highest weight,
-              // then rule index, then selector index within a comma list.
-              sourceOrder: sheetIdx * 100000 + ruleIdx * 100 + selIdx,
-            });
-          });
-        });
+        walk(sheet.cssRules, sheetIdx, rootLayer, [], [], null, { n: 0 });
       } catch (_) {
         /* Skip sheets with parse errors */
       }
@@ -152,7 +253,8 @@ function CC_parseCSSRules(cssTexts) {
  *   2. Declare a value for `property`
  *
  * Returns an array sorted in cascade order:
- *   - ascending specificity (lowest first)
+ *   - ascending layer priority (earlier layers first; unlayered last / wins)
+ *   - then ascending specificity (lowest first)
  *   - ties broken by ascending sourceOrder (later source = later = wins)
  *
  * The CASCADE WINNER is therefore the LAST element in the returned array.
@@ -198,9 +300,11 @@ function CC_findMatchingRules(el, allRules, property) {
     });
   });
 
-  // Sort: lowest specificity first; ties → earliest source order first.
-  // Winner = last item (highest spec, or if tied, latest source order).
+  // Sort: lowest layer first, then lowest specificity, then earliest source.
+  // Winner = last item. Unlayered ranks as Infinity so it sorts last / wins.
   matching.sort((a, b) => {
+    const lc = CC_cmpLayerRanks(a.layerRanks, b.layerRanks);
+    if (lc !== 0) return lc;
     const sc = CC_cmpSpecificity(a.specificity, b.specificity);
     return sc !== 0 ? sc : a.sourceOrder - b.sourceOrder;
   });
@@ -212,8 +316,8 @@ function CC_findMatchingRules(el, allRules, property) {
  * Rebuild CSS text for one sheet from parsed rules, excluding any rule
  * whose `id` is in the `disabledIds` Set.
  *
- * Comma-separated selectors are handled correctly: if only some selectors
- * in a rule are disabled, the rest are kept with the same declarations.
+ * Re-emits `@layer` wrappers so the iframe cascade matches the trace.
+ * Comma-separated selectors: if only some are disabled, the rest are kept.
  */
 function CC_buildCSS(allRules, sheetIndex, disabledIds) {
   // Filter to this sheet
@@ -226,24 +330,43 @@ function CC_buildCSS(allRules, sheetIndex, disabledIds) {
     byRule.get(rule.ruleIndex).push(rule);
   });
 
-  const chunks = [];
-
-  // Iterate in source order
-  [...byRule.entries()]
+  const groups = [...byRule.entries()]
     .sort(([a], [b]) => a - b)
-    .forEach(([, group]) => {
-      // Keep only non-disabled selectors
+    .map(([, group]) => {
       const enabled = group.filter(r => !disabledIds.has(r.id));
-      if (!enabled.length) return;
-
+      if (!enabled.length) return null;
       const selectorStr = enabled.map(r => r.selector).join(', ');
-      // All selectors in a rule share the same declarations
       const propsText = Object.entries(enabled[0].props)
         .map(([k, v]) => `  ${k}: ${v};`)
         .join('\n');
+      return {
+        css: `${selectorStr} {\n${propsText}\n}`,
+        layerPath: enabled[0].layerPath || [],
+        layerBlockId: enabled[0].layerBlockId == null ? null : enabled[0].layerBlockId,
+      };
+    })
+    .filter(Boolean);
 
-      chunks.push(`${selectorStr} {\n${propsText}\n}`);
-    });
+  // Flush consecutive groups from the same @layer block as one wrap so
+  // anonymous/sibling rules in one block stay a single layer.
+  const chunks = [];
+  let buf = [];
+  let bufKey = undefined;
+
+  function flush() {
+    if (!buf.length) return;
+    const inner = buf.map(g => g.css).join('\n\n');
+    chunks.push(CC_wrapInLayers(inner, buf[0].layerPath));
+    buf = [];
+  }
+
+  groups.forEach(g => {
+    const key = g.layerBlockId;
+    if (buf.length && bufKey !== key) flush();
+    bufKey = key;
+    buf.push(g);
+  });
+  flush();
 
   return chunks.join('\n\n');
 }

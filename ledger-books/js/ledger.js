@@ -2,17 +2,23 @@
  * ledger.js — pure domain logic for double-entry bookkeeping
  * Amounts in integer cents throughout. No DOM dependencies.
  * Storage key: ledger-books-v1
+ *
+ * Root state: { books: { personal: Book, business: Book }, currentBookId }
+ * Each Book: { id, accounts, entries, auditLog, nextEntrySeq }
  */
 
 'use strict';
 
 const STORAGE_KEY = 'ledger-books-v1';
 
+const BOOK_IDS = ['personal', 'business'];
+const BOOK_LABELS = { personal: 'Personal', business: 'Business' };
+
 // ─────────────────────────────────────────────
-//  Default seed data
+//  Default seed data — Personal (Session A)
 // ─────────────────────────────────────────────
 
-const SEED_ACCOUNTS = [
+const SEED_ACCOUNTS_PERSONAL = [
   { id: 'a1',  code: '1010', name: 'Cash',                  type: 'asset'     },
   { id: 'a2',  code: '1200', name: 'Accounts Receivable',   type: 'asset'     },
   { id: 'a3',  code: '1500', name: 'Equipment',             type: 'asset'     },
@@ -26,8 +32,8 @@ const SEED_ACCOUNTS = [
   { id: 'a11', code: '5030', name: 'Utilities Expense',     type: 'expense'   },
 ];
 
-// Posted entries — all balanced (sum debits = sum credits)
-function buildSeedEntries() {
+/** Posted entries — all balanced (sum debits = sum credits). TB foots $35,550.00 */
+function buildPersonalSeedEntries() {
   const now = Date.now();
   return [
     {
@@ -113,41 +119,103 @@ function buildSeedEntries() {
 }
 
 // ─────────────────────────────────────────────
-//  State helpers
+//  Default seed data — Business (Session C)
 // ─────────────────────────────────────────────
 
-function emptyState() {
-  return {
-    accounts: [...SEED_ACCOUNTS],
-    entries: buildSeedEntries(),
-    auditLog: [],
-    nextEntrySeq: 100,
-  };
+const SEED_ACCOUNTS_BUSINESS = [
+  { id: 'b1',  code: '1100', name: 'Operating Cash',        type: 'asset'     },
+  { id: 'b2',  code: '1300', name: 'Trade Receivables',     type: 'asset'     },
+  { id: 'b3',  code: '1400', name: 'Merchandise Inventory', type: 'asset'     },
+  { id: 'b4',  code: '2100', name: 'Trade Payables',        type: 'liability' },
+  { id: 'b5',  code: '3100', name: 'Common Stock',          type: 'equity'    },
+  { id: 'b6',  code: '4100', name: 'Product Sales',         type: 'revenue'   },
+  { id: 'b7',  code: '5100', name: 'Cost of Goods Sold',    type: 'expense'   },
+  { id: 'b8',  code: '5200', name: 'Office Expense',        type: 'expense'   },
+  { id: 'b9',  code: '5300', name: 'Advertising Expense',   type: 'expense'   },
+];
+
+/** ≥ 4 posted balancing entries. TB foots $90,000.00 */
+function buildBusinessSeedEntries() {
+  const now = Date.now();
+  return [
+    {
+      id: 'be1',
+      date: '2026-01-10',
+      memo: 'Founders contribute cash for common stock',
+      lines: [
+        { accountId: 'b1', debitCents: 4000000, creditCents: 0 },
+        { accountId: 'b5', debitCents: 0,       creditCents: 4000000 },
+      ],
+      posted: true,
+      postedAt: now - 8*86400000,
+      reversedBy: null,
+      reverses: null,
+    },
+    {
+      id: 'be2',
+      date: '2026-01-20',
+      memo: 'Purchase merchandise on account',
+      lines: [
+        { accountId: 'b3', debitCents: 1500000, creditCents: 0 },
+        { accountId: 'b4', debitCents: 0,       creditCents: 1500000 },
+      ],
+      posted: true,
+      postedAt: now - 7*86400000,
+      reversedBy: null,
+      reverses: null,
+    },
+    {
+      id: 'be3',
+      date: '2026-02-05',
+      memo: 'Invoice wholesale customer',
+      lines: [
+        { accountId: 'b2', debitCents: 2200000, creditCents: 0 },
+        { accountId: 'b6', debitCents: 0,       creditCents: 2200000 },
+      ],
+      posted: true,
+      postedAt: now - 5*86400000,
+      reversedBy: null,
+      reverses: null,
+    },
+    {
+      id: 'be4',
+      date: '2026-02-05',
+      memo: 'Record cost of goods sold',
+      lines: [
+        { accountId: 'b7', debitCents: 900000, creditCents: 0 },
+        { accountId: 'b3', debitCents: 0,      creditCents: 900000 },
+      ],
+      posted: true,
+      postedAt: now - 5*86400000 + 1000,
+      reversedBy: null,
+      reverses: null,
+    },
+    {
+      id: 'be5',
+      date: '2026-02-28',
+      memo: 'Pay office rent and advertising',
+      lines: [
+        { accountId: 'b8', debitCents: 250000, creditCents: 0 },
+        { accountId: 'b9', debitCents: 150000, creditCents: 0 },
+        { accountId: 'b1', debitCents: 0,      creditCents: 400000 },
+      ],
+      posted: true,
+      postedAt: now - 3*86400000,
+      reversedBy: null,
+      reverses: null,
+    },
+  ];
 }
 
-/** Load state from localStorage, falling back to seed. */
-function loadState() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      // Basic integrity check
-      if (parsed && Array.isArray(parsed.accounts) && Array.isArray(parsed.entries)) {
-        // Seed entries postedAt may be missing if loaded from old save — patch
-        parsed.entries.forEach(e => {
-          if (e.posted && !e.postedAt) e.postedAt = Date.now();
-        });
-        return parsed;
-      }
-    }
-  } catch (_) {
-    // corrupted; fall through to seed
-  }
-  const state = emptyState();
-  // Build initial audit log from seeded posted entries
-  state.entries.forEach(e => {
+// ─────────────────────────────────────────────
+//  Book builders
+// ─────────────────────────────────────────────
+
+function fillSeedAudit(book) {
+  book.auditLog = [];
+  book.entries.forEach(e => {
     if (e.posted) {
-      state.auditLog.push({
+      book.auditLog.push({
         at: e.postedAt,
         action: 'post',
         entryId: e.id,
@@ -155,7 +223,128 @@ function loadState() {
       });
     }
   });
-  return state;
+}
+
+function buildPersonalBook() {
+  const book = {
+    id: 'personal',
+    accounts: SEED_ACCOUNTS_PERSONAL.map(a => ({ ...a })),
+    entries: buildPersonalSeedEntries(),
+    auditLog: [],
+    nextEntrySeq: 100,
+  };
+  fillSeedAudit(book);
+  return book;
+}
+
+function buildBusinessBook() {
+  const book = {
+    id: 'business',
+    accounts: SEED_ACCOUNTS_BUSINESS.map(a => ({ ...a })),
+    entries: buildBusinessSeedEntries(),
+    auditLog: [],
+    nextEntrySeq: 100,
+  };
+  fillSeedAudit(book);
+  return book;
+}
+
+function isBookShape(book) {
+  return book && Array.isArray(book.accounts) && Array.isArray(book.entries);
+}
+
+function patchBookEntries(book) {
+  if (!Array.isArray(book.entries)) return;
+  book.entries.forEach(e => {
+    if (e.posted && !e.postedAt) e.postedAt = Date.now();
+  });
+  if (!Array.isArray(book.auditLog)) book.auditLog = [];
+  if (typeof book.nextEntrySeq !== 'number') book.nextEntrySeq = 100;
+}
+
+function currentBook(state) {
+  const id = state && BOOK_IDS.includes(state.currentBookId)
+    ? state.currentBookId
+    : 'personal';
+  return state.books[id] || state.books.personal;
+}
+
+function bookOf(state, bookId) {
+  if (bookId && state.books && state.books[bookId]) return state.books[bookId];
+  return currentBook(state);
+}
+
+function switchBook(state, bookId) {
+  if (!BOOK_IDS.includes(bookId) || !state.books[bookId]) {
+    return { ok: false, error: 'Unknown book.' };
+  }
+  state.currentBookId = bookId;
+  saveState(state);
+  return { ok: true, currentBookId: bookId };
+}
+
+// ─────────────────────────────────────────────
+//  State helpers
+// ─────────────────────────────────────────────
+
+function emptyState() {
+  return {
+    books: {
+      personal: buildPersonalBook(),
+      business: buildBusinessBook(),
+    },
+    currentBookId: 'personal',
+  };
+}
+
+function normalizeRoot(parsed) {
+  const personal = isBookShape(parsed.books && parsed.books.personal)
+    ? parsed.books.personal
+    : buildPersonalBook();
+  const business = isBookShape(parsed.books && parsed.books.business)
+    ? parsed.books.business
+    : buildBusinessBook();
+  personal.id = 'personal';
+  business.id = 'business';
+  patchBookEntries(personal);
+  patchBookEntries(business);
+  const currentBookId = parsed.currentBookId === 'business' ? 'business' : 'personal';
+  return { books: { personal, business }, currentBookId };
+}
+
+/** Load state from localStorage, falling back to seed. Migrates Session A single-book saves. */
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.books) {
+        const state = normalizeRoot(parsed);
+        saveState(state);
+        return state;
+      }
+      // Legacy Session A: { accounts, entries, auditLog, nextEntrySeq }
+      if (parsed && Array.isArray(parsed.accounts) && Array.isArray(parsed.entries)) {
+        const state = normalizeRoot({
+          books: {
+            personal: {
+              id: 'personal',
+              accounts: parsed.accounts,
+              entries: parsed.entries,
+              auditLog: parsed.auditLog || [],
+              nextEntrySeq: parsed.nextEntrySeq || 100,
+            },
+          },
+          currentBookId: 'personal',
+        });
+        saveState(state);
+        return state;
+      }
+    }
+  } catch (_) {
+    // corrupted; fall through to seed
+  }
+  return emptyState();
 }
 
 /** Persist state to localStorage. */
@@ -167,9 +356,9 @@ function saveState(state) {
 //  ID generation
 // ─────────────────────────────────────────────
 
-function nextEntryId(state) {
-  const id = 'e' + state.nextEntrySeq;
-  state.nextEntrySeq += 1;
+function nextEntryId(book) {
+  const id = 'e' + book.nextEntrySeq;
+  book.nextEntrySeq += 1;
   return id;
 }
 
@@ -207,15 +396,16 @@ function validateEntryLines(lines, accounts) {
 }
 
 // ─────────────────────────────────────────────
-//  CRUD operations
+//  CRUD operations (current book)
 // ─────────────────────────────────────────────
 
 /**
  * Create a new draft entry. Returns { ok, entry, error }.
  */
 function createEntry(state, { date, memo, lines }) {
+  const book = currentBook(state);
   const entry = {
-    id: nextEntryId(state),
+    id: nextEntryId(book),
     date: date || new Date().toISOString().slice(0, 10),
     memo: memo || '',
     lines: lines.map(l => ({
@@ -228,7 +418,7 @@ function createEntry(state, { date, memo, lines }) {
     reversedBy: null,
     reverses: null,
   };
-  state.entries.push(entry);
+  book.entries.push(entry);
   saveState(state);
   return { ok: true, entry };
 }
@@ -238,16 +428,17 @@ function createEntry(state, { date, memo, lines }) {
  * Returns { ok, entry, error }.
  */
 function postEntry(state, entryId) {
-  const entry = state.entries.find(e => e.id === entryId);
+  const book = currentBook(state);
+  const entry = book.entries.find(e => e.id === entryId);
   if (!entry) return { ok: false, error: 'Entry not found.' };
   if (entry.posted) return { ok: false, error: 'Entry is already posted.' };
 
-  const err = validateEntryLines(entry.lines, state.accounts);
+  const err = validateEntryLines(entry.lines, book.accounts);
   if (err) return { ok: false, error: err };
 
   entry.posted   = true;
   entry.postedAt = Date.now();
-  state.auditLog.push({
+  book.auditLog.push({
     at: entry.postedAt,
     action: 'post',
     entryId: entry.id,
@@ -262,13 +453,14 @@ function postEntry(state, entryId) {
  * Returns { ok, reversalEntry, error }.
  */
 function reverseEntry(state, entryId) {
-  const orig = state.entries.find(e => e.id === entryId);
+  const book = currentBook(state);
+  const orig = book.entries.find(e => e.id === entryId);
   if (!orig) return { ok: false, error: 'Entry not found.' };
   if (!orig.posted) return { ok: false, error: 'Cannot reverse a draft entry. Post it first.' };
   if (orig.reversedBy) return { ok: false, error: 'Entry has already been reversed.' };
 
   const now = Date.now();
-  const reversalId = nextEntryId(state);
+  const reversalId = nextEntryId(book);
   const reversalLines = orig.lines.map(l => ({
     accountId:   l.accountId,
     debitCents:  l.creditCents, // swap
@@ -287,8 +479,8 @@ function reverseEntry(state, entryId) {
   };
 
   orig.reversedBy = reversalId;
-  state.entries.push(reversal);
-  state.auditLog.push({
+  book.entries.push(reversal);
+  book.auditLog.push({
     at: now,
     action: 'reverse',
     entryId: reversalId,
@@ -303,28 +495,31 @@ function reverseEntry(state, entryId) {
  * Delete a draft (unposted) entry.
  */
 function deleteDraftEntry(state, entryId) {
-  const idx = state.entries.findIndex(e => e.id === entryId);
+  const book = currentBook(state);
+  const idx = book.entries.findIndex(e => e.id === entryId);
   if (idx === -1) return { ok: false, error: 'Entry not found.' };
-  if (state.entries[idx].posted) return { ok: false, error: 'Cannot delete a posted entry.' };
-  state.entries.splice(idx, 1);
+  if (book.entries[idx].posted) return { ok: false, error: 'Cannot delete a posted entry.' };
+  book.entries.splice(idx, 1);
   saveState(state);
   return { ok: true };
 }
 
 // ─────────────────────────────────────────────
-//  Reporting
+//  Reporting (per book)
 // ─────────────────────────────────────────────
 
 /**
  * Trial balance — posted lines only, grouped by account.
+ * Optional bookId selects a book; otherwise uses the current book.
  * Returns { rows, totalDebits, totalCredits, balanced }
  *   row: { account, debitCents, creditCents, netCents }
  */
-function trialBalance(state) {
+function trialBalance(state, bookId) {
+  const book = bookOf(state, bookId);
   const balances = new Map(); // accountId → { debit, credit }
-  state.accounts.forEach(a => balances.set(a.id, { debit: 0, credit: 0 }));
+  book.accounts.forEach(a => balances.set(a.id, { debit: 0, credit: 0 }));
 
-  state.entries
+  book.entries
     .filter(e => e.posted)
     .forEach(e => {
       e.lines.forEach(l => {
@@ -338,7 +533,7 @@ function trialBalance(state) {
   let totalDebits  = 0;
   let totalCredits = 0;
 
-  const rows = state.accounts.map(a => {
+  const rows = book.accounts.map(a => {
     const b = balances.get(a.id) || { debit: 0, credit: 0 };
     totalDebits  += b.debit;
     totalCredits += b.credit;
@@ -360,20 +555,22 @@ function trialBalance(state) {
 
 /**
  * P&L summary for a date range [fromDate, toDate] inclusive.
+ * Optional bookId selects a book; otherwise uses the current book.
  * Returns { revenueRows, expenseRows, totalRevenue, totalExpense, net }
  */
-function profitAndLoss(state, fromDate, toDate) {
+function profitAndLoss(state, fromDate, toDate, bookId) {
+  const book = bookOf(state, bookId);
   const revenueMap = new Map(); // accountId → cents
   const expenseMap = new Map();
 
-  state.accounts
+  book.accounts
     .filter(a => a.type === 'revenue' || a.type === 'expense')
     .forEach(a => {
       if (a.type === 'revenue') revenueMap.set(a.id, 0);
       else expenseMap.set(a.id, 0);
     });
 
-  state.entries
+  book.entries
     .filter(e => e.posted && e.date >= fromDate && e.date <= toDate)
     .forEach(e => {
       e.lines.forEach(l => {
@@ -388,7 +585,7 @@ function profitAndLoss(state, fromDate, toDate) {
       });
     });
 
-  const getAcct = id => state.accounts.find(a => a.id === id);
+  const getAcct = id => book.accounts.find(a => a.id === id);
 
   const revenueRows = [...revenueMap.entries()].map(([id, cents]) => ({
     account: getAcct(id),
@@ -473,17 +670,7 @@ function entryTotalDebits(entry) {
 
 function resetToSeed(state) {
   const fresh = emptyState();
-  // Build audit from seeded posted entries
-  fresh.entries.forEach(e => {
-    if (e.posted) {
-      fresh.auditLog.push({
-        at: e.postedAt,
-        action: 'post',
-        entryId: e.id,
-        memo: e.memo,
-      });
-    }
-  });
+  Object.keys(state).forEach(k => delete state[k]);
   Object.assign(state, fresh);
   saveState(state);
 }
@@ -493,10 +680,16 @@ function resetToSeed(state) {
 // ─────────────────────────────────────────────
 
 window.Ledger = {
+  STORAGE_KEY,
+  BOOK_IDS,
+  BOOK_LABELS,
+
   // State management
   loadState,
   saveState,
   resetToSeed,
+  currentBook,
+  switchBook,
 
   // Operations
   createEntry,

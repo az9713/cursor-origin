@@ -141,6 +141,18 @@ export function solve(sketch) {
           R.push(pr[con.circle] - con.r);
           break;
         }
+
+        case 'equal-length': {
+          // |len(l1) − len(l2)| = 0 in the same pixel units as distance.
+          // Signed difference so Gauss-Newton has a smooth Jacobian.
+          const l1 = lineMap.get(con.l1);
+          const l2 = lineMap.get(con.l2);
+          if (!l1 || !l2) break;
+          const len1 = Math.hypot(px[l1.b] - px[l1.a], py[l1.b] - py[l1.a]);
+          const len2 = Math.hypot(px[l2.b] - px[l2.a], py[l2.b] - py[l2.a]);
+          R.push(len1 - len2);
+          break;
+        }
       }
     }
     return R;

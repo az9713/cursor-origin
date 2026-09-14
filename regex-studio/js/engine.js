@@ -21,6 +21,20 @@ RS._maxGroup = function (node) {
   return m;
 };
 
+/* 1-based map of capturing-group index → name (string) or null */
+RS._groupNames = function (node) {
+  var names = [];
+  function walk(n0) {
+    if (!n0) return;
+    if (n0.type === 'group') names[n0.index] = n0.name || null;
+    if (n0.child) walk(n0.child);
+    if (n0.items) n0.items.forEach(walk);
+    if (n0.alts) n0.alts.forEach(walk);
+  }
+  walk(node);
+  return names;
+};
+
 /* Assign capturing-group indexes left-to-right starting at startIndex. */
 RS._reindexGroups = function (node, startIndex) {
   var n = startIndex;
@@ -39,6 +53,7 @@ RS._reindexGroups = function (node, startIndex) {
  * Returns a match object or null. */
 RS._matchAt = function (ast, str, startPos) {
   var numGroups = RS._maxGroup(ast);
+  var names = RS._groupNames(ast);
   /* caps[i] = {start, end} for group index i (1-based). Index 0 unused. */
   var caps = new Array(numGroups + 1).fill(null);
   var trace = []; /* [{label, start, end}] — only successful atoms */
@@ -232,9 +247,10 @@ RS._matchAt = function (ast, str, startPos) {
     start: startPos,
     end: endPos,
     text: str.slice(startPos, endPos),
-    groups: caps.slice(1).map(function (c) {
+    groups: caps.slice(1).map(function (c, i) {
+      var name = names[i + 1] || null;
       if (!c || c.end === -1) return null;
-      return { start: c.start, end: c.end, text: str.slice(c.start, c.end) };
+      return { start: c.start, end: c.end, text: str.slice(c.start, c.end), name: name };
     }),
     trace: trace.slice()
   };

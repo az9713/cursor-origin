@@ -44,6 +44,12 @@ RS.PRESETS = [
     name: 'URL protocol',
     pattern: '(https?|ftp)://[\\w./%-]+',
     haystack: 'Visit https://example.com or ftp://files.example.org/data and http://old.site.net'
+  },
+  {
+    id: 'named',
+    name: 'Named groups',
+    pattern: '(?<user>[\\w.+-]+)@(?<host>[\\w.-]+)',
+    haystack: 'Contact alice@example.com or support@test.org for help.'
   }
 ];
 
@@ -347,13 +353,16 @@ RS.renderMatchesList = function (matches, str) {
 RS.renderCaptures = function (match) {
   var el = document.getElementById('capture-table');
   if (!match) { el.innerHTML = '<p class="hint">Select a match.</p>'; return; }
-  var rows = '<tr><th>#</th><th>Text</th><th>Span</th></tr>';
-  rows += '<tr><td><strong>0</strong></td><td><code>' + RS.esc(match.text) + '</code></td><td><code>[' + match.start + ',' + match.end + ']</code></td></tr>';
+  var names = RS._groupNames(RS.currentAst);
+  var rows = '<tr><th>#</th><th>Name</th><th>Text</th><th>Span</th></tr>';
+  rows += '<tr><td><strong>0</strong></td><td class="capture-null">—</td><td><code>' + RS.esc(match.text) + '</code></td><td><code>[' + match.start + ',' + match.end + ']</code></td></tr>';
   match.groups.forEach(function (g, i) {
+    var name = (g && g.name) || names[i + 1] || null;
+    var nameCell = name ? '<code>' + RS.esc(name) + '</code>' : '<span class="capture-null">—</span>';
     if (!g) {
-      rows += '<tr><td>' + (i + 1) + '</td><td class="capture-null">—</td><td class="capture-null">—</td></tr>';
+      rows += '<tr><td>' + (i + 1) + '</td><td>' + nameCell + '</td><td class="capture-null">—</td><td class="capture-null">—</td></tr>';
     } else {
-      rows += '<tr><td>' + (i + 1) + '</td><td><code>' + RS.esc(g.text) + '</code></td><td><code>[' + g.start + ',' + g.end + ']</code></td></tr>';
+      rows += '<tr><td>' + (i + 1) + '</td><td>' + nameCell + '</td><td><code>' + RS.esc(g.text) + '</code></td><td><code>[' + g.start + ',' + g.end + ']</code></td></tr>';
     }
   });
   el.innerHTML = '<table class="capture-table">' + rows + '</table>';
@@ -559,13 +568,26 @@ RS.buildAtomFromForm = function () {
       case 'group':
       case 'ncgroup': {
         if (!val) { alert('Enter a pattern for the group.'); return null; }
+        var groupName = null;
+        var innerSrc = val;
+        if (type === 'group') {
+          var colon = val.indexOf(':');
+          if (colon > 0) {
+            var maybeName = val.slice(0, colon);
+            if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(maybeName)) {
+              groupName = maybeName;
+              innerSrc = val.slice(colon + 1);
+            }
+          }
+        }
+        if (!innerSrc) { alert('Enter a pattern for the group.'); return null; }
         var inner;
-        try { inner = RS.parse(val); } catch (e) { alert('Invalid pattern: ' + e.message); return null; }
+        try { inner = RS.parse(innerSrc); } catch (e) { alert('Invalid pattern: ' + e.message); return null; }
         if (type === 'group') {
           /* find next group index; bump inner captures so they stay unique */
           var nextIdx = RS._maxGroup(RS.currentAst || { type: 'empty' }) + 1;
           RS._reindexGroups(inner, nextIdx + 1);
-          node = { type: 'group', index: nextIdx, child: inner };
+          node = { type: 'group', index: nextIdx, name: groupName, child: inner };
         } else {
           node = { type: 'ncgroup', child: inner };
         }
@@ -736,6 +758,17 @@ RS.bind = function () {
       RS._addBranch();
       return;
     }
+  });
+
+  /* Placeholder hint: Group atom accepts name:pattern or just pattern */
+  document.getElementById('add-type').addEventListener('change', function () {
+    var input = document.getElementById('add-value');
+    if (this.value === 'group') input.placeholder = 'name:pattern or pattern';
+    else if (this.value === 'ncgroup') input.placeholder = 'inner pattern';
+    else if (this.value === 'escape') input.placeholder = 'd  w  s  D  W  S';
+    else if (this.value === 'charclass') input.placeholder = 'a-z0-9';
+    else if (this.value === 'anchor') input.placeholder = '^ or $';
+    else input.placeholder = 'value / contents';
   });
 
   /* Builder-add form */

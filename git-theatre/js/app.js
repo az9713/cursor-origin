@@ -91,6 +91,9 @@
     } else if (store.mergeState) {
       banner.textContent = 'Merge in progress — stage resolved files and commit';
       banner.classList.add('visible');
+    } else if (store.cherryPickState) {
+      banner.textContent = 'Cherry-pick in progress — resolve markers then Stage All + Commit';
+      banner.classList.add('visible');
     } else {
       banner.classList.remove('visible');
     }
@@ -326,6 +329,24 @@
   function showModal(id)  { document.getElementById(id).classList.add('visible'); }
   function closeModal(id) { document.getElementById(id).classList.remove('visible'); }
 
+  function populateCherryPickModal() {
+    const store   = Git.load();
+    const commits = Git.getAllCommits(store).sort((a, b) => b.timestamp - a.timestamp);
+    const head    = Git.resolveHead(store);
+    const sel     = document.getElementById('cherryPickSelect');
+    sel.innerHTML = '<option value="">— select a commit —</option>' +
+      commits.map(c => {
+        const short  = c.sha.slice(0, 7);
+        const msg    = esc((c.message || '').split('\n')[0].slice(0, 48));
+        const isHead = c.sha === head ? ' (HEAD)' : '';
+        return `<option value="${c.sha}">${short}  ${msg}${isHead}</option>`;
+      }).join('');
+    const input = document.getElementById('cherryPickSha');
+    const pre   = selectedSha || '';
+    input.value = pre;
+    sel.value   = pre && commits.some(c => c.sha === pre) ? pre : '';
+  }
+
   function populateBranchSelect(selId) {
     const store   = Git.load();
     const current = Git.headBranch(store);
@@ -520,6 +541,45 @@
         setTab('catfile');
         toast(`Rebased ${n} commit(s) onto ${branch} → new tip ${result.newHead.slice(0,7)}`);
       } catch(e) { toast(e.message, true); }
+    });
+
+    // ── Cherry-pick ──
+    document.getElementById('cherryPickBtn').addEventListener('click', () => {
+      populateCherryPickModal();
+      showModal('cherryPickModal');
+    });
+    document.getElementById('cherryPickSelect').addEventListener('change', (e) => {
+      if (e.target.value) document.getElementById('cherryPickSha').value = e.target.value;
+    });
+    document.getElementById('cherryPickConfirm').addEventListener('click', () => {
+      const sha = document.getElementById('cherryPickSha').value.trim()
+               || document.getElementById('cherryPickSelect').value;
+      if (!sha) { toast('Select or paste a commit SHA', true); return; }
+      if (currentFile) Git.saveWorkingTreeFile(currentFile, editor.value);
+      try {
+        const result = Git.doCherryPick(sha);
+        closeModal('cherryPickModal');
+        if (result.type === 'conflict') {
+          currentFile = result.conflicts[0];
+          const s2 = Git.load();
+          if (s2.cherryPickState && s2.cherryPickState.message) {
+            document.getElementById('commitMessage').value = s2.cherryPickState.message;
+          }
+          renderAll();
+          toast(`⚠ Conflicts in: ${result.conflicts.join(', ')}`, true);
+          return;
+        }
+        selectedSha = result.sha;
+        history.pushState(null, '', `#/c/${result.sha}`);
+        renderAll();
+        document.getElementById('catfileHash').value = result.sha;
+        showCatfile(result.sha);
+        setTab('catfile');
+        toast(`Cherry-picked ${result.originalSha.slice(0,7)} → ${result.sha.slice(0,7)}`);
+      } catch(e) { toast(e.message, true); }
+    });
+    document.getElementById('cherryPickSha').addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('cherryPickConfirm').click();
     });
 
     // ── Reset seed ──

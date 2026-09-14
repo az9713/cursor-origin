@@ -36,6 +36,7 @@ function isBlack(m) { return BLACK_SET.has(m % 12); }
 
 const SEED_SONG = {
   bpm: 120,
+  swing: 0,
   tracks: [
     {
       id: 'T1', name: 'Melody', gain: 0.65, wave: 'sine',
@@ -86,6 +87,8 @@ const engine      = new AudioEngine();
 ═══════════════════════════════════════════════════════ */
 
 const elBpm        = document.getElementById('bpm');
+const elSwing      = document.getElementById('swing');
+const elSwingVal   = document.getElementById('swing-val');
 const elPlayBtn    = document.getElementById('play-btn');
 const elStopBtn    = document.getElementById('stop-btn');
 const elExportBtn  = document.getElementById('export-btn');
@@ -128,6 +131,14 @@ function loadSong() {
 }
 function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
 
+/** Clamp swing to 0..1; missing/invalid → 0 so Session A JSON still loads. */
+function normalizeSong(s) {
+  if (!s || typeof s !== 'object') return s;
+  const n = Number(s.swing);
+  s.swing = Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 0;
+  return s;
+}
+
 /* ═══════════════════════════════════════════════════════
    Initialise
 ═══════════════════════════════════════════════════════ */
@@ -135,13 +146,13 @@ function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
 function init() {
   const hid = getHashId();
   if (hid === 'seed') {
-    song = deepClone(SEED_SONG);
+    song = normalizeSong(deepClone(SEED_SONG));
   } else if (hid === 'user') {
-    song = loadSong() || deepClone(SEED_SONG);
+    song = normalizeSong(loadSong() || deepClone(SEED_SONG));
   } else {
     const saved = loadSong();
-    if (saved) { song = saved; setHash('user'); }
-    else        { song = deepClone(SEED_SONG); setHash('seed'); }
+    if (saved) { song = normalizeSong(saved); setHash('user'); }
+    else        { song = normalizeSong(deepClone(SEED_SONG)); setHash('seed'); }
   }
 
   buildPianoRoll();
@@ -281,6 +292,8 @@ function onGridClick(e) {
 
 function renderAll() {
   elBpm.value = song.bpm;
+  elSwing.value = Math.round((song.swing || 0) * 100);
+  elSwingVal.textContent = Math.round((song.swing || 0) * 100) + '%';
   renderTracks();
   renderNotes();
   renderPlayhead(-1);
@@ -418,12 +431,14 @@ elPlayBtn.addEventListener('click', () => {
   elPlayBtn.disabled = true;
   elStopBtn.disabled = false;
   elBpm.disabled = true;
+  elSwing.disabled = true;
 
   engine.start(song, TOTAL_BEATS, (beat) => {
     if (beat < 0) {
       elPlayBtn.disabled = false;
       elStopBtn.disabled = true;
       elBpm.disabled = false;
+      elSwing.disabled = false;
       renderPlayhead(-1);
     } else {
       renderPlayhead(beat);
@@ -444,6 +459,14 @@ elBpm.addEventListener('change', () => {
   } else {
     elBpm.value = song.bpm;
   }
+});
+
+elSwing.addEventListener('input', () => {
+  const pctVal = parseInt(elSwing.value, 10);
+  const s = Number.isFinite(pctVal) ? Math.max(0, Math.min(1, pctVal / 100)) : 0;
+  song.swing = s;
+  elSwingVal.textContent = Math.round(s * 100) + '%';
+  saveSong();
 });
 
 /* ═══════════════════════════════════════════════════════
@@ -479,7 +502,7 @@ elImportFile.addEventListener('change', () => {
         throw new Error('Invalid song format');
       }
       if (engine.playing) engine.stop();
-      song = imported;
+      song = normalizeSong(imported);
       saveSong();
       selectedTrack = 0;
       renderAll();
@@ -500,7 +523,7 @@ elResetBtn.addEventListener('click', () => {
   if (!confirm('Reset to seed song? All changes will be lost.')) return;
   if (engine.playing) engine.stop();
   localStorage.removeItem(STORAGE_KEY);
-  song = deepClone(SEED_SONG);
+  song = normalizeSong(deepClone(SEED_SONG));
   selectedTrack = 0;
   setHash('seed');
   renderAll();

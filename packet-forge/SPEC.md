@@ -4,7 +4,7 @@ Internal spec for Wave 3 project 24. Vanilla HTML/CSS/JS. Persist to `localStora
 
 ## Product
 
-Ethernet / IPv4 / TCP / UDP fields on one side, hex dump on the other. Checksums and length fields recompute. Import/export hex. Lives at `packet-forge/index.html`.
+Ethernet / IPv4 / TCP / UDP / ICMP fields on one side, hex dump on the other. Checksums and length fields recompute. Import/export hex. Lives at `packet-forge/index.html`.
 
 Flip a flag in the form and the hex byte must move. Checksum mismatch is visible.
 
@@ -16,10 +16,11 @@ Bytes are big-endian.
 - IPv4: version/IHL, TOS, total length, id, flags/frag, TTL, protocol, checksum, src, dst, options if IHL>5 (Session A: IHL=5 only)
 - UDP: src port, dst port, length, checksum (optional; 0 means unused)
 - TCP: src, dst, seq, ack, data offset, flags (URG ACK PSH RST SYN FIN), window, checksum, urg, payload
+- ICMP (Session C): type (1), code (1), checksum (2), rest-of-header (4), payload
 
-Payload is raw bytes after the transport header. Protocol field selects TCP (6) or UDP (17).
+Payload is raw bytes after the transport / ICMP header. Protocol field selects TCP (6), UDP (17), or ICMP (1).
 
-IPv4 header checksum: ones' complement of 16-bit words. TCP/UDP checksum: pseudo-header + segment (IPv4).
+IPv4 header checksum: ones' complement of 16-bit words of the IP header. TCP/UDP checksum: IPv4 pseudo-header + segment. ICMP checksum: ones' complement of the ICMP message only (no pseudo-header).
 
 ## Session A must
 
@@ -32,9 +33,20 @@ IPv4 header checksum: ones' complement of 16-bit words. TCP/UDP checksum: pseudo
 - Reset
 - Hub link `../`
 
+## Session C must
+
+- ICMP over IPv4 (protocol 1). Form: type, code, checksum, rest-of-header (4 bytes), payload hex
+- Ethernet + IPv4 + ICMP encode/decode
+- ICMP checksum: ones' complement of the ICMP message (no TCP-style pseudo-header)
+- IPv4 header checksum still ones' complement of the IP header
+- Lock checksum still shows mismatch (Session B)
+- Presets `tcp-syn` and `udp-dns` still build identical IPv4/TCP and IPv4/UDP packets
+- Preset `icmp-echo` (type 8, code 0), hash `#/p/icmp-echo`
+- Protocol dropdown includes `1 — ICMP`; hide TCP/UDP sections, show ICMP
+
 ## Out of scope (later sessions)
 
-ICMP, IPv6, VLAN, options.
+IPv6, VLAN, options.
 
 ## Visual
 

@@ -29,7 +29,15 @@ PGN: import/export movetext (`1. e4 e5 2. Nf3 …`). SAN generator/parser for Se
 
 ## Out of scope (later sessions)
 
-Chess960, fairy pieces, engine search, clocks.
+Fairy pieces, engine search, clocks.
+
+## Session C must
+
+- Chess960 (Fischer random): starting positions id 0–959; king between the two rooks on the back rank; bishops on opposite colors; black mirrors white. No fairy pieces.
+- Castling uses Chess960 rules: after O-O / O-O-O the king ends on the g/c files and the rook on f/d; rights come from that start; the path is empty except the king and that rook; the king may not castle out of, through, or into check. King or rook may already stand on their destination square.
+- UI: Chess960 button generates a position from a seed id 0–959 and shows the id. Fixture hash `#/g/chess960-518` is ID 518 = standard chess (`RNBQKBNR`).
+- Session A fixtures (Scholar's mate, Italian O-O) still replay move-for-move. Session B SAN disambiguation (pre-move SAN, e.g. Nbd2 vs Nd2) still holds. Eval bar, takeback, PGN import/export still work.
+- Local `js/chess.js` only (no chess.js npm).
 
 ## Visual
 

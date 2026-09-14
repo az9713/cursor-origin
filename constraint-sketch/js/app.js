@@ -77,6 +77,33 @@ function makeSeedTriangle(cx, cy) {
   };
 }
 
+function makeSeedIsosceles(cx, cy) {
+  // Equal legs enforced by equal-length (not two matching distance constraints).
+  const BASE = 200, HEIGHT = 160;
+  return {
+    name: 'Isosceles',
+    points: [
+      { id: 'p1', x: cx,         y: cy - HEIGHT / 2 },  // apex
+      { id: 'p2', x: cx - BASE / 2, y: cy + HEIGHT / 2 },
+      { id: 'p3', x: cx + BASE / 2, y: cy + HEIGHT / 2 },
+    ],
+    lines: [
+      { id: 'l1', a: 'p1', b: 'p2' },   // left leg
+      { id: 'l2', a: 'p1', b: 'p3' },   // right leg
+      { id: 'l3', a: 'p2', b: 'p3' },   // base
+    ],
+    circles: [],
+    constraints: [
+      { id: 'c1', type: 'distance',     p1: 'p2', p2: 'p3', len: BASE },
+      { id: 'c2', type: 'equal-length', l1: 'l1', l2: 'l2' },
+    ],
+  };
+}
+
+const NAMED_SEEDS = {
+  isosceles: { make: makeSeedIsosceles, kind: 'isosceles' },
+};
+
 // ── ID generation ─────────────────────────────────────────────────────────────
 let _seq = Date.now();
 function uid(prefix = 'e') { return prefix + (++_seq).toString(36); }
@@ -139,9 +166,9 @@ function pushHash(id) {
 
 window.addEventListener('hashchange', () => {
   const id = parseHash();
-  if (id && state.sketches[id]) {
-    switchSketch(id);
-  }
+  if (!id) return;
+  if (!state.sketches[id] && !materializeNamedSeed(id)) return;
+  switchSketch(id);
 });
 
 // ── Canvas ────────────────────────────────────────────────────────────────────
@@ -302,6 +329,14 @@ function drawConstraintIndicators(sketch) {
         break;
       }
 
+      case 'equal-length': {
+        const l1 = getLine(sketch, con.l1);
+        const l2 = getLine(sketch, con.l2);
+        if (l1) drawEqualLengthTick(sketch, l1, selCon);
+        if (l2) drawEqualLengthTick(sketch, l2, selCon);
+        break;
+      }
+
       case 'angle': {
         const l1 = getLine(sketch, con.l1);
         const l2 = getLine(sketch, con.l2);
@@ -382,6 +417,27 @@ function drawDimensionLabel(p1, p2, len, selected) {
   ctx.fillRect(-tw/2, -8, tw, 16);
   ctx.fillStyle = selected ? '#b4451a' : '#7a4030';
   ctx.fillText(text, 0, 0);
+  ctx.restore();
+}
+
+function drawEqualLengthTick(sketch, line, selected) {
+  const a = getPoint(sketch, line.a);
+  const b = getPoint(sketch, line.b);
+  if (!a || !b) return;
+  const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const len = Math.hypot(dx, dy) + 1e-9;
+  const ux = dx / len, uy = dy / len;
+  const nx = -uy, ny = ux;
+  const s = 7;
+
+  ctx.save();
+  ctx.strokeStyle = selected ? '#b4451a' : 'rgba(42,37,31,0.45)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(mx + nx * s, my + ny * s);
+  ctx.lineTo(mx - nx * s, my - ny * s);
+  ctx.stroke();
   ctx.restore();
 }
 
@@ -527,6 +583,7 @@ const CONSTRAINT_SPEC = {
   coincident:      { selects: ['point', 'point'],  hasValue: false },
   distance:        { selects: ['point', 'point'],  hasValue: true,  valueLabel: 'Distance (px)', defaultValue: 100 },
   parallel:        { selects: ['line',  'line'],   hasValue: false },
+  'equal-length':  { selects: ['line',  'line'],   hasValue: false },
   angle:           { selects: ['line',  'line'],   hasValue: true,  valueLabel: 'Angle (°)',     defaultValue: 90 },
   'point-on-line': { selects: ['point', 'line'],   hasValue: false },
   radius:          { selects: ['circle'],           hasValue: true,  valueLabel: 'Radius (px)',   defaultValue: 60 },
@@ -763,6 +820,8 @@ function finaliseConstraint(value) {
       con = { id, type: 'distance',   p1: ids[0], p2: ids[1], len: value }; break;
     case 'parallel':
       con = { id, type: 'parallel',   l1: ids[0], l2: ids[1] }; break;
+    case 'equal-length':
+      con = { id, type: 'equal-length', l1: ids[0], l2: ids[1] }; break;
     case 'angle':
       con = { id, type: 'angle',      l1: ids[0], l2: ids[1], deg: value }; break;
     case 'point-on-line':
@@ -1056,6 +1115,8 @@ function constraintParamsHtml(con) {
                 <input class="insp-input" id="con-len" type="number" value="${con.len}" step="1"></div>`;
     case 'parallel':
       return `<div class="insp-row"><span class="insp-key">Lines</span><span class="insp-val">${con.l1} ∥ ${con.l2}</span></div>`;
+    case 'equal-length':
+      return `<div class="insp-row"><span class="insp-key">Lines</span><span class="insp-val">${con.l1} = ${con.l2}</span></div>`;
     case 'angle':
       return `<div class="insp-row"><span class="insp-key">Lines</span><span class="insp-val">${con.l1} · ${con.l2}</span></div>
               <div class="insp-row"><span class="insp-key">Angle</span>
@@ -1109,6 +1170,7 @@ function constraintShortDesc(c) {
     case 'coincident':   return `${c.p1} = ${c.p2}`;
     case 'distance':     return `|${c.p1}${c.p2}| = ${c.len}px`;
     case 'parallel':     return `${c.l1} ∥ ${c.l2}`;
+    case 'equal-length': return `|${c.l1}| = |${c.l2}|`;
     case 'angle':        return `${c.l1}∠${c.l2} = ${c.deg}°`;
     case 'point-on-line':return `${c.p} on ${c.l}`;
     case 'radius':       return `r(${c.circle}) = ${c.r}px`;
@@ -1154,24 +1216,50 @@ function loadSeed(makeFn, kind) {
   switchSketch(id);
 }
 
+function canvasCenter() {
+  const W = canvas.width  || container.clientWidth  || 600;
+  const H = canvas.height || container.clientHeight || 400;
+  return { cx: W / 2, cy: H / 2 };
+}
+
+function materializeNamedSeed(id, { replace = false } = {}) {
+  const def = NAMED_SEEDS[id];
+  if (!def) return false;
+  if (state.sketches[id] && !replace) return true;
+  const { cx, cy } = canvasCenter();
+  state.sketches[id] = { ...def.make(cx, cy), seedKind: def.kind };
+  return true;
+}
+
+function loadNamedSeed(id) {
+  if (!materializeNamedSeed(id, { replace: true })) return;
+  switchSketch(id);
+}
+
 function resetCurrentSketch() {
   const sketch = currentSketch();
   if (!sketch) return;
   if (!confirm(`Reset "${sketch.name}"? Restore the seed geometry.`)) return;
-  const W = canvas.width  || container.clientWidth  || 600;
-  const H = canvas.height || container.clientHeight || 400;
+  const { cx, cy } = canvasCenter();
   let data = null;
-  if (sketch.seedKind === 'triangle' || sketch.name === 'Right Triangle') {
-    data = makeSeedTriangle(W / 2, H / 2);
+  let kind = sketch.seedKind;
+  if (kind === 'isosceles' || sketch.name === 'Isosceles' || state.currentId === 'isosceles') {
+    data = makeSeedIsosceles(cx, cy);
+    kind = 'isosceles';
+  } else if (sketch.seedKind === 'triangle' || sketch.name === 'Right Triangle') {
+    data = makeSeedTriangle(cx, cy);
+    kind = 'triangle';
   } else if (sketch.seedKind === 'rect' || sketch.name === 'Rectangle') {
-    data = makeSeedRect(W / 2, H / 2);
+    data = makeSeedRect(cx, cy);
+    kind = 'rect';
   }
   if (data) {
     sketch.points = data.points;
     sketch.lines = data.lines;
     sketch.circles = data.circles;
     sketch.constraints = data.constraints;
-    sketch.seedKind = sketch.seedKind || (data.name === 'Right Triangle' ? 'triangle' : 'rect');
+    sketch.name = data.name;
+    sketch.seedKind = kind;
   } else {
     sketch.points = [];
     sketch.lines = [];
@@ -1252,6 +1340,9 @@ function wireDom() {
   document.getElementById('load-triangle').addEventListener('click', () => {
     loadSeed(makeSeedTriangle, 'triangle');
   });
+  document.getElementById('load-isosceles').addEventListener('click', () => {
+    loadNamedSeed('isosceles');
+  });
 
   // Sketch select dropdown
   document.getElementById('sketch-select').addEventListener('change', e => {
@@ -1275,15 +1366,16 @@ function init() {
   wireDom();
 
   // Load persisted data or create default sketch
-  let loaded = load();
+  load();
 
-  // Check hash for requested sketch
+  // Check hash for requested sketch (including named seeds like isosceles)
   const hashId = parseHash();
+  if (hashId && !state.sketches[hashId]) materializeNamedSeed(hashId);
   if (hashId && state.sketches[hashId]) {
     state.currentId = hashId;
   }
 
-  if (!loaded || Object.keys(state.sketches).length === 0) {
+  if (Object.keys(state.sketches).length === 0) {
     // First run: create a welcome sketch with the rectangle seed
     // Use container client dimensions (available before ResizeObserver fires)
     const W = container.clientWidth  || 600;

@@ -19,7 +19,7 @@ const DEFAULT_STATE = {
   ipMf:         false,
   ipFragOffset: 0,
   ipTtl:        64,
-  ipProto:      6,          // 6 = TCP, 17 = UDP
+  ipProto:      6,          // 6 = TCP, 17 = UDP, 1 = ICMP
   ipSrc:        '192.168.1.1',
   ipDst:        '192.168.1.2',
 
@@ -39,10 +39,15 @@ const DEFAULT_STATE = {
   udpSport:    1234,
   udpDport:    53,
 
+  icmpType:    8,            // Echo Request
+  icmpCode:    0,
+  icmpRest:    '00000000',   // 4-byte rest-of-header
+
   payload:       '',
   lockChecksum:  false,
   tcpManualCksum: 0,
   udpManualCksum: 0,
+  icmpManualCksum: 0,
   ipManualCksum:  0,
 };
 
@@ -113,6 +118,41 @@ const PRESETS = {
       '00' +                     // root label
       '0001' +                   // QTYPE  = A
       '0001',                    // QCLASS = IN
+    lockChecksum: false,
+  },
+  'icmp-echo': {
+    ethDst: 'ff:ff:ff:ff:ff:ff',
+    ethSrc: '00:11:22:33:44:55',
+    ipTos:        0,
+    ipId:         0x0042,
+    ipDf:         true,
+    ipMf:         false,
+    ipFragOffset: 0,
+    ipTtl:        64,
+    ipProto:      1,
+    ipSrc:        '192.168.1.10',
+    ipDst:        '8.8.8.8',
+    tcpSport:     54321,
+    tcpDport:     80,
+    tcpSeq:       0,
+    tcpAck:       0,
+    tcpFlagUrg:   false,
+    tcpFlagAck:   false,
+    tcpFlagPsh:   false,
+    tcpFlagRst:   false,
+    tcpFlagSyn:   false,
+    tcpFlagFin:   false,
+    tcpWindow:    65535,
+    tcpUrgent:    0,
+    udpSport:     1234,
+    udpDport:     53,
+    icmpType:     8,             // Echo Request
+    icmpCode:     0,
+    icmpRest:     '00010001',    // identifier=1, sequence=1
+    // Windows-style 32-byte ping data: "abcdefghijklmnopqrstuvwabcdefghi"
+    payload:
+      '6162636465666768696a6b6c6d6e6f70' +
+      '71727374757677616263646566676869',
     lockChecksum: false,
   },
 };
@@ -187,6 +227,10 @@ function writeForm() {
   G('fld-udp-sport').value    = state.udpSport;
   G('fld-udp-dport').value    = state.udpDport;
 
+  G('fld-icmp-type').value    = state.icmpType;
+  G('fld-icmp-code').value    = state.icmpCode;
+  G('fld-icmp-rest').value    = state.icmpRest || '00000000';
+
   G('fld-payload').value      = state.payload;
   G('fld-lock-cksum').checked = !!state.lockChecksum;
 }
@@ -221,6 +265,10 @@ function readForm() {
   state.udpSport = parseNum(G('fld-udp-sport').value);
   state.udpDport = parseNum(G('fld-udp-dport').value);
 
+  state.icmpType = parseNum(G('fld-icmp-type').value) & 0xff;
+  state.icmpCode = parseNum(G('fld-icmp-code').value) & 0xff;
+  state.icmpRest = G('fld-icmp-rest').value.replace(/[^0-9a-fA-F]/g, '').toLowerCase();
+
   state.payload      = G('fld-payload').value.replace(/\s/g, '');
   state.lockChecksum = G('fld-lock-cksum').checked;
 }
@@ -228,9 +276,10 @@ function readForm() {
 // ── Protocol section visibility ───────────────────────────────────────────────
 
 function updateSections() {
-  const isTcp = Number(state.ipProto) === 6;
-  G('section-tcp').style.display = isTcp ? '' : 'none';
-  G('section-udp').style.display = isTcp ? 'none' : '';
+  const proto = Number(state.ipProto);
+  G('section-tcp').style.display  = proto === 6  ? '' : 'none';
+  G('section-udp').style.display  = proto === 17 ? '' : 'none';
+  G('section-icmp').style.display = proto === 1  ? '' : 'none';
 }
 
 // ── Computed display labels ───────────────────────────────────────────────────
@@ -254,6 +303,7 @@ function snapshotChecksums() {
   state.ipManualCksum = u16(bytes, 24);
   if (Number(state.ipProto) === 6 && bytes.length >= 52) state.tcpManualCksum = u16(bytes, 50);
   if (Number(state.ipProto) === 17 && bytes.length >= 42) state.udpManualCksum = u16(bytes, 40);
+  if (Number(state.ipProto) === 1 && bytes.length >= 38) state.icmpManualCksum = u16(bytes, 36);
 }
 
 function updateComputedDisplays(bytes) {
@@ -270,6 +320,9 @@ function updateComputedDisplays(bytes) {
     G('disp-udp-length').textContent = u16(bytes, 38) + ' B';
     G('disp-udp-cksum').textContent  = fmtCksum(u16(bytes, 40));
   }
+  if (proto === 1 && bytes.length >= 38) {
+    G('disp-icmp-cksum').textContent = fmtCksum(u16(bytes, 36));
+  }
 
   let ipBad = false, l4Bad = false;
   if (state.lockChecksum) {
@@ -281,10 +334,14 @@ function updateComputedDisplays(bytes) {
     if (proto === 17 && bytes.length >= 42 && expected.length >= 42) {
       l4Bad = u16(bytes, 40) !== u16(expected, 40);
     }
+    if (proto === 1 && bytes.length >= 38 && expected.length >= 38) {
+      l4Bad = u16(bytes, 36) !== u16(expected, 36);
+    }
   }
   markMismatch(G('disp-ip-cksum'), ipBad);
   markMismatch(G('disp-tcp-cksum'), proto === 6 && l4Bad);
   markMismatch(G('disp-udp-cksum'), proto === 17 && l4Bad);
+  markMismatch(G('disp-icmp-cksum'), proto === 1 && l4Bad);
   const status = G('cksum-status');
   if (ipBad || l4Bad) {
     status.hidden = false;
@@ -304,6 +361,7 @@ function layerClass(field) {
   if (field.startsWith('ip'))      return 'hb-ip';
   if (field.startsWith('tcp'))     return 'hb-tcp';
   if (field.startsWith('udp'))     return 'hb-udp';
+  if (field.startsWith('icmp'))    return 'hb-icmp';
   return 'hb-payload';
 }
 
@@ -501,8 +559,9 @@ function setupEvents() {
   G('fld-lock-cksum').addEventListener('change', onFormChange);
 
   // Preset buttons
-  G('btn-syn').addEventListener('click',     () => applyPreset('tcp-syn'));
-  G('btn-udp-dns').addEventListener('click', () => applyPreset('udp-dns'));
+  G('btn-syn').addEventListener('click',       () => applyPreset('tcp-syn'));
+  G('btn-udp-dns').addEventListener('click',   () => applyPreset('udp-dns'));
+  G('btn-icmp-echo').addEventListener('click', () => applyPreset('icmp-echo'));
 
   // Reset
   G('btn-reset').addEventListener('click', doReset);

@@ -42,7 +42,33 @@ body {
   font-size: .95rem;
   font-weight: 600;
   letter-spacing: .02em;
-  flex: 1;
+}
+.book-switcher {
+  margin-left: auto;
+  display: flex;
+  background: rgba(255,253,248,.08);
+  border: 1px solid rgba(255,253,248,.14);
+  border-radius: var(--r-md);
+  padding: 2px;
+  gap: 2px;
+}
+.book-btn {
+  background: none;
+  border: none;
+  color: rgba(255,253,248,.55);
+  padding: 4px 12px;
+  font-family: var(--font-sans);
+  font-size: .78rem;
+  font-weight: 500;
+  letter-spacing: .02em;
+  cursor: pointer;
+  border-radius: var(--r-sm);
+  transition: background .15s, color .15s;
+}
+.book-btn:hover { color: var(--header-text); }
+.book-btn.active {
+  background: var(--rust);
+  color: #fff;
 }
 .site-header .ledger-badge {
   font-family: var(--font-mono);

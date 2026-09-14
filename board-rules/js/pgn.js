@@ -7,7 +7,7 @@
  *   replayPGN(chess, moves)   → replays parsed move tokens; throws on error
  */
 
-import { parseSAN } from './chess.js';
+import { parseSAN, INITIAL_FEN } from './chess.js';
 
 /**
  * Parse PGN text → array of game objects.
@@ -22,7 +22,7 @@ export function parsePGN(text) {
   let inGame = false;
 
   const flush = () => {
-    if (movetextLines.length) {
+    if (movetextLines.length || currentHeaders.size) {
       const movetext = movetextLines.join(' ');
       games.push({ headers: currentHeaders, moves: extractMoves(movetext) });
       currentHeaders = new Map();
@@ -98,9 +98,16 @@ export function replayPGN(chess, moves) {
 export function exportPGN(chess, headers) {
   let pgn = '';
 
-  // Headers
-  if (headers && headers.size) {
-    for (const [key, val] of headers) {
+  const hdrs = headers ? new Map(headers) : new Map();
+  const start = typeof chess.startFen === 'function' ? chess.startFen() : INITIAL_FEN;
+  if (start && start !== INITIAL_FEN) {
+    if (chess.chess960Id != null && !hdrs.has('Variant')) hdrs.set('Variant', 'Chess960');
+    if (!hdrs.has('SetUp')) hdrs.set('SetUp', '1');
+    if (!hdrs.has('FEN')) hdrs.set('FEN', start);
+  }
+
+  if (hdrs.size) {
+    for (const [key, val] of hdrs) {
       pgn += `[${key} "${val}"]\n`;
     }
     pgn += '\n';

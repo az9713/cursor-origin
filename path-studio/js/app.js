@@ -57,9 +57,38 @@ function seedMaze() {
   return cells;
 }
 
+/**
+ * Wall at x=12 (gap only at y=0) plus portal A through the wall.
+ * Without the portal the path goes the long way around the top;
+ * with it, A* / Dijkstra / flow field jump (11,8) ↔ (13,8).
+ */
+function seedPortals() {
+  const cells = makeCells(() => ({ blocked: false, cost: 1 }));
+  for (let y = 1; y < ROWS; y++) {
+    cells[y * COLS + 12].blocked = true;
+  }
+  return cells;
+}
+
 const SEEDS = {
-  open: { makeCells: seedOpen, start: { x: 2,  y: 8  }, goal: { x: 21, y: 8  } },
-  maze: { makeCells: seedMaze, start: { x: 2,  y: 2  }, goal: { x: 21, y: 13 } },
+  open: {
+    makeCells: seedOpen,
+    start: { x: 2, y: 8 },
+    goal:  { x: 21, y: 8 },
+    portals: [],
+  },
+  maze: {
+    makeCells: seedMaze,
+    start: { x: 2, y: 2 },
+    goal:  { x: 21, y: 13 },
+    portals: [],
+  },
+  portals: {
+    makeCells: seedPortals,
+    start: { x: 2, y: 8 },
+    goal:  { x: 21, y: 8 },
+    portals: [{ a: { x: 11, y: 8 }, b: { x: 13, y: 8 }, letter: 'A' }],
+  },
 };
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -73,6 +102,8 @@ const state = {
   tool:        'blocked',
   result:      null,
   agentStep:   0,
+  portals:     [],
+  pendingPortal: null,
 };
 
 // ── Canvas ────────────────────────────────────────────────────────────────────
@@ -99,6 +130,8 @@ const GRID_LINE    = 'rgba(207,198,182,0.55)';
 const PATH_COLOR   = '#b4451a';
 const OPEN_COLOR   = 'rgba(44,120,100,0.40)';
 const AGENT_COLOR  = '#ff8844';
+const PORTAL_COLOR = '#2c7864';
+const PORTAL_JUMP  = '#2c7864';
 
 function heatAlpha(t) {
   // t in [0..1]: low = transparent, high = rust-tinted
@@ -161,28 +194,34 @@ function render() {
   }
   ctx.stroke();
 
-  // ── 5. Path polyline ──────────────────────────────────────────────────────
+  // ── 5. Path polyline (solid 4-adj; dashed portal jumps) ───────────────────
   if (result && result.pathIdx.length > 1) {
-    const lw = Math.max(2, cellSize * 0.17);
-    ctx.strokeStyle = PATH_COLOR;
-    ctx.lineWidth   = lw;
-    ctx.lineJoin    = 'round';
-    ctx.lineCap     = 'round';
-    ctx.beginPath();
-    const p0 = result.pathIdx[0];
-    ctx.moveTo((p0 % COLS + 0.5) * cellSize, (((p0 / COLS) | 0) + 0.5) * cellSize);
-    for (let k = 1; k < result.pathIdx.length; k++) {
-      const p = result.pathIdx[k];
-      ctx.lineTo((p % COLS + 0.5) * cellSize, (((p / COLS) | 0) + 0.5) * cellSize);
-    }
-    ctx.stroke();
+    drawPath(result.pathIdx);
   }
 
-  // ── 6. Start / goal markers ───────────────────────────────────────────────
+  // ── 6. Portal glyphs ──────────────────────────────────────────────────────
+  const sg = (x, y) =>
+    (x === start.x && y === start.y) || (x === goal.x && y === goal.y);
+  for (const p of state.portals) {
+    drawPortalGlyph(p.a.x, p.a.y, p.letter, sg(p.a.x, p.a.y));
+    drawPortalGlyph(p.b.x, p.b.y, p.letter, sg(p.b.x, p.b.y));
+  }
+
+  // Pending first-click of a portal pair
+  if (state.pendingPortal) {
+    const { x, y } = state.pendingPortal;
+    ctx.strokeStyle = PORTAL_COLOR;
+    ctx.lineWidth   = 2;
+    ctx.setLineDash([4, 3]);
+    ctx.strokeRect(x * cellSize + 2, y * cellSize + 2, cellSize - 4, cellSize - 4);
+    ctx.setLineDash([]);
+  }
+
+  // ── 7. Start / goal markers ───────────────────────────────────────────────
   drawCircleMarker(start.x, start.y, '#2c4a3e', 'S');
   drawCircleMarker(goal.x,  goal.y,  '#b4451a', 'G');
 
-  // ── 7. Agent dot ──────────────────────────────────────────────────────────
+  // ── 8. Agent dot ──────────────────────────────────────────────────────────
   if (result && result.found && result.pathIdx.length > 0) {
     const step = Math.min(agentStep, result.pathIdx.length - 1);
     const ai   = result.pathIdx[step];
@@ -199,6 +238,93 @@ function render() {
     ctx.lineWidth   = 1.5;
     ctx.stroke();
   }
+}
+
+function cellCenter(i) {
+  return {
+    x: ((i % COLS) + 0.5) * cellSize,
+    y: (((i / COLS) | 0) + 0.5) * cellSize,
+  };
+}
+
+function cellsAre4Adj(i, j) {
+  const x1 = i % COLS, y1 = (i / COLS) | 0;
+  const x2 = j % COLS, y2 = (j / COLS) | 0;
+  return Math.abs(x1 - x2) + Math.abs(y1 - y2) === 1;
+}
+
+/** Same `pathIdx` as the debug list; portal jumps are dashed. */
+function drawPath(path) {
+  const lw = Math.max(2, cellSize * 0.17);
+  ctx.lineJoin = 'round';
+  ctx.lineCap  = 'round';
+
+  ctx.strokeStyle = PATH_COLOR;
+  ctx.lineWidth   = lw;
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  let penDown = false;
+  for (let k = 0; k < path.length; k++) {
+    const c = cellCenter(path[k]);
+    const nextAdj = k + 1 < path.length && cellsAre4Adj(path[k], path[k + 1]);
+    if (!penDown) {
+      if (nextAdj) { ctx.moveTo(c.x, c.y); penDown = true; }
+    } else {
+      ctx.lineTo(c.x, c.y);
+      if (!nextAdj) { ctx.stroke(); ctx.beginPath(); penDown = false; }
+    }
+  }
+  if (penDown) ctx.stroke();
+
+  ctx.strokeStyle = PORTAL_JUMP;
+  ctx.lineWidth   = Math.max(1.5, cellSize * 0.12);
+  ctx.setLineDash([Math.max(3, cellSize * 0.18), Math.max(3, cellSize * 0.14)]);
+  for (let k = 0; k < path.length - 1; k++) {
+    if (cellsAre4Adj(path[k], path[k + 1])) continue;
+    const a = cellCenter(path[k]);
+    const b = cellCenter(path[k + 1]);
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+}
+
+function drawPortalGlyph(x, y, letter, corner) {
+  const cx = (x + 0.5) * cellSize;
+  const cy = (y + 0.5) * cellSize;
+
+  if (corner) {
+    const bx = x * cellSize + cellSize * 0.78;
+    const by = y * cellSize + cellSize * 0.22;
+    ctx.fillStyle = PORTAL_COLOR;
+    ctx.beginPath();
+    ctx.arc(bx, by, cellSize * 0.16, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle    = '#fff';
+    ctx.font         = `700 ${Math.max(7, (cellSize * 0.22) | 0)}px "IBM Plex Mono",monospace`;
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(letter, bx, by);
+    return;
+  }
+
+  const r = cellSize * 0.28;
+  ctx.fillStyle = PORTAL_COLOR;
+  ctx.beginPath();
+  ctx.moveTo(cx,     cy - r);
+  ctx.lineTo(cx + r, cy);
+  ctx.lineTo(cx,     cy + r);
+  ctx.lineTo(cx - r, cy);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle    = '#fff';
+  ctx.font         = `700 ${Math.max(9, (cellSize * 0.34) | 0)}px "IBM Plex Mono",monospace`;
+  ctx.textAlign    = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(letter, cx, cy);
 }
 
 function drawCircleMarker(x, y, color, label) {
@@ -220,24 +346,37 @@ function drawCircleMarker(x, y, color, label) {
 }
 
 // ── Recompute pathfinding ─────────────────────────────────────────────────────
+function portalPairs() {
+  return state.portals
+    .map(p => ({
+      a: p.a.y * COLS + p.a.x,
+      b: p.b.y * COLS + p.b.x,
+    }))
+    .filter(p => {
+      const ca = state.cells[p.a], cb = state.cells[p.b];
+      return ca && cb && !ca.blocked && !cb.blocked;
+    });
+}
+
 function recompute() {
   const { cells, start, goal, algo } = state;
   const api = window.PSPath;
+  const portals = portalPairs();
 
   state.agentStep = 0;
 
   // Guard: start or goal blocked
-  const sI = goal.y * COLS + goal.x;  // typo-safe: check both
-  const gI = start.y * COLS + start.x;
+  const sI = start.y * COLS + start.x;
+  const gI = goal.y * COLS + goal.x;
   if (cells[sI] && cells[sI].blocked) { state.result = null; return; }
   if (cells[gI] && cells[gI].blocked) { state.result = null; return; }
 
   if (algo === 'dijkstra') {
-    state.result = api.dijkstra(cells, COLS, ROWS, start, goal);
+    state.result = api.dijkstra(cells, COLS, ROWS, start, goal, portals);
   } else if (algo === 'astar') {
-    state.result = api.astar(cells, COLS, ROWS, start, goal);
+    state.result = api.astar(cells, COLS, ROWS, start, goal, portals);
   } else if (algo === 'flow') {
-    state.result = api.flowField(cells, COLS, ROWS, start, goal);
+    state.result = api.flowField(cells, COLS, ROWS, start, goal, portals);
   }
 
   // Show/hide "no path" badge
@@ -282,9 +421,12 @@ function updateDebug() {
   renderSet(lstClosed, r.closedSet, 80);
 
   if (r.pathIdx.length) {
-    lstPath.textContent = r.pathIdx
-      .map(i => `(${i % COLS},${(i / COLS) | 0})`)
-      .join(' → ');
+    lstPath.textContent = r.pathIdx.map((i, k, arr) => {
+      const cell = `(${i % COLS},${(i / COLS) | 0})`;
+      if (k === 0) return cell;
+      const sep = cellsAre4Adj(arr[k - 1], i) ? ' → ' : ' ↷ ';
+      return sep + cell;
+    }).join('');
   } else {
     lstPath.textContent = r.found ? '' : 'No path found';
   }
@@ -313,6 +455,82 @@ function canvasCell(e) {
   return { x, y };
 }
 
+function findPortalAt(x, y) {
+  return state.portals.find(p =>
+    (p.a.x === x && p.a.y === y) || (p.b.x === x && p.b.y === y)
+  );
+}
+
+function removePortalsAt(x, y) {
+  state.portals = state.portals.filter(p =>
+    !(p.a.x === x && p.a.y === y) && !(p.b.x === x && p.b.y === y)
+  );
+  if (state.pendingPortal && state.pendingPortal.x === x && state.pendingPortal.y === y) {
+    state.pendingPortal = null;
+  }
+}
+
+function nextPortalLetter() {
+  const used = new Set(state.portals.map(p => p.letter));
+  for (let i = 0; i < 26; i++) {
+    const L = String.fromCharCode(65 + i);
+    if (!used.has(L)) return L;
+  }
+  return String(state.portals.length + 1);
+}
+
+function updatePortalHint() {
+  const el = document.getElementById('portal-hint');
+  if (!el) return;
+  if (state.tool !== 'portal') {
+    el.textContent = '';
+    return;
+  }
+  if (state.pendingPortal) {
+    el.textContent = `Second cell for (${state.pendingPortal.x},${state.pendingPortal.y})…`;
+  } else {
+    el.textContent = 'Click two walkable cells to pair. Click a glyph to remove.';
+  }
+}
+
+function applyPortalClick(x, y) {
+  const cell = state.cells[y * COLS + x];
+  if (!cell || cell.blocked) return false;
+
+  const existing = findPortalAt(x, y);
+
+  if (!state.pendingPortal) {
+    if (existing) {
+      state.portals = state.portals.filter(p => p !== existing);
+      updatePortalHint();
+      return true;
+    }
+    state.pendingPortal = { x, y };
+    updatePortalHint();
+    return true;
+  }
+
+  const p = state.pendingPortal;
+  if (p.x === x && p.y === y) {
+    state.pendingPortal = null;
+    updatePortalHint();
+    return true;
+  }
+
+  if (existing) {
+    state.portals = state.portals.filter(pr => pr !== existing);
+  }
+
+  state.portals.push({
+    a: { x: p.x, y: p.y },
+    b: { x, y },
+    letter: nextPortalLetter(),
+  });
+  state.pendingPortal = null;
+  updatePortalHint();
+  return true;
+}
+
 function applyTool(x, y) {
   const { tool, start, goal } = state;
   const isStart = x === start.x && y === start.y;
@@ -333,6 +551,7 @@ function applyTool(x, y) {
     case 'blocked':
       if (isStart || isGoal) return false;
       state.cells[idx] = { blocked: true, cost: 1 };
+      removePortalsAt(x, y);
       return true;
 
     case 'cost1':
@@ -358,10 +577,17 @@ function applyTool(x, y) {
 function onMouseDown(e) {
   if (e.button !== 0) return;
   e.preventDefault();
-  isPainting  = true;
-  lastPainted = -1;
   const pos = canvasCell(e);
   if (!pos) return;
+
+  if (state.tool === 'portal') {
+    const changed = applyPortalClick(pos.x, pos.y);
+    if (changed) { recompute(); render(); updateDebug(); saveToStorage(); }
+    return;
+  }
+
+  isPainting  = true;
+  lastPainted = -1;
   const changed = applyTool(pos.x, pos.y);
   lastPainted = pos.y * COLS + pos.x;
   if (changed) { recompute(); render(); updateDebug(); saveToStorage(); }
@@ -416,9 +642,16 @@ function loadSeedMap(id) {
   state.cells    = seed.makeCells();
   state.start    = { ...seed.start };
   state.goal     = { ...seed.goal };
+  state.portals  = (seed.portals || []).map(p => ({
+    a: { x: p.a.x, y: p.a.y },
+    b: { x: p.b.x, y: p.b.y },
+    letter: p.letter,
+  }));
+  state.pendingPortal = null;
   state.agentStep = 0;
   state.result   = null;
   history.replaceState(null, '', `#/m/${id}`);
+  updatePortalHint();
 }
 
 // ── Storage ───────────────────────────────────────────────────────────────────
@@ -431,6 +664,7 @@ function saveToStorage() {
       algo:        state.algo,
       showHeatmap: state.showHeatmap,
       mapId:       state.mapId,
+      portals:     state.portals,
     }));
   } catch (_) {}
 }
@@ -454,6 +688,23 @@ function loadFromStorage() {
     if (d.algo  && ['dijkstra','astar','flow'].includes(d.algo)) state.algo = d.algo;
     if (typeof d.showHeatmap === 'boolean') state.showHeatmap = d.showHeatmap;
     if (d.mapId && SEEDS[d.mapId]) state.mapId = d.mapId;
+
+    if (Array.isArray(d.portals)) {
+      state.portals = d.portals.filter(p =>
+        p && p.a && p.b &&
+        Number.isInteger(p.a.x) && Number.isInteger(p.a.y) &&
+        Number.isInteger(p.b.x) && Number.isInteger(p.b.y) &&
+        p.a.x >= 0 && p.a.x < COLS && p.a.y >= 0 && p.a.y < ROWS &&
+        p.b.x >= 0 && p.b.x < COLS && p.b.y >= 0 && p.b.y < ROWS &&
+        typeof p.letter === 'string' && p.letter.length > 0
+      ).map(p => ({
+        a: { x: p.a.x, y: p.a.y },
+        b: { x: p.b.x, y: p.b.y },
+        letter: p.letter.slice(0, 2),
+      }));
+    } else {
+      state.portals = [];
+    }
 
     return true;
   } catch (_) {
@@ -480,6 +731,7 @@ function syncUI() {
   document.querySelectorAll('.tool-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.tool === state.tool);
   });
+  updatePortalHint();
 }
 
 // ── Event binding ─────────────────────────────────────────────────────────────
@@ -511,8 +763,11 @@ function bindEvents() {
   document.querySelectorAll('.tool-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       state.tool = btn.dataset.tool;
+      state.pendingPortal = null;
       document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
+      updatePortalHint();
+      render();
     });
   });
 
@@ -549,6 +804,14 @@ function bindEvents() {
   window.addEventListener('resize', () => {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => { computeCellSize(); render(); }, 80);
+  });
+
+  window.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && state.pendingPortal) {
+      state.pendingPortal = null;
+      updatePortalHint();
+      render();
+    }
   });
 
   // Hash change (browser back/forward)

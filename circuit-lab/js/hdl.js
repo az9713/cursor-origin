@@ -3,7 +3,7 @@
 //
 // Grammar:
 //   stmt ::= ident "=" "NOT"  ident
-//          | ident "=" ("AND"|"OR"|"XOR"|"NAND"|"NOR") ident ident
+//          | ident "=" ("AND"|"OR"|"XOR"|"NAND"|"NOR"|"XNOR") ident ident
 //          | ident "=" "IN"  INT          # numbered input switch
 //          | ident "=" "OUT" ident        # probe
 //          | ident "=" "DFF" ident        # rising-edge D flip-flop
@@ -11,7 +11,7 @@
 // Stmt object: { out: string, op: string, args: Array<string|number> }
 
 const HDL_UNARY  = new Set(['NOT', 'DFF']);
-const HDL_BINARY = new Set(['AND', 'OR', 'XOR', 'NAND', 'NOR']);
+const HDL_BINARY = new Set(['AND', 'OR', 'XOR', 'NAND', 'NOR', 'XNOR']);
 
 /**
  * Parse HDL text into an array of stmt objects.

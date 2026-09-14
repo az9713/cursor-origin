@@ -389,6 +389,22 @@ main {
 }
 .fixture-btn:hover { background: var(--paper-0); }
 
+.chess960-row {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+}
+
+.chess960-id {
+  display: inline-block;
+  padding: 4px 10px;
+  background: var(--paper-1);
+  border: 1px solid rgba(0,0,0,0.10);
+  border-radius: var(--radius);
+  color: var(--ink);
+  font-weight: 500;
+}
+
 /* ── PGN section ──────────────────────────── */
 .pgn-wrap {
   background: var(--paper-1);

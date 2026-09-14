@@ -2,7 +2,7 @@
  * packet-forge/js/codec.js
  * Pure packet codec — no DOM, no side-effects.
  *
- * Builds and parses Ethernet II / IPv4 / TCP / UDP frames.
+ * Builds and parses Ethernet II / IPv4 / TCP / UDP / ICMP frames.
  * Bytes are big-endian throughout.
  */
 'use strict';
@@ -36,6 +36,16 @@ function parseHex(str) {
   const out = new Uint8Array(len);
   for (let i = 0; i < len; i++) {
     out[i] = parseInt(clean.slice(i * 2, i * 2 + 2), 16) || 0;
+  }
+  return out;
+}
+
+/** Hex string → Uint8Array of exactly n bytes (zero-padded / truncated). */
+function parseFixedHex(str, n) {
+  const hex = (str || '').replace(/[^0-9a-fA-F]/g, '').padEnd(n * 2, '0');
+  const out = new Uint8Array(n);
+  for (let i = 0; i < n; i++) {
+    out[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16) || 0;
   }
   return out;
 }
@@ -92,6 +102,14 @@ function transportChecksum(srcIp, dstIp, proto, seg) {
   return ones16sum(buf);
 }
 
+/**
+ * ICMP checksum: ones' complement of the ICMP message (header + payload).
+ * No TCP-style IPv4 pseudo-header. msg must have checksum field already zeroed.
+ */
+function icmpChecksum(msg) {
+  return ones16sum(msg);
+}
+
 // ── Build packet ──────────────────────────────────────────────────────────────
 
 /**
@@ -145,6 +163,22 @@ function buildPacket(state) {
       ? (Number(state.tcpManualCksum || 0) & 0xffff)
       : transportChecksum(ipSrc, ipDst, 6, transport);
     dv.setUint16(16, cksum);
+
+  } else if (proto === 1) {
+    // ICMP  (8-byte header + payload; checksum covers ICMP only — no pseudo-header)
+    const rest = parseFixedHex(state.icmpRest, 4);
+    transport = new Uint8Array(8 + payload.length);
+    const dv = new DataView(transport.buffer);
+    transport[0] = Number(state.icmpType) & 0xff;
+    transport[1] = Number(state.icmpCode) & 0xff;
+    dv.setUint16(2, 0);              // checksum placeholder (must be 0 for computation)
+    transport.set(rest, 4);
+    transport.set(payload, 8);
+
+    const cksum = state.lockChecksum
+      ? (Number(state.icmpManualCksum || 0) & 0xffff)
+      : icmpChecksum(transport);
+    dv.setUint16(2, cksum);
 
   } else {
     // UDP  (8-byte header + payload)
@@ -225,6 +259,12 @@ function buildPacket(state) {
     mark('tcp-cksum',  tp + 16, tp + 18);
     mark('tcp-urgent', tp + 18, tp + 20);
     if (payload.length) mark('payload', tp + 20, tp + 20 + payload.length);
+  } else if (proto === 1) {
+    mark('icmp-type',  tp + 0, tp + 1);
+    mark('icmp-code',  tp + 1, tp + 2);
+    mark('icmp-cksum', tp + 2, tp + 4);
+    mark('icmp-rest',  tp + 4, tp + 8);
+    if (payload.length) mark('payload', tp + 8, tp + 8 + payload.length);
   } else {
     mark('udp-sport',  tp + 0, tp + 2);
     mark('udp-dport',  tp + 2, tp + 4);
@@ -299,6 +339,14 @@ function parsePacket(bytes) {
     s.udpDport   = dv.getUint16(tpStart + 2);
     s.udpManualCksum = dv.getUint16(tpStart + 6);
     s.payload    = bytesToHex(bytes.slice(tpStart + 8));
+
+  } else if (s.ipProto === 1 && bytes.length >= tpStart + 8) {
+    // ICMP
+    s.icmpType         = bytes[tpStart];
+    s.icmpCode         = bytes[tpStart + 1];
+    s.icmpManualCksum  = dv.getUint16(tpStart + 2);
+    s.icmpRest         = bytesToHex(bytes.slice(tpStart + 4, tpStart + 8));
+    s.payload          = bytesToHex(bytes.slice(tpStart + 8));
   }
 
   return s;

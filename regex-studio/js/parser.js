@@ -1,13 +1,15 @@
-/* parser.js — regex AST parser + printer for Session A
+/* parser.js — regex AST parser + printer (Session A + named groups)
  *
- * Grammar (no lookbehind, no named groups):
+ * Grammar (no lookbehind):
  *   pattern  ::= alt
  *   alt      ::= concat ("|" concat)*
  *   concat   ::= quantified*
  *   quantified ::= atom quant?
  *   quant    ::= "*" | "+" | "?" | "{" INT ("," INT?)? "}"  (followed by "?"?)
  *   atom     ::= CHAR | "." | "^" | "$" | charclass
- *              | "(" pattern ")"  | "(?:" pattern ")"  | "\" escape
+ *              | "(" pattern ")" | "(?<IDENT>" pattern ")" | "(?:" pattern ")"
+ *              | "\" escape
+ *   IDENT    ::= [A-Za-z_][A-Za-z0-9_]*
  *   charclass ::= "[" "^"? (CHAR | CHAR "-" CHAR | "\" escape)+ "]"
  *   escape   ::= d|w|s|D|W|S|n|t|\|.|*|+|?|(|)|[|]|{|}|^|$
  *
@@ -22,7 +24,7 @@
  *   {type:'escaped_char', ch:'\n'|'\t'|...}
  *   {type:'charclass', negated:bool, ranges:[range,...]}
  *     range: {kind:'char',ch} | {kind:'range',from,to} | {kind:'escape',code:'d'|...}
- *   {type:'group',   index:N, child:node}   (1-based)
+ *   {type:'group',   index:N, name:string|null, child:node}   (1-based; name null if unnamed)
  *   {type:'ncgroup', child:node}
  *   {type:'empty'}
  */
@@ -112,21 +114,54 @@ RS.parse = function (src) {
     return parseInt(src.slice(s, pos), 10);
   }
 
+  function isIdentStart(c) {
+    return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c === '_';
+  }
+  function isIdentPart(c) {
+    return isIdentStart(c) || (c >= '0' && c <= '9');
+  }
+  function readIdent() {
+    if (done() || !isIdentStart(src[pos])) return null;
+    var s = pos;
+    pos++;
+    while (!done() && isIdentPart(src[pos])) pos++;
+    return src.slice(s, pos);
+  }
+
   function parseAtom() {
     if (done()) err('Unexpected end of pattern');
     var ch = src[pos];
 
     if (ch === '(') {
       pos++;
-      var nc = (src[pos] === '?' && src[pos + 1] === ':');
-      if (nc) pos += 2;
+      var nc = false;
+      var name = null;
+      if (src[pos] === '?') {
+        if (src[pos + 1] === ':') {
+          nc = true;
+          pos += 2;
+        } else if (src[pos + 1] === '<') {
+          /* named capturing group (?<IDENT>pattern) — not lookbehind */
+          var extAt = pos;
+          pos += 2;
+          if (src[pos] === '=' || src[pos] === '!') {
+            err('Lookbehind is not supported at ' + extAt);
+          }
+          name = readIdent();
+          if (!name) err('Expected group name after (?< at ' + pos);
+          if (src[pos] !== '>') err("Expected '>' after group name at " + pos);
+          pos++;
+        } else {
+          err('Unknown group extension at ' + pos + ' (lookbehind not supported)');
+        }
+      }
       var idx = nc ? null : ++groupCount;
       var child = parsePattern();
       if (src[pos] !== ')') err("Expected ')' at " + pos);
       pos++;
       return nc
         ? { type: 'ncgroup', child: child }
-        : { type: 'group', index: idx, child: child };
+        : { type: 'group', index: idx, name: name, child: child };
     }
 
     if (ch === '[') return parseCharClass();
@@ -237,7 +272,8 @@ RS.print = function (node) {
           return '';
         }).join('') + ']';
 
-    case 'group':   return '(' + RS.print(node.child) + ')';
+    case 'group':
+      return (node.name ? '(?<' + node.name + '>' : '(') + RS.print(node.child) + ')';
     case 'ncgroup': return '(?:' + RS.print(node.child) + ')';
     default: return '';
   }
@@ -301,7 +337,10 @@ RS.nodeSummary = function (node) {
         }).join('');
       return '[' + inner + (node.ranges.length > 3 ? '…' : '') + ']';
     }
-    case 'group':   return '(#' + node.index + ' ' + RS._childPreview(node.child) + ')';
+    case 'group':
+      return node.name
+        ? '(?<' + node.name + '>' + RS._childPreview(node.child) + ')'
+        : '(#' + node.index + ' ' + RS._childPreview(node.child) + ')';
     case 'ncgroup': return '(?:' + RS._childPreview(node.child) + ')';
     case 'quantified': return RS.nodeSummary(node.child) + RS._printQuant(node.quant);
     case 'concat':  return node.items.map(RS.nodeSummary).join('');

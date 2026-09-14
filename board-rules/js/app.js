@@ -6,7 +6,7 @@
  * Hash routing: #/g/<gameId>
  */
 
-import { Chess, GLYPHS, sqToAlg, algToSq, PIECE_VALUES } from './chess.js';
+import { Chess, GLYPHS, sqToAlg, algToSq, PIECE_VALUES, INITIAL_FEN } from './chess.js';
 import { parsePGN, exportPGN, replayPGN } from './pgn.js';
 
 const STORAGE_KEY = 'board-rules-v1';
@@ -23,6 +23,16 @@ const FIXTURES = [
     id: 'castling-opening',
     label: 'Short castling (Italian)',
     pgn: '1. e4 e5 2. Nf3 Nc6 3. Bc4 Bc5 4. O-O Nf6 5. d3 O-O',
+  },
+  {
+    id: 'chess960-518',
+    label: 'Chess960 #518 (standard)',
+    chess960: 518,
+  },
+  {
+    id: 'chess960-0',
+    label: 'Chess960 #0',
+    chess960: 0,
   },
 ];
 
@@ -56,17 +66,41 @@ function init() {
 
 // ── Hash routing ──────────────────────────────────────────────────────────────
 function handleHash() {
-  const hash = location.hash;
-  const m = hash.match(/^#\/g\/([a-z0-9]+)$/);
-  if (m && m[1] !== gameId) {
-    // Try to load saved game from storage
-    const saved = loadGameFromStorage(m[1]);
-    if (saved) {
-      gameId = m[1];
-      reloadFromSaved(saved);
-      renderAll();
-    }
+  const id = parseHashId();
+  if (id && id !== gameId) {
+    loadGameById(id);
+    renderAll();
   }
+}
+
+function parseHashId() {
+  const m = location.hash.match(/^#\/g\/([A-Za-z0-9-]+)$/);
+  return m ? m[1] : null;
+}
+
+function chess960IdFromKey(id) {
+  const m = /^chess960-(\d+)$/.exec(id);
+  if (!m) return null;
+  const n = parseInt(m[1], 10);
+  return n >= 0 && n <= 959 ? n : null;
+}
+
+function loadGameById(id) {
+  const saved = loadGameFromStorage(id);
+  if (saved) {
+    gameId = id;
+    reloadFromSaved(saved);
+    return true;
+  }
+  const n960 = chess960IdFromKey(id);
+  if (n960 != null) {
+    chess = Chess.from960(n960);
+    selectedSq = -1;
+    legalTargets = [];
+    gameId = `chess960-${n960}`;
+    return true;
+  }
+  return false;
 }
 
 function setHash(id) {
@@ -83,6 +117,8 @@ function saveToStorage() {
     const all = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
     all[gameId] = {
       pgn: exportPGN(chess),
+      startFen: chess.startFen(),
+      chess960Id: chess.chess960Id,
       ts: Date.now(),
     };
     // Keep only the 20 most recent
@@ -95,15 +131,8 @@ function saveToStorage() {
 }
 
 function loadFromStorage() {
-  const hash = location.hash;
-  const m = hash.match(/^#\/g\/([a-z0-9]+)$/);
-  if (m) {
-    const saved = loadGameFromStorage(m[1]);
-    if (saved) {
-      gameId = m[1];
-      reloadFromSaved(saved);
-    }
-  }
+  const id = parseHashId();
+  if (id) loadGameById(id);
 }
 
 function loadGameFromStorage(id) {
@@ -114,17 +143,34 @@ function loadGameFromStorage(id) {
 }
 
 function reloadFromSaved(saved) {
-  chess = new Chess();
   selectedSq = -1;
   legalTargets = [];
+  let fen = saved.startFen || INITIAL_FEN;
+  let moves = [];
   if (saved.pgn) {
     try {
       const games = parsePGN(saved.pgn);
-      if (games.length) replayPGN(chess, games[0].moves);
+      if (games.length) {
+        const hdrFen = games[0].headers.get('FEN');
+        if (!saved.startFen && hdrFen) fen = hdrFen;
+        moves = games[0].moves;
+      }
     } catch (e) {
-      console.warn('Saved PGN replay failed', e);
-      chess = new Chess();
+      console.warn('Saved PGN parse failed', e);
     }
+  }
+  chess = new Chess(fen);
+  if (saved.chess960Id != null) chess.chess960Id = saved.chess960Id;
+  else {
+    const n = chess960IdFromKey(gameId);
+    if (n != null) chess.chess960Id = n;
+  }
+  try {
+    if (moves.length) replayPGN(chess, moves);
+  } catch (e) {
+    console.warn('Saved PGN replay failed', e);
+    chess = new Chess(fen);
+    if (saved.chess960Id != null) chess.chess960Id = saved.chess960Id;
   }
 }
 
@@ -168,9 +214,15 @@ function buildFixtureButtons() {
 }
 
 function loadFixture(fix) {
-  chess = new Chess();
   selectedSq = -1;
   legalTargets = [];
+
+  if (fix.chess960 != null) {
+    loadChess960(fix.chess960);
+    return;
+  }
+
+  chess = new Chess();
   gameId = _makeId();
   setHash(gameId);
 
@@ -181,6 +233,17 @@ function loadFixture(fix) {
   } catch (e) {
     console.error('Fixture replay error', e);
   }
+  saveToStorage();
+  renderAll();
+}
+
+function loadChess960(id) {
+  const n = ((id % 960) + 960) % 960;
+  chess = Chess.from960(n);
+  selectedSq = -1;
+  legalTargets = [];
+  gameId = `chess960-${n}`;
+  setHash(gameId);
   saveToStorage();
   renderAll();
 }
@@ -209,6 +272,10 @@ function attachControls() {
   document.getElementById('btn-pgn-export').addEventListener('click', () => {
     pgnTextarea.value = exportPGN(chess);
   });
+
+  document.getElementById('btn-chess960').addEventListener('click', () => {
+    loadChess960(Math.floor(Math.random() * 960));
+  });
 }
 
 // ── PGN apply ─────────────────────────────────────────────────────────────────
@@ -216,11 +283,18 @@ function applyPGN() {
   const text = pgnTextarea.value.trim();
   if (!text) return;
 
-  const newChess = new Chess();
   let games;
   try {
     games = parsePGN(text);
     if (!games.length) throw new Error('No games found');
+  } catch (e) {
+    flashStatus(`PGN error: ${e.message}`);
+    return;
+  }
+
+  const fen = games[0].headers.get('FEN');
+  const newChess = fen ? new Chess(fen) : new Chess();
+  try {
     replayPGN(newChess, games[0].moves);
   } catch (e) {
     flashStatus(`PGN error: ${e.message}`);
@@ -260,8 +334,13 @@ function onSquareClick(e) {
     return;
   }
 
-  // Clicking another own piece — re-select
+  // Clicking another own piece — re-select, unless this square is a legal
+  // destination (Chess960 castle: drop the king onto its rook).
   if (piece && piece.color === chess.turn) {
+    if (legalTargets.includes(sq)) {
+      attemptMove(selectedSq, sq);
+      return;
+    }
     select(sq);
     return;
   }
@@ -273,7 +352,13 @@ function onSquareClick(e) {
 function select(sq) {
   selectedSq = sq;
   const legal = chess.moves(sq);
-  legalTargets = legal.map(m => m.to);
+  legalTargets = [];
+  for (const m of legal) {
+    legalTargets.push(m.to);
+    if ((m.flags === 'kcastle' || m.flags === 'qcastle') && m.rookFrom !== m.to) {
+      legalTargets.push(m.rookFrom);
+    }
+  }
   renderBoard();
 }
 
@@ -365,7 +450,21 @@ function renderAll() {
   renderEvalBar();
   renderPGN();
   renderFEN();
+  renderChess960Id();
   setHash(gameId);
+}
+
+function renderChess960Id() {
+  const row = document.getElementById('chess960-row');
+  const el = document.getElementById('chess960-id');
+  if (!row || !el) return;
+  if (chess.chess960Id == null) {
+    row.hidden = true;
+    el.textContent = '';
+    return;
+  }
+  row.hidden = false;
+  el.textContent = `Chess960 #${chess.chess960Id}`;
 }
 
 function renderBoard() {

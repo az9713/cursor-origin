@@ -8,6 +8,9 @@
  * Seed documents
  * ═══════════════════════════════════════════════ */
 
+/* Seeds. `specificity` and `boxmodel` stay unlayered so Session A winners
+ * (#main .highlight → crimson/210px; .outer .inner → 55%; .inner padding)
+ * do not change. `layers` is the Session C demo. */
 const SEEDS = {
   specificity: {
     name: 'Specificity Fight',
@@ -40,6 +43,22 @@ div { box-sizing: border-box; font-family: sans-serif; font-size: 14px; }
 .box { width: 300px; background: #ffe8e8; }
 .inner { width: 75%; }
 .outer .inner { width: 55%; }`,
+  },
+
+  layers: {
+    name: 'Layer vs Unlayered',
+    html: `<div class="box" id="hero">Layered #hero vs unlayered .box</div>
+<p class="note">Unlayered color/width win even against an ID in @layer.</p>`,
+    css1: `/* Sheet 1 – named layers (lose to unlayered) */
+@layer reset {
+  .box { color: gray; width: 90%; }
+}
+@layer theme {
+  #hero { color: crimson; width: 400px; }
+  .box { background: #ffe8e8; padding: 12px; }
+}`,
+    css2: `/* Sheet 2 – unlayered wins over any layer */
+.box { box-sizing: border-box; color: navy; width: 180px; }`,
   },
 };
 
@@ -293,11 +312,13 @@ function renderTrace(matching, prop) {
     const isOff     = state.disabledIds.has(rule.id);
     const sheetLbl  = `S${rule.sheetIndex + 1}`;
     const srcLbl    = `${sheetLbl}·r${rule.ruleIndex + 1}`;
+    const layerLbl  = CC_layerLabel(rule.layerPath) || '—';
     const rowClass  = [isWinner ? 'tr-win' : '', isOff ? 'tr-off' : ''].join(' ').trim();
 
     return `<tr class="${rowClass}">
       <td class="tc-sheet">${sheetLbl}</td>
       <td class="tc-sel"><code title="${escH(rule.selector)}">${escH(rule.selector)}</code></td>
+      <td class="tc-layer" title="${escH(layerLbl)}">${escH(layerLbl)}</td>
       <td class="tc-val"><code>${escH(rule.props[prop])}</code></td>
       <td class="tc-spec">${CC_fmtSpec(rule.specificity)}</td>
       <td class="tc-src">${srcLbl}</td>
@@ -316,6 +337,7 @@ function renderTrace(matching, prop) {
       <tr>
         <th>Sheet</th>
         <th>Selector</th>
+        <th>Layer</th>
         <th>Value</th>
         <th>Spec</th>
         <th>Src</th>

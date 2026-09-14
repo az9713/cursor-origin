@@ -9,6 +9,10 @@
 const L = window.Ledger;
 let state = L.loadState();
 
+function book() {
+  return L.currentBook(state);
+}
+
 // ─────────────────────────────────────────────
 //  Toast system
 // ─────────────────────────────────────────────
@@ -86,7 +90,7 @@ function renderAccounts() {
   const grid = document.getElementById('accounts-grid');
   const types = ['asset', 'liability', 'equity', 'revenue', 'expense'];
   const grouped = {};
-  types.forEach(t => { grouped[t] = state.accounts.filter(a => a.type === t); });
+  types.forEach(t => { grouped[t] = book().accounts.filter(a => a.type === t); });
 
   let html = '';
   types.forEach(type => {
@@ -103,7 +107,7 @@ function renderAccounts() {
     });
   });
   grid.innerHTML = html;
-  document.getElementById('accounts-count').textContent = state.accounts.length;
+  document.getElementById('accounts-count').textContent = book().accounts.length;
 }
 
 // ─────────────────────────────────────────────
@@ -113,7 +117,7 @@ function renderAccounts() {
 function renderJournal() {
   const list = document.getElementById('entry-list');
   // Sort newest date first
-  const sorted = [...state.entries].sort((a, b) => {
+  const sorted = [...book().entries].sort((a, b) => {
     if (b.date !== a.date) return b.date.localeCompare(a.date);
     return (b.postedAt || 0) - (a.postedAt || 0);
   });
@@ -157,7 +161,7 @@ function renderJournal() {
 }
 
 function entryCardHtml(entry) {
-  const getAcct = id => state.accounts.find(a => a.id === id);
+  const getAcct = id => book().accounts.find(a => a.id === id);
   const totalDR = L.entryTotalDebits(entry);
 
   let statusClass, statusLabel;
@@ -272,7 +276,7 @@ function closeModal() {
 
 function renderDraftLines() {
   const container = document.getElementById('lines-container');
-  const accountOptions = state.accounts
+  const accountOptions = [...book().accounts]
     .sort((a, b) => a.code.localeCompare(b.code))
     .map(a => `<option value="${a.id}">${escHtml(a.code)} — ${escHtml(a.name)}</option>`)
     .join('');
@@ -382,7 +386,7 @@ function saveNewEntry(andPost = false) {
     creditCents: l.creditCents,
   }));
 
-  const err = L.validateEntryLines(lines, state.accounts);
+  const err = L.validateEntryLines(lines, book().accounts);
   if (err) { toast(err, 'error'); return; }
 
   const result = L.createEntry(state, { date, memo, lines });
@@ -411,6 +415,7 @@ function saveNewEntry(andPost = false) {
 
 function renderTrialBalance() {
   const { rows, totalDebits, totalCredits, balanced } = L.trialBalance(state);
+  const bookName = L.BOOK_LABELS[state.currentBookId] || 'Personal';
 
   const banner = document.getElementById('tb-banner');
   const tbody  = document.getElementById('tb-tbody');
@@ -419,8 +424,8 @@ function renderTrialBalance() {
 
   banner.className = `tb-foot-banner ${balanced ? 'ok' : 'fail'}`;
   banner.textContent = balanced
-    ? `✓ Trial Balance Foots — Total Debits = Total Credits = ${L.formatCents(totalDebits)}`
-    : `✗ Out of Balance! Debits ${L.formatCents(totalDebits)} ≠ Credits ${L.formatCents(totalCredits)}`;
+    ? `✓ ${bookName} trial balance foots — Total Debits = Total Credits = ${L.formatCents(totalDebits)}`
+    : `✗ ${bookName} out of balance! Debits ${L.formatCents(totalDebits)} ≠ Credits ${L.formatCents(totalCredits)}`;
 
   tbody.innerHTML = rows.map(r => `
     <tr>
@@ -490,7 +495,7 @@ function renderPL() {
 
 function renderAudit() {
   const list = document.getElementById('audit-list');
-  const sorted = [...state.auditLog].sort((a, b) => b.at - a.at);
+  const sorted = [...book().auditLog].sort((a, b) => b.at - a.at);
 
   if (!sorted.length) {
     list.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><p>No audit events yet.</p></div>`;
@@ -513,9 +518,28 @@ function renderAudit() {
 // ─────────────────────────────────────────────
 
 function doReset() {
-  if (!confirm('Reset to seed data? All custom entries will be lost.')) return;
+  if (!confirm('Reset both books to seed data? All custom entries will be lost.')) return;
   L.resetToSeed(state);
-  toast('Reset to seed data', 'info');
+  toast('Reset both books to seed', 'info');
+  updateBookSwitcher();
+  handleHash();
+}
+
+function updateBookSwitcher() {
+  document.querySelectorAll('.book-btn').forEach(btn => {
+    const on = btn.dataset.book === state.currentBookId;
+    btn.classList.toggle('active', on);
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+}
+
+function switchToBook(bookId) {
+  if (bookId === state.currentBookId) return;
+  const res = L.switchBook(state, bookId);
+  if (!res.ok) { toast(res.error, 'error'); return; }
+  closeModal();
+  updateBookSwitcher();
+  // Hash stays #/e/<id> but resolves only inside the current book.
   handleHash();
 }
 
@@ -570,6 +594,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Reset button
   document.getElementById('btn-reset').addEventListener('click', doReset);
+
+  // Book switcher
+  document.querySelectorAll('.book-btn').forEach(btn => {
+    btn.addEventListener('click', () => switchToBook(btn.dataset.book));
+  });
+  updateBookSwitcher();
 
   // Hash routing
   window.addEventListener('hashchange', handleHash);

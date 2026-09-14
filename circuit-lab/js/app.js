@@ -44,6 +44,17 @@ const SEEDS = {
       'q = DFF d',
       'y = OUT q'
     ].join('\n')
+  },
+  'xnor': {
+    id: 'xnor',
+    name: '2-input XNOR',
+    hdl: [
+      '# 2-input XNOR — output 1 iff inputs equal',
+      'a = IN 0',
+      'b = IN 1',
+      'q = XNOR a b',
+      'y = OUT q'
+    ].join('\n')
   }
 };
 
@@ -138,7 +149,7 @@ function mergeLayout(stmts, existing) {
 // ── Name generator ────────────────────────────────────────────────────────────
 function genName(op, stmts) {
   const pfx = { IN:'in', OUT:'out', NOT:'not', AND:'and', OR:'or',
-                XOR:'xor', NAND:'nand', NOR:'nor', DFF:'dff' }[op] ?? op.toLowerCase();
+                XOR:'xor', NAND:'nand', NOR:'nor', XNOR:'xnor', DFF:'dff' }[op] ?? op.toLowerCase();
   const taken = new Set(stmts.map(s => s.out));
   let i = 1;
   while (taken.has(pfx + i)) i++;

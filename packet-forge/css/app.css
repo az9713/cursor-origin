@@ -143,6 +143,7 @@ body {
 .badge-ip      { background: var(--c-ip); }
 .badge-tcp     { background: var(--c-tcp); }
 .badge-udp     { background: var(--c-udp); }
+.badge-icmp    { background: var(--c-icmp); }
 .badge-payload { background: var(--c-payload); }
 
 .section-title {
@@ -333,6 +334,7 @@ textarea.field-input {
 .hb-ip      { color: var(--c-ip); }
 .hb-tcp     { color: var(--c-tcp); }
 .hb-udp     { color: var(--c-udp); }
+.hb-icmp    { color: var(--c-icmp); }
 .hb-payload { color: var(--c-payload); }
 
 .hb:hover { background: var(--rust-dim); }

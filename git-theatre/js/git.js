@@ -25,7 +25,8 @@
       index:      {},   // filename → sha40 (staging area)
       reflog:     {},   // ref → [{ old, new, action, time }]
       conflicts:  [],   // filenames currently in conflict
-      mergeState: null  // { parentSha, branchName } while merge is pending
+      mergeState: null, // { parentSha, branchName } while merge is pending
+      cherryPickState: null // { sourceSha, message } while cherry-pick is pending
     };
   }
 
@@ -185,6 +186,39 @@
     return wt;
   }
 
+  /**
+   * Three-way merge of path→text maps.
+   * Equivalent to applying (base → theirs) onto ours, with conflict markers
+   * matching merge:  <<<<<<< HEAD / ======= / >>>>>>> <theirsLabel>
+   */
+  function threeWayMergeTrees(baseTree, ourTree, theirTree, theirsLabel) {
+    const allFiles = new Set([
+      ...Object.keys(baseTree || {}),
+      ...Object.keys(ourTree  || {}),
+      ...Object.keys(theirTree || {})
+    ]);
+    const merged    = {};
+    const conflicts = [];
+
+    for (const path of allFiles) {
+      const base   = baseTree[path];
+      const ours   = ourTree[path];
+      const theirs = theirTree[path];
+
+      if (ours === theirs) {
+        if (ours !== undefined) merged[path] = ours;
+        continue;
+      }
+      if (ours   === base) { if (theirs !== undefined) merged[path] = theirs; continue; }
+      if (theirs === base) { if (ours   !== undefined) merged[path] = ours;   continue; }
+
+      merged[path] =
+        `<<<<<<< HEAD\n${ours || ''}\n=======\n${theirs || ''}\n>>>>>>> ${theirsLabel}`;
+      conflicts.push(path);
+    }
+    return { merged, conflicts };
+  }
+
   // ── Graph helpers ────────────────────────────────────────────────────────
 
   /** BFS: all commits reachable from sha (inclusive). */
@@ -296,22 +330,30 @@
     const parents = headSha ? [headSha] : [];
     if (store.mergeState) parents.push(store.mergeState.parentSha);
 
+    const cherryPickState = store.cherryPickState;
     const commitSha = writeCommit(store, {
       tree: treeSha, parents, author, message, timestamp: Date.now()
     });
 
+    const cherryAction = cherryPickState
+      ? `cherry-pick ${(cherryPickState.sourceSha || '').slice(0, 7)}: ${message}`
+      : null;
+
     const branch = headBranch(store);
     if (branch) {
       const ref = `refs/heads/${branch}`;
-      appendReflog(store, ref,    headSha, commitSha, `commit: ${message}`);
-      appendReflog(store, 'HEAD', headSha, commitSha, `commit (${branch}): ${message}`);
+      const refAction  = cherryAction || `commit: ${message}`;
+      const headAction = cherryAction || `commit (${branch}): ${message}`;
+      appendReflog(store, ref,    headSha, commitSha, refAction);
+      appendReflog(store, 'HEAD', headSha, commitSha, headAction);
       store.refs[ref] = commitSha;
     } else {
-      appendReflog(store, 'HEAD', headSha, commitSha, `commit: ${message}`);
+      appendReflog(store, 'HEAD', headSha, commitSha, cherryAction || `commit: ${message}`);
       store.refs['HEAD'] = commitSha;   // detached HEAD advances
     }
 
     store.mergeState = null;
+    store.cherryPickState = null;
     store.conflicts  = [];
     save(store);
     return commitSha;
@@ -346,6 +388,7 @@
     store.refs['HEAD'] = `ref: ${ref}`;
     store.conflicts  = [];
     store.mergeState = null;
+    store.cherryPickState = null;
     appendReflog(store, 'HEAD', oldSha, sha, `checkout: ${branchName}`);
     save(store);
   }
@@ -354,6 +397,8 @@
 
   function doMerge(branchName) {
     const store  = load();
+    if (store.cherryPickState)
+      throw new Error('Cherry-pick in progress — commit resolved files or checkout to abort');
     const curSha = resolveHead(store);
     const tgtSha = store.refs[`refs/heads/${branchName}`];
 
@@ -393,29 +438,7 @@
     const ourTree  = treeToWorkingTree(store, readCommit(store, curSha).tree);
     const theirTree= treeToWorkingTree(store, readCommit(store, tgtSha).tree);
 
-    const allFiles = new Set([
-      ...Object.keys(ourTree), ...Object.keys(theirTree)
-    ]);
-    const merged    = {};
-    const conflicts = [];
-
-    for (const path of allFiles) {
-      const base  = baseTree[path];
-      const ours  = ourTree[path];
-      const theirs= theirTree[path];
-
-      if (ours === theirs) {
-        if (ours !== undefined) merged[path] = ours;
-        continue;
-      }
-      if (ours   === base) { if (theirs !== undefined) merged[path] = theirs; continue; }
-      if (theirs === base) { if (ours   !== undefined) merged[path] = ours;   continue; }
-
-      // True conflict
-      merged[path] =
-        `<<<<<<< HEAD\n${ours || ''}\n=======\n${theirs || ''}\n>>>>>>> ${branchName}`;
-      conflicts.push(path);
-    }
+    const { merged, conflicts } = threeWayMergeTrees(baseTree, ourTree, theirTree, branchName);
 
     // Update working tree & index
     store.workingTree = merged;
@@ -456,6 +479,8 @@
 
   function doRebase(targetBranch) {
     const store     = load();
+    if (store.cherryPickState || store.mergeState)
+      throw new Error('Finish the in-progress merge/cherry-pick first');
     const curBranch = headBranch(store);
     const curSha    = resolveHead(store);
     const tgtSha    = store.refs[`refs/heads/${targetBranch}`];
@@ -527,8 +552,83 @@
     }
     store.conflicts  = [];
     store.mergeState = null;
+    store.cherryPickState = null;
     save(store);
     return { oldToNew, newHead };
+  }
+
+  // ── Cherry-pick ──────────────────────────────────────────────────────────
+  // Apply source commit's first-parent → tree diff onto current HEAD
+  // (three-way merge with parent as base). New commit, original object stays.
+
+  function doCherryPick(shaOrPrefix) {
+    const store = load();
+    if (store.mergeState)
+      throw new Error('Merge in progress — commit resolved files or checkout to abort');
+    if (store.cherryPickState)
+      throw new Error('Cherry-pick already in progress — commit or checkout to abort');
+
+    const curSha = resolveHead(store);
+    if (!curSha) throw new Error('No HEAD');
+
+    const srcSha = resolveSha(store, shaOrPrefix);
+    if (!srcSha) throw new Error(`Commit not found: ${shaOrPrefix || ''}`);
+    const src = readCommit(store, srcSha);
+    if (!src) throw new Error('Not a commit object');
+    if (srcSha === curSha) throw new Error('Cannot cherry-pick HEAD onto itself');
+
+    const parentSha  = src.parents[0] || null;
+    const parentC    = parentSha ? readCommit(store, parentSha) : null;
+    const baseTree   = parentC ? treeToWorkingTree(store, parentC.tree) : {};
+    const theirTree  = treeToWorkingTree(store, src.tree);
+    const headC      = readCommit(store, curSha);
+    const ourTree    = headC ? treeToWorkingTree(store, headC.tree) : {};
+
+    const short = srcSha.slice(0, 7);
+    const { merged, conflicts } = threeWayMergeTrees(baseTree, ourTree, theirTree, short);
+
+    store.workingTree = merged;
+    const newIndex = {};
+    for (const [name, text] of Object.entries(merged)) {
+      newIndex[name] = writeBlob(store, text);
+    }
+    store.index     = newIndex;
+    store.conflicts = conflicts;
+
+    const subject = (src.message || '').split('\n')[0];
+    const action  = `cherry-pick ${short}: ${subject}`;
+
+    if (conflicts.length === 0) {
+      const entries = Object.entries(merged)
+        .map(([name, text]) => ({ name, mode: '100644', hash: newIndex[name] }));
+      const treeSha = writeTree(store, entries);
+      const newSha  = writeCommit(store, {
+        tree:      treeSha,
+        parents:   [curSha],
+        author:    src.author,
+        message:   src.message,
+        timestamp: Date.now()
+      });
+      const branch = headBranch(store);
+      if (branch) {
+        const ref = `refs/heads/${branch}`;
+        appendReflog(store, ref,    curSha, newSha, action);
+        appendReflog(store, 'HEAD', curSha, newSha, action);
+        store.refs[ref] = newSha;
+      } else {
+        appendReflog(store, 'HEAD', curSha, newSha, action);
+        store.refs['HEAD'] = newSha;
+      }
+      store.cherryPickState = null;
+      store.mergeState = null;
+      save(store);
+      return { type: 'ok', sha: newSha, originalSha: srcSha };
+    }
+
+    store.cherryPickState = { sourceSha: srcSha, message: src.message };
+    store.mergeState = null;
+    save(store);
+    return { type: 'conflict', conflicts, originalSha: srcSha };
   }
 
   // ── Query helpers ─────────────────────────────────────────────────────────
@@ -710,10 +810,10 @@
     stageFile, stageAll, doCommit,
     // Branch ops
     createBranch, doCheckout,
-    // Merge & rebase
-    doMerge, doRebase,
+    // Merge, rebase, cherry-pick
+    doMerge, doRebase, doCherryPick,
     // Query
-    getAllCommits, catFile,
+    getAllCommits, catFile, resolveSha,
     appendReflog,
     // Seed
     resetToSeed, initIfEmpty

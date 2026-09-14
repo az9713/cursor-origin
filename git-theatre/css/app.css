@@ -497,6 +497,11 @@ body {
   margin-top: 18px;
 }
 
+#cherryPickSha {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
 /* ── Toast notification ───────────────────────────────────────────────────── */
 .notification {
   position: fixed;

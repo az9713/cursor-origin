@@ -15,6 +15,8 @@
  *   .turn                  — 'w' | 'b'
  *   .history()             — array of past move objects
  *   .material()            — { w: number, b: number }
+ *   .startFen()            — FEN this instance was constructed with
+ *   Chess.from960(id)      — Chess960 starting position id 0–959
  */
 
 const PIECE_VALUES = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
@@ -39,10 +41,74 @@ const INITIAL_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 // Castling rights bits
 const CASTLE_WK = 1, CASTLE_WQ = 2, CASTLE_BK = 4, CASTLE_BQ = 8;
 
+// Knight-pair placements among 5 remaining squares (lexicographic C(5,2))
+const CHESS960_N5N = [
+  [0, 1], [0, 2], [0, 3], [0, 4],
+  [1, 2], [1, 3], [1, 4],
+  [2, 3], [2, 4],
+  [3, 4],
+];
+
+/**
+ * Reinhard Scharnagl Chess960 numbering (ids 0–959).
+ * ID 518 = RNBQKBNR (standard chess). ID 0 = BBQNNRKR.
+ */
+export function chess960Fen(id) {
+  const n0 = ((id % 960) + 960) % 960;
+  const pos = new Array(8).fill(null);
+  let n = n0;
+
+  const lightBishop = n % 4; n = Math.floor(n / 4);
+  const darkBishop  = n % 4; n = Math.floor(n / 4);
+  const queenIdx    = n % 6; n = Math.floor(n / 6);
+  const knightPair  = n;
+
+  pos[2 * lightBishop + 1] = 'B';
+  pos[2 * darkBishop] = 'B';
+
+  const empty = [];
+  for (let i = 0; i < 8; i++) if (!pos[i]) empty.push(i);
+  pos[empty[queenIdx]] = 'Q';
+
+  const rest = [];
+  for (let i = 0; i < 8; i++) if (!pos[i]) rest.push(i);
+  const [n1, n2] = CHESS960_N5N[knightPair];
+  pos[rest[n1]] = 'N';
+  pos[rest[n2]] = 'N';
+
+  const last = [];
+  for (let i = 0; i < 8; i++) if (!pos[i]) last.push(i);
+  pos[last[0]] = 'R';
+  pos[last[1]] = 'K';
+  pos[last[2]] = 'R';
+
+  const white = pos.join('');
+  const black = white.toLowerCase();
+  return `${black}/pppppppp/8/8/8/8/PPPPPPPP/${white} w KQkq - 0 1`;
+}
+
+export function chess960Rank(id) {
+  return chess960Fen(id).split('/')[7].split(' ')[0];
+}
+
 export class Chess {
   constructor(fen = INITIAL_FEN) {
     this._history = [];
+    this.chess960Id = null;
     this._load(fen);
+    this._startFen = this.fen();
+  }
+
+  /** Chess960 starting position (id 0–959). */
+  static from960(id) {
+    const n = ((id % 960) + 960) % 960;
+    const game = new Chess(chess960Fen(n));
+    game.chess960Id = n;
+    return game;
+  }
+
+  startFen() {
+    return this._startFen;
   }
 
   /** Load position from FEN */
@@ -83,6 +149,99 @@ export class Chess {
     this._halfmove = parseInt(parts[4]) || 0;
     this._fullmove = parseInt(parts[5]) || 1;
     this._history = [];
+    this._discoverCastleRooks();
+  }
+
+  /**
+   * Bind KQkq rights to the actual back-rank rooks (outermost each side of the king).
+   * Standard chess maps to a1/h1; Chess960 maps to whatever files the start used.
+   */
+  _discoverCastleRooks() {
+    this._castleRookSq = { wk: -1, wq: -1, bk: -1, bq: -1 };
+    for (const color of ['w', 'b']) {
+      const r = color === 'w' ? 0 : 7;
+      let kingF = -1;
+      for (let f = 0; f < 8; f++) {
+        const p = this._board[sq(f, r)];
+        if (p && p.type === 'k' && p.color === color) kingF = f;
+      }
+      let qFile = -1, kFile = -1;
+      if (kingF >= 0) {
+        for (let f = 0; f < 8; f++) {
+          const p = this._board[sq(f, r)];
+          if (!p || p.type !== 'r' || p.color !== color) continue;
+          if (f < kingF && qFile === -1) qFile = f;
+          if (f > kingF) kFile = f;
+        }
+      }
+      if (color === 'w') {
+        if ((this._castling & CASTLE_WK) && kFile >= 0) this._castleRookSq.wk = sq(kFile, r);
+        else this._castling &= ~CASTLE_WK;
+        if ((this._castling & CASTLE_WQ) && qFile >= 0) this._castleRookSq.wq = sq(qFile, r);
+        else this._castling &= ~CASTLE_WQ;
+      } else {
+        if ((this._castling & CASTLE_BK) && kFile >= 0) this._castleRookSq.bk = sq(kFile, r);
+        else this._castling &= ~CASTLE_BK;
+        if ((this._castling & CASTLE_BQ) && qFile >= 0) this._castleRookSq.bq = sq(qFile, r);
+        else this._castling &= ~CASTLE_BQ;
+      }
+    }
+  }
+
+  _clearRookRightsAt(square) {
+    if (square < 0) return;
+    if (this._castleRookSq.wk === square) { this._castling &= ~CASTLE_WK; this._castleRookSq.wk = -1; }
+    if (this._castleRookSq.wq === square) { this._castling &= ~CASTLE_WQ; this._castleRookSq.wq = -1; }
+    if (this._castleRookSq.bk === square) { this._castling &= ~CASTLE_BK; this._castleRookSq.bk = -1; }
+    if (this._castleRookSq.bq === square) { this._castling &= ~CASTLE_BQ; this._castleRookSq.bq = -1; }
+  }
+
+  /** Squares between from and to (including to, excluding from) must be empty except king+rook. */
+  _castlePathClear(fromSq, toSq, extras) {
+    const f0 = file(fromSq), f1 = file(toSq);
+    if (f0 === f1) return true;
+    const r = rank(fromSq);
+    const step = f1 > f0 ? 1 : -1;
+    for (let f = f0 + step; ; f += step) {
+      const s = sq(f, r);
+      const p = this._board[s];
+      if (p && !extras.has(s)) return false;
+      if (f === f1) break;
+    }
+    return true;
+  }
+
+  _kingCastlePathSafe(kingSq, kingDest, opp) {
+    const f0 = file(kingSq), f1 = file(kingDest);
+    const r = rank(kingSq);
+    const step = f1 > f0 ? 1 : f1 < f0 ? -1 : 0;
+    if (step === 0) return !this._isAttacked(kingSq, opp);
+    for (let f = f0; ; f += step) {
+      if (this._isAttacked(sq(f, r), opp)) return false;
+      if (f === f1) break;
+    }
+    return true;
+  }
+
+  _makeCastleMove(kingSq, rookSq, flags) {
+    if (rookSq < 0) return null;
+    const rook = this._board[rookSq];
+    const king = this._board[kingSq];
+    if (!rook || rook.type !== 'r' || !king || rook.color !== king.color) return null;
+    const r = rank(kingSq);
+    const kingDest = sq(flags === 'kcastle' ? 6 : 2, r);
+    const rookDest = sq(flags === 'kcastle' ? 5 : 3, r);
+    const extras = new Set([kingSq, rookSq]);
+    if (!this._castlePathClear(kingSq, kingDest, extras)) return null;
+    if (!this._castlePathClear(rookSq, rookDest, extras)) return null;
+    const travel = Math.abs(file(kingSq) - file(kingDest));
+    // Two-or-more file king travel (standard e1g1/e1c1) uses dest; else drop on the rook
+    // so a one-square king walk is never confused with Chess960 castling.
+    const to = travel >= 2 ? kingDest : rookSq;
+    return {
+      from: kingSq, to, flags, piece: 'k', captured: null,
+      rookFrom: rookSq, rookTo: rookDest, kingTo: kingDest,
+    };
   }
 
   get(square) {
@@ -199,26 +358,27 @@ export class Chess {
             moves.push({ from: s, to: target, flags: cap ? 'capture' : '', piece: 'k', captured: cap?.type || null });
           }
 
-          // Castling
-          if (color === 'w' && r0 === 0 && f0 === 4) {
-            // King-side
-            if ((this._castling & CASTLE_WK) &&
-                !this._board[sq(5,0)] && !this._board[sq(6,0)]) {
-              moves.push({ from: s, to: sq(6,0), flags: 'kcastle', piece: 'k', captured: null });
-            }
-            // Queen-side
-            if ((this._castling & CASTLE_WQ) &&
-                !this._board[sq(3,0)] && !this._board[sq(2,0)] && !this._board[sq(1,0)]) {
-              moves.push({ from: s, to: sq(2,0), flags: 'qcastle', piece: 'k', captured: null });
-            }
-          } else if (color === 'b' && r0 === 7 && f0 === 4) {
-            if ((this._castling & CASTLE_BK) &&
-                !this._board[sq(5,7)] && !this._board[sq(6,7)]) {
-              moves.push({ from: s, to: sq(6,7), flags: 'kcastle', piece: 'k', captured: null });
-            }
-            if ((this._castling & CASTLE_BQ) &&
-                !this._board[sq(3,7)] && !this._board[sq(2,7)] && !this._board[sq(1,7)]) {
-              moves.push({ from: s, to: sq(2,7), flags: 'qcastle', piece: 'k', captured: null });
+          // Castling (standard + Chess960): king ends on g/c, rook on f/d
+          const back = color === 'w' ? 0 : 7;
+          if (r0 === back) {
+            if (color === 'w') {
+              if (this._castling & CASTLE_WK) {
+                const mv = this._makeCastleMove(s, this._castleRookSq.wk, 'kcastle');
+                if (mv) moves.push(mv);
+              }
+              if (this._castling & CASTLE_WQ) {
+                const mv = this._makeCastleMove(s, this._castleRookSq.wq, 'qcastle');
+                if (mv) moves.push(mv);
+              }
+            } else {
+              if (this._castling & CASTLE_BK) {
+                const mv = this._makeCastleMove(s, this._castleRookSq.bk, 'kcastle');
+                if (mv) moves.push(mv);
+              }
+              if (this._castling & CASTLE_BQ) {
+                const mv = this._makeCastleMove(s, this._castleRookSq.bq, 'qcastle');
+                if (mv) moves.push(mv);
+              }
             }
           }
           break;
@@ -305,6 +465,7 @@ export class Chess {
       piece: mv.piece, captured: mv.captured,
       capturedSq: mv.to,
       castling: this._castling,
+      castleRookSq: { ...this._castleRookSq },
       ep: this._ep,
       halfmove: this._halfmove,
       fullmove: this._fullmove,
@@ -322,23 +483,22 @@ export class Chess {
       this._board[epCaptureSq] = null;
     }
 
-    this._board[mv.to] = moving;
+    if (mv.flags === 'kcastle' || mv.flags === 'qcastle') {
+      // Remove both pieces first — dest may be the other's origin
+      this._board[mv.rookFrom] = null;
+      this._board[mv.kingTo] = { type: 'k', color: moving.color };
+      this._board[mv.rookTo] = { type: 'r', color: moving.color };
+      undo.rookFrom = mv.rookFrom;
+      undo.rookTo = mv.rookTo;
+      undo.kingTo = mv.kingTo;
+    } else {
+      this._board[mv.to] = moving;
 
-    // Promotion — always queen
-    if (mv.flags === 'promotion' || mv.flags === 'promotion-capture') {
-      undo.promotedFrom = moving.type;
-      this._board[mv.to] = { type: 'q', color: moving.color };
-    }
-
-    // Castling — move rook
-    if (mv.flags === 'kcastle') {
-      const r = rank(mv.from);
-      this._board[sq(5, r)] = this._board[sq(7, r)];
-      this._board[sq(7, r)] = null;
-    } else if (mv.flags === 'qcastle') {
-      const r = rank(mv.from);
-      this._board[sq(3, r)] = this._board[sq(0, r)];
-      this._board[sq(0, r)] = null;
+      // Promotion — always queen
+      if (mv.flags === 'promotion' || mv.flags === 'promotion-capture') {
+        undo.promotedFrom = moving.type;
+        this._board[mv.to] = { type: 'q', color: moving.color };
+      }
     }
 
     // Update en passant square
@@ -347,18 +507,23 @@ export class Chess {
       : -1;
 
     // Update castling rights
-    // Moving king
     if (moving.type === 'k') {
-      if (moving.color === 'w') this._castling &= ~(CASTLE_WK | CASTLE_WQ);
-      else                      this._castling &= ~(CASTLE_BK | CASTLE_BQ);
+      if (moving.color === 'w') {
+        this._castling &= ~(CASTLE_WK | CASTLE_WQ);
+        this._castleRookSq.wk = -1;
+        this._castleRookSq.wq = -1;
+      } else {
+        this._castling &= ~(CASTLE_BK | CASTLE_BQ);
+        this._castleRookSq.bk = -1;
+        this._castleRookSq.bq = -1;
+      }
     }
-    // Moving rook or capturing rook
-    const rookRightsMap = {
-      [sq(7,0)]: CASTLE_WK, [sq(0,0)]: CASTLE_WQ,
-      [sq(7,7)]: CASTLE_BK, [sq(0,7)]: CASTLE_BQ,
-    };
-    if (rookRightsMap[mv.from] !== undefined) this._castling &= ~rookRightsMap[mv.from];
-    if (rookRightsMap[mv.to]   !== undefined) this._castling &= ~rookRightsMap[mv.to];
+    this._clearRookRightsAt(mv.from);
+    this._clearRookRightsAt(mv.to);
+    if (mv.flags === 'kcastle' || mv.flags === 'qcastle') {
+      this._clearRookRightsAt(mv.rookFrom);
+    }
+    if (undo.capturedSq !== mv.to) this._clearRookRightsAt(undo.capturedSq);
 
     // Half-move clock
     if (moving.type === 'p' || mv.captured) this._halfmove = 0;
@@ -377,6 +542,17 @@ export class Chess {
     this._ep       = undo.ep;
     this._halfmove = undo.halfmove;
     this._fullmove = undo.fullmove;
+    this._castleRookSq = undo.castleRookSq
+      ? { ...undo.castleRookSq }
+      : this._castleRookSq;
+
+    if (undo.flags === 'kcastle' || undo.flags === 'qcastle') {
+      this._board[undo.kingTo] = null;
+      this._board[undo.rookTo] = null;
+      this._board[undo.from] = { type: 'k', color: undo.turn };
+      this._board[undo.rookFrom] = { type: 'r', color: undo.turn };
+      return;
+    }
 
     // Restore moving piece (handle promotion)
     const movedPiece = undo.promotedFrom
@@ -389,17 +565,6 @@ export class Chess {
     // Restore captured piece
     if (undo.captured) {
       this._board[undo.capturedSq] = { type: undo.captured, color: undo.turn === 'w' ? 'b' : 'w' };
-    }
-
-    // Undo castling rook move
-    if (undo.flags === 'kcastle') {
-      const r = rank(undo.from);
-      this._board[sq(7, r)] = this._board[sq(5, r)];
-      this._board[sq(5, r)] = null;
-    } else if (undo.flags === 'qcastle') {
-      const r = rank(undo.from);
-      this._board[sq(0, r)] = this._board[sq(3, r)];
-      this._board[sq(3, r)] = null;
     }
   }
 
@@ -419,14 +584,9 @@ export class Chess {
       this._unapplyMove(undo);
 
       if (!inCheck) {
-        // Castling: ensure king doesn't pass through check
         if (mv.flags === 'kcastle' || mv.flags === 'qcastle') {
-          const color = this.turn;
-          const r = color === 'w' ? 0 : 7;
-          const passSq = mv.flags === 'kcastle' ? sq(5, r) : sq(3, r);
-          const opp = color === 'w' ? 'b' : 'w';
-          // King must not be in check on origin or passing square
-          if (this._isAttacked(mv.from, opp) || this._isAttacked(passSq, opp)) continue;
+          const opp = this.turn === 'w' ? 'b' : 'w';
+          if (!this._kingCastlePathSafe(mv.from, mv.kingTo, opp)) continue;
         }
         mv.san = this._toSAN(mv);
         legal.push(mv);
@@ -442,7 +602,13 @@ export class Chess {
     const toS   = typeof toArg   === 'string' ? algToSq(toArg)   : toArg;
 
     const legal = this.moves();
-    const mv = legal.find(m => m.from === fromS && m.to === toS);
+    const mv = legal.find(m => {
+      if (m.from !== fromS) return false;
+      if (m.to === toS) return true;
+      // Chess960: dropping the king onto its rook is always that castle
+      if ((m.flags === 'kcastle' || m.flags === 'qcastle') && m.rookFrom === toS) return true;
+      return false;
+    });
     if (!mv) return null;
 
     const undo = this._applyMove(mv);
@@ -642,16 +808,12 @@ export function parseSAN(chess, san) {
   // Strip check/mate markers
   const token = san.replace(/[+#!?]/g, '').trim();
 
-  // Castling
-  if (token === 'O-O-O' || token === '0-0-0') {
-    const r = chess.turn === 'w' ? '1' : '8';
-    const mv = chess.move('e' + r, 'c' + r);
-    if (!mv) throw new Error(`Illegal castle: ${san}`);
-    return mv;
-  }
-  if (token === 'O-O' || token === '0-0') {
-    const r = chess.turn === 'w' ? '1' : '8';
-    const mv = chess.move('e' + r, 'g' + r);
+  // Castling — match by flag so Chess960 kings not on e still work; standard e1g1 stays O-O
+  if (token === 'O-O-O' || token === '0-0-0' || token === 'O-O' || token === '0-0') {
+    const want = (token === 'O-O-O' || token === '0-0-0') ? 'qcastle' : 'kcastle';
+    const castle = chess.moves().find(m => m.flags === want);
+    if (!castle) throw new Error(`Illegal castle: ${san}`);
+    const mv = chess.move(castle.from, castle.to);
     if (!mv) throw new Error(`Illegal castle: ${san}`);
     return mv;
   }
@@ -702,4 +864,4 @@ export function parseSAN(chess, san) {
   return mv;
 }
 
-export { GLYPHS, sqToAlg, algToSq, PIECE_VALUES };
+export { GLYPHS, sqToAlg, algToSq, PIECE_VALUES, INITIAL_FEN };

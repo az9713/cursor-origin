@@ -13,6 +13,10 @@
   <a href="../" class="hub-link">Hub</a>
   <span class="sep">›</span>
   <h1>Ledger Books</h1>
+  <div class="book-switcher" role="group" aria-label="Current book">
+    <button type="button" class="book-btn active" data-book="personal" aria-pressed="true">Personal</button>
+    <button type="button" class="book-btn" data-book="business" aria-pressed="false">Business</button>
+  </div>
   <span class="ledger-badge">DOUBLE-ENTRY</span>
 </header>
 
@@ -121,7 +125,7 @@
 
   <!-- ─── RESET ─── -->
   <div class="reset-zone">
-    <p>Restore the built-in seed data (11 accounts, 6 posted entries).</p>
+    <p>Restore both books to seed (Personal: 11 accounts / 6 posted entries; Business: own chart / 5 posted entries).</p>
     <button class="btn btn-secondary" id="btn-reset">↺ Reset to Seed</button>
   </div>
 

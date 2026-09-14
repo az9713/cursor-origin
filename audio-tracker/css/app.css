@@ -58,6 +58,23 @@ button, input, select { font: inherit; cursor: pointer; }
 }
 #bpm:focus { outline: 1px solid var(--rust); }
 
+.swing-group input[type="range"] {
+  width: 5.5rem;
+  height: 3px;
+  accent-color: var(--rust);
+  cursor: pointer;
+}
+.swing-group input[type="range"]:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.swing-val {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: #d0c8bc;
+  min-width: 2.4rem;
+}
+
 button.action {
   background: var(--rust);
   color: #fff;

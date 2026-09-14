@@ -72,7 +72,7 @@ p { margin: 0; }
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: 21rem 1fr 23rem;
+  grid-template-columns: 21rem 1fr 26rem;
   overflow: hidden;
 }
 
@@ -222,11 +222,17 @@ p { margin: 0; }
 }
 .trace-tbl .tc-sel code {
   display: inline-block;
-  max-width: 10rem;
+  max-width: 8.5rem;
   overflow: hidden;
   text-overflow: ellipsis;
   vertical-align: bottom;
 }
+.trace-tbl .tc-layer {
+  font-family: var(--mono);
+  font-size: .72rem;
+  color: var(--muted);
+}
+.tr-win .tc-layer { color: var(--rust); }
 .trace-tbl .tc-win { color: var(--rust); font-weight: 700; text-align: center; }
 .trace-tbl .tc-off { text-align: center; }
 /* Winner row */

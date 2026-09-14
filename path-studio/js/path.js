@@ -60,6 +60,37 @@ const DIRS4 = [
 function ci(x, y, cols) { return y * cols + x; }
 
 /**
+ * Visit each walkable neighbor of `curr`.
+ * Order is stable: N, E, S, W, then portal partners (cost 1 teleport).
+ * `portals` is an array of `{ a: index, b: index }` pairs (optional).
+ * `visit(ni, edgeCost)` is called for each neighbor.
+ */
+function forEachNeighbor(cells, cols, rows, curr, portals, visit) {
+  const cx = curr % cols;
+  const cy = (curr / cols) | 0;
+
+  for (const { dx, dy } of DIRS4) {
+    const nx = cx + dx, ny = cy + dy;
+    if (nx < 0 || nx >= cols || ny < 0 || ny >= rows) continue;
+    const ni = ci(nx, ny, cols);
+    if (cells[ni].blocked) continue;
+    visit(ni, cells[ni].cost);
+  }
+
+  if (!portals || !portals.length) return;
+
+  for (const p of portals) {
+    let other = -1;
+    if (curr === p.a) other = p.b;
+    else if (curr === p.b) other = p.a;
+    else continue;
+    if (other < 0 || other >= cells.length) continue;
+    if (cells[other].blocked) continue;
+    visit(other, 1);
+  }
+}
+
+/**
  * Reconstruct path from `prev` array.
  * Returns array of flat indices from start → goal.
  */
@@ -83,10 +114,11 @@ function reconstructPath(prev, startI, goalI) {
  * @param {number} rows
  * @param {{x:number,y:number}} start
  * @param {{x:number,y:number}} goal
+ * @param {Array<{a:number,b:number}>} [portals]
  * @returns {{ pathIdx: number[], openSet: Set<number>, closedSet: Set<number>,
  *             gScores: Float32Array, found: boolean }}
  */
-function dijkstra(cells, cols, rows, start, goal) {
+function dijkstra(cells, cols, rows, start, goal, portals) {
   const N      = cols * rows;
   const dist   = new Float32Array(N).fill(Infinity);
   const prev   = new Array(N).fill(undefined);
@@ -109,23 +141,17 @@ function dijkstra(cells, cols, rows, start, goal) {
 
     if (curr === goalI) break;
 
-    const cx = curr % cols;
-    const cy = (curr / cols) | 0;
+    forEachNeighbor(cells, cols, rows, curr, portals, (ni, edgeCost) => {
+      if (closed.has(ni)) return;
 
-    for (const { dx, dy } of DIRS4) {
-      const nx = cx + dx, ny = cy + dy;
-      if (nx < 0 || nx >= cols || ny < 0 || ny >= rows) continue;
-      const ni = ci(nx, ny, cols);
-      if (cells[ni].blocked || closed.has(ni)) continue;
-
-      const nd = dist[curr] + cells[ni].cost;
+      const nd = dist[curr] + edgeCost;
       if (nd < dist[ni]) {
         dist[ni] = nd;
         prev[ni] = curr;
         pq.push(ni, nd);
         open.add(ni);
       }
-    }
+    });
   }
 
   const found  = dist[goalI] < Infinity;
@@ -142,10 +168,27 @@ function manhattan(i, goalI, cols) {
 }
 
 /**
+ * Admissible when no portals (plain Manhattan). With portals, also consider
+ * a single teleport hop so A* will pursue shortcuts instead of overestimating.
+ */
+function heuristic(i, goalI, cols, portals) {
+  const h = manhattan(i, goalI, cols);
+  if (!portals || !portals.length) return h;
+  let best = h;
+  for (const p of portals) {
+    const viaA = manhattan(i, p.a, cols) + 1 + manhattan(p.b, goalI, cols);
+    const viaB = manhattan(i, p.b, cols) + 1 + manhattan(p.a, goalI, cols);
+    if (viaA < best) best = viaA;
+    if (viaB < best) best = viaB;
+  }
+  return best;
+}
+
+/**
  * Same signature and return shape as dijkstra().
  * gScores holds g-values (cost so far from start).
  */
-function astar(cells, cols, rows, start, goal) {
+function astar(cells, cols, rows, start, goal, portals) {
   const N      = cols * rows;
   const g      = new Float32Array(N).fill(Infinity);
   const prev   = new Array(N).fill(undefined);
@@ -157,7 +200,7 @@ function astar(cells, cols, rows, start, goal) {
 
   g[startI] = 0;
   const pq = new MinHeap();
-  pq.push(startI, manhattan(startI, goalI, cols));
+  pq.push(startI, heuristic(startI, goalI, cols, portals));
   open.add(startI);
 
   while (!pq.isEmpty()) {
@@ -168,23 +211,17 @@ function astar(cells, cols, rows, start, goal) {
 
     if (curr === goalI) break;
 
-    const cx = curr % cols;
-    const cy = (curr / cols) | 0;
+    forEachNeighbor(cells, cols, rows, curr, portals, (ni, edgeCost) => {
+      if (closed.has(ni)) return;
 
-    for (const { dx, dy } of DIRS4) {
-      const nx = cx + dx, ny = cy + dy;
-      if (nx < 0 || nx >= cols || ny < 0 || ny >= rows) continue;
-      const ni = ci(nx, ny, cols);
-      if (cells[ni].blocked || closed.has(ni)) continue;
-
-      const ng = g[curr] + cells[ni].cost;
+      const ng = g[curr] + edgeCost;
       if (ng < g[ni]) {
         g[ni] = ng;
         prev[ni] = curr;
-        pq.push(ni, ng + manhattan(ni, goalI, cols));
+        pq.push(ni, ng + heuristic(ni, goalI, cols, portals));
         open.add(ni);
       }
-    }
+    });
   }
 
   const found   = g[goalI] < Infinity;
@@ -201,7 +238,7 @@ function astar(cells, cols, rows, start, goal) {
  * Return shape matches dijkstra/astar; gScores holds costTo values.
  * openSet is empty after the full sweep (all reachable cells are closed).
  */
-function flowField(cells, cols, rows, start, goal) {
+function flowField(cells, cols, rows, start, goal, portals) {
   const N      = cols * rows;
   const costTo = new Float32Array(N).fill(Infinity);
   const closed = new Set();
@@ -222,26 +259,19 @@ function flowField(cells, cols, rows, start, goal) {
     open.delete(curr);
     closed.add(curr);
 
-    const cx = curr % cols;
-    const cy = (curr / cols) | 0;
+    forEachNeighbor(cells, cols, rows, curr, portals, (ni, edgeCost) => {
+      if (closed.has(ni)) return;
 
-    for (const { dx, dy } of DIRS4) {
-      const nx = cx + dx, ny = cy + dy;
-      if (nx < 0 || nx >= cols || ny < 0 || ny >= rows) continue;
-      const ni = ci(nx, ny, cols);
-      if (cells[ni].blocked || closed.has(ni)) continue;
-
-      // Cost of entering ni (from any direction) = cells[ni].cost
-      const nd = costTo[curr] + cells[ni].cost;
+      const nd = costTo[curr] + edgeCost;
       if (nd < costTo[ni]) {
         costTo[ni] = nd;
         pq.push(ni, nd);
         open.add(ni);
       }
-    }
+    });
   }
 
-  // Trace agent path: greedy descent on costTo
+  // Trace agent path: greedy descent on costTo (4-neighbor then portal)
   const pathIdx = [];
   const found   = costTo[startI] < Infinity;
 
@@ -252,19 +282,14 @@ function flowField(cells, cols, rows, start, goal) {
       pathIdx.push(curr);
       visited.add(curr);
 
-      const cx = curr % cols, cy = (curr / cols) | 0;
       let bestI = -1, bestCost = costTo[curr];
 
-      for (const { dx, dy } of DIRS4) {
-        const nx = cx + dx, ny = cy + dy;
-        if (nx < 0 || nx >= cols || ny < 0 || ny >= rows) continue;
-        const ni = ci(nx, ny, cols);
-        if (cells[ni].blocked) continue;
+      forEachNeighbor(cells, cols, rows, curr, portals, (ni) => {
         if (costTo[ni] < bestCost) {
           bestCost = costTo[ni];
           bestI    = ni;
         }
-      }
+      });
 
       if (bestI === -1) break;
       curr = bestI;
@@ -283,4 +308,4 @@ function flowField(cells, cols, rows, start, goal) {
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
-window.PSPath = { dijkstra, astar, flowField };
+window.PSPath = { dijkstra, astar, flowField, forEachNeighbor };

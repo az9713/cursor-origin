@@ -57,6 +57,7 @@ class Simulator {
           case 'XOR':  v = a0 ^ a1;                   break;
           case 'NAND': v = (a0 & a1) ^ 1;             break;
           case 'NOR':  v = (a0 | a1) ^ 1;             break;
+          case 'XNOR': v = (a0 ^ a1) ^ 1;             break;
           case 'OUT':  v = a0;                         break;
           default:     v = 0;
         }

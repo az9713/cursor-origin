@@ -32,7 +32,17 @@ Do not fake the layout engine — the iframe is the renderer. The trace must exp
 
 ## Out of scope (later sessions)
 
-`@layer`, media queries, shadow DOM, animations.
+Media queries (optional), shadow DOM, animations.
+
+## Session C must
+
+- Parse `@layer name { ... }` via CSSOM `CSSLayerBlockRule` when available
+- Cascade trace shows layer name; unlayered wins over layered (normal cascade)
+- What-if disable still works
+- Seeds `specificity` and `boxmodel` keep the same winning declarations (not wrapped in `@layer`)
+- Seed `#/d/layers` — a layer loses to an unlayered rule on `color` or `width`
+- Iframe is the renderer; computed width matches `getBoundingClientRect`
+- Padding trace (Session B) still works on `boxmodel`
 
 ## Visual
 

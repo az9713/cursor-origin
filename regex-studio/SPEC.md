@@ -39,7 +39,16 @@ Engine: backtracking matcher that records capture spans (numbered groups). Hayst
 
 ## Out of scope (later sessions)
 
-Named groups, lookbehind, Unicode properties, replace-all UI.
+Lookbehind, Unicode properties, replace-all UI.
+
+## Session C must (completed)
+
+- Named capturing groups `(?<IDENT>pattern)` where IDENT is `[A-Za-z_][A-Za-z0-9_]*`. Numbered `(pattern)` still works. No lookbehind.
+- AST `{ type:'group', index, name, child }` — `name` is a string or `null` for unnamed groups.
+- `print` emits `(?<name>...)` when `name` is set so parse → print → parse stays equal.
+- Engine numbered captures still work. Capture table shows the name when present.
+- Visual builder Group atom accepts `name:pattern` or just the inner pattern.
+- Fourth seed preset `named`: `(?<user>[\w.+-]+)@(?<host>[\w.-]+)` at `#/p/named`.
 
 ## Visual
 

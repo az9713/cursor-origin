@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Packet Forge — Ethernet/IPv4/TCP/UDP Builder</title>
+  <title>Packet Forge — Ethernet/IPv4/TCP/UDP/ICMP Builder</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -18,8 +18,9 @@
   <h1 class="app-title">Packet Forge</h1>
   <span class="header-sep"></span>
   <div class="header-controls">
-    <button class="btn btn-accent" id="btn-syn"     title="Load TCP SYN preset  (#/p/tcp-syn)">TCP SYN</button>
-    <button class="btn"            id="btn-udp-dns" title="Load UDP DNS preset   (#/p/udp-dns)">UDP DNS</button>
+    <button class="btn btn-accent" id="btn-syn"       title="Load TCP SYN preset  (#/p/tcp-syn)">TCP SYN</button>
+    <button class="btn"            id="btn-udp-dns"   title="Load UDP DNS preset   (#/p/udp-dns)">UDP DNS</button>
+    <button class="btn"            id="btn-icmp-echo" title="Load ICMP Echo preset (#/p/icmp-echo)">ICMP Echo</button>
     <button class="btn"            id="btn-reset"   title="Reset to defaults">Reset</button>
     <button class="btn"            id="btn-import"  title="Import hex bytes">Import</button>
     <button class="btn"            id="btn-export"  title="Export hex bytes">Export</button>
@@ -121,6 +122,7 @@
         <select class="field-select" id="fld-ip-proto">
           <option value="6"  selected>6 — TCP</option>
           <option value="17">17 — UDP</option>
+          <option value="1">1 — ICMP</option>
         </select>
         <span class="field-hint">1 B</span>
       </div>
@@ -249,6 +251,42 @@
       </div>
     </div><!-- /UDP -->
 
+    <!-- ICMP -->
+    <div class="proto-section" id="section-icmp" style="display:none">
+      <div class="section-head">
+        <span class="section-badge badge-icmp">ICMP</span>
+        <span class="section-title">Internet Control Message Protocol</span>
+      </div>
+
+      <div class="field-row" id="row-icmp-type">
+        <label class="field-label" for="fld-icmp-type">Type</label>
+        <input  class="field-input" id="fld-icmp-type" type="number"
+                min="0" max="255" value="8" placeholder="8">
+        <span class="field-hint">1 B</span>
+      </div>
+
+      <div class="field-row" id="row-icmp-code">
+        <label class="field-label" for="fld-icmp-code">Code</label>
+        <input  class="field-input" id="fld-icmp-code" type="number"
+                min="0" max="255" value="0" placeholder="0">
+        <span class="field-hint">1 B</span>
+      </div>
+
+      <div class="field-row" id="row-icmp-cksum">
+        <label class="field-label">Checksum</label>
+        <span  class="field-computed" id="disp-icmp-cksum">—</span>
+        <span  class="field-hint">auto</span>
+      </div>
+
+      <div class="field-row" id="row-icmp-rest">
+        <label class="field-label" for="fld-icmp-rest">Rest of hdr</label>
+        <input  class="field-input" id="fld-icmp-rest" type="text"
+                value="00000000" placeholder="00010001" spellcheck="false"
+                title="4-byte rest of header (echo: identifier + sequence)">
+        <span class="field-hint">4 B</span>
+      </div>
+    </div><!-- /ICMP -->
+
     <!-- Payload -->
     <div class="proto-section">
       <div class="section-head">
@@ -285,6 +323,9 @@
     </div>
     <div class="legend-item">
       <div class="legend-dot" style="background:var(--c-udp)"></div>UDP
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:var(--c-icmp)"></div>ICMP
     </div>
     <div class="legend-item">
       <div class="legend-dot" style="background:var(--c-payload)"></div>Payload
