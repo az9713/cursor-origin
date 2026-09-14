@@ -1,0 +1,26 @@
+/* tokens.css — design-system primitives for git-theatre */
+:root {
+  /* Colours */
+  --paper-dk:    #ebe4d6;   /* outer background */
+  --paper-lt:    #fffdf8;   /* panel / surface */
+  --ink-hdr:     #2a251f;   /* header bar */
+  --rust:        #b4451a;   /* accent / rust */
+  --ink:         #1a1612;   /* body text */
+  --muted:       #6b6256;   /* secondary text */
+  --rule:        #d4c9b6;   /* borders / dividers */
+  --code-bg:     #f0e9db;   /* monospace backgrounds */
+  --hover-bg:    #f0e9da;   /* list hover */
+  --sel-bg:      rgba(180,69,26,.08);
+
+  /* Typography */
+  --font-sans:   'IBM Plex Sans',  system-ui, sans-serif;
+  --font-mono:   'IBM Plex Mono',  'Courier New', monospace;
+
+  /* Radii */
+  --r:   4px;
+  --r-lg:8px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(42,37,31,.12);
+  --shadow-md: 0 3px 10px rgba(42,37,31,.18);
+}

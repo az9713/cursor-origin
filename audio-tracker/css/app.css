@@ -1,0 +1,374 @@
+/* ─── Reset & base ─────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: var(--font);
+  background: var(--paper);
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+}
+button, input, select { font: inherit; cursor: pointer; }
+
+/* ─── Header ────────────────────────────────────── */
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.8rem;
+  background: var(--head);
+  color: #efe7db;
+  flex-shrink: 0;
+  user-select: none;
+}
+.top h1 {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  margin-right: 0.5rem;
+  flex-shrink: 0;
+}
+.top a {
+  color: #e8c4b0;
+  font-size: 0.82rem;
+  text-decoration: none;
+  margin-left: auto;
+}
+.top a:hover { text-decoration: underline; }
+
+.bpm-group {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+}
+.bpm-group label { color: #a09880; font-size: 0.75rem; }
+#bpm {
+  width: 4.5rem;
+  background: #1e1912;
+  color: #f0e8d8;
+  border: 1px solid #4a4236;
+  padding: 0.25rem 0.35rem;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  text-align: right;
+  border-radius: 2px;
+}
+#bpm:focus { outline: 1px solid var(--rust); }
+
+button.action {
+  background: var(--rust);
+  color: #fff;
+  border: 0;
+  padding: 0.28rem 0.7rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  border-radius: 2px;
+}
+button.action:hover { background: #c94f20; }
+button.action:disabled { background: #5a3a30; color: #8a7060; cursor: default; }
+
+button.ghost {
+  background: transparent;
+  border: 1px solid #5a5248;
+  color: #d0c8bc;
+  padding: 0.26rem 0.55rem;
+  font-size: 0.78rem;
+  border-radius: 2px;
+}
+button.ghost:hover { border-color: #a09880; color: #f0e8d8; }
+
+.hdivider {
+  width: 1px;
+  height: 1.4rem;
+  background: #3a3530;
+  flex-shrink: 0;
+  margin: 0 0.1rem;
+}
+
+.status-msg {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: #a09880;
+  min-width: 8rem;
+}
+.status-msg.err { color: #f0a898; }
+
+/* ─── Main layout ───────────────────────────────── */
+.main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+}
+
+/* ─── Tracks / Mixer panel ──────────────────────── */
+.tracks-panel {
+  width: 188px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  border-right: 1px solid var(--line);
+  background: var(--panel);
+  padding: 0.5rem 0.6rem;
+}
+
+.track-item {
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  margin-bottom: 0.5rem;
+  background: var(--paper);
+  overflow: hidden;
+}
+.track-item.selected { border-color: var(--rust); background: var(--panel); }
+
+.track-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.5rem;
+  cursor: pointer;
+  background: transparent;
+  border-bottom: 1px solid var(--line);
+  user-select: none;
+}
+.track-item.selected .track-header { background: var(--sel); }
+.track-header:hover { background: var(--sel); }
+
+.track-sel-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid var(--muted);
+  flex-shrink: 0;
+}
+.track-item.selected .track-sel-dot {
+  background: var(--rust);
+  border-color: var(--rust);
+}
+
+.track-name {
+  font-size: 0.78rem;
+  font-weight: 600;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.track-controls {
+  padding: 0.4rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.ctrl-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+}
+.ctrl-row .ctrl-label {
+  color: var(--muted);
+  width: 2.5rem;
+  flex-shrink: 0;
+  font-size: 0.7rem;
+}
+.ctrl-row input[type="range"] {
+  flex: 1;
+  height: 3px;
+  accent-color: var(--rust);
+  cursor: pointer;
+}
+.ctrl-row .ctrl-val {
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  width: 2.2rem;
+  text-align: right;
+  flex-shrink: 0;
+}
+.ctrl-row select {
+  flex: 1;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  padding: 0.18rem 0.3rem;
+  font-size: 0.72rem;
+  border-radius: 2px;
+  color: var(--ink);
+}
+
+.panel-section-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--rust);
+  margin: 0.6rem 0 0.3rem;
+}
+.panel-section-label:first-child { margin-top: 0; }
+
+/* ─── Piano roll wrapper ────────────────────────── */
+.roll-wrap {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  grid-template-rows: 26px 1fr;
+  overflow: hidden;
+}
+
+/* corner */
+.pr-corner {
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+}
+
+/* ruler clip — overflow hidden, ruler inside scrolls via translateX */
+.pr-ruler-clip {
+  overflow: hidden;
+  border-bottom: 1px solid var(--line);
+  background: var(--paper);
+  position: relative;
+}
+.pr-ruler {
+  position: absolute;
+  top: 0; left: 0;
+  height: 100%;
+  white-space: nowrap;
+}
+
+/* keys clip — overflow hidden, keys inside scrolls via translateY */
+.pr-keys-clip {
+  overflow: hidden;
+  border-right: 1px solid var(--line);
+  background: var(--paper);
+  position: relative;
+}
+.pr-keys {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+}
+
+/* main scroll area */
+.pr-grid-outer {
+  overflow: auto;
+  position: relative;
+  background: var(--paper);
+}
+
+/* grid */
+.pr-grid {
+  position: relative;
+  /* dimensions set by JS */
+  /* Vertical beat/bar lines via repeating gradients.
+     Pixel values match JS constants:
+       step = 22px, beat = 88px (4 steps), bar = 352px (4 beats) */
+  background-color: var(--panel);
+  background-image:
+    /* bar separators */
+    repeating-linear-gradient(90deg,
+      transparent 0px, transparent 351px,
+      #a09080 351px, #a09080 352px),
+    /* beat separators */
+    repeating-linear-gradient(90deg,
+      transparent 0px, transparent 87px,
+      #cfc6b6 87px, #cfc6b6 88px),
+    /* step separators (very faint) */
+    repeating-linear-gradient(90deg,
+      transparent 0px, transparent 21px,
+      rgba(0,0,0,0.03) 21px, rgba(0,0,0,0.03) 22px),
+    /* row separators */
+    repeating-linear-gradient(180deg,
+      transparent 0px, transparent 13px,
+      rgba(0,0,0,0.07) 13px, rgba(0,0,0,0.07) 14px);
+}
+
+/* black-key row tint — created by JS as absolute divs */
+.grid-row-black {
+  position: absolute;
+  left: 0;
+  right: 0;
+  background: rgba(0,0,0,0.04);
+  pointer-events: none;
+}
+
+/* ─── Note blocks ───────────────────────────────── */
+.note-block {
+  position: absolute;
+  background: var(--rust);
+  border-radius: 2px;
+  opacity: 0.82;
+  pointer-events: auto;
+  cursor: pointer;
+  z-index: 5;
+  transition: opacity 0.08s;
+}
+.note-block:hover { opacity: 1; }
+
+/* ─── Playhead ──────────────────────────────────── */
+.pr-playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--rust);
+  pointer-events: none;
+  display: none;
+  z-index: 20;
+  box-shadow: 0 0 4px rgba(180,69,26,0.5);
+}
+
+/* ─── Ruler ticks ───────────────────────────────── */
+.r-bar, .r-beat {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding-left: 3px;
+  font-family: var(--mono);
+  font-size: 10px;
+  pointer-events: none;
+  white-space: nowrap;
+  border-left: 1px solid var(--muted);
+}
+.r-bar {
+  color: var(--ink);
+  font-weight: 600;
+}
+.r-beat {
+  color: var(--muted);
+  font-size: 9px;
+  border-left: 1px solid var(--line);
+}
+
+/* ─── Piano keys ────────────────────────────────── */
+.pr-key {
+  display: flex;
+  align-items: center;
+  padding-left: 3px;
+  font-size: 8px;
+  font-family: var(--mono);
+  color: var(--muted);
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  user-select: none;
+}
+.pr-key.white { background: var(--panel); }
+.pr-key.black { background: #d8d0c0; color: #7a6e60; }
+.pr-key.c-note { color: var(--rust); font-weight: 600; }
+
+/* ─── Scrollbars (subtle) ───────────────────────── */
+.pr-grid-outer::-webkit-scrollbar { width: 8px; height: 8px; }
+.pr-grid-outer::-webkit-scrollbar-track { background: var(--paper); }
+.pr-grid-outer::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+.pr-grid-outer::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+.tracks-panel::-webkit-scrollbar { width: 5px; }
+.tracks-panel::-webkit-scrollbar-track { background: transparent; }
+.tracks-panel::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }

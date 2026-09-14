@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CSS Cascade Laboratory</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<header class="top">
+  <h1>CSS Cascade Lab</h1>
+  <label for="doc-select">Doc:</label>
+  <select id="doc-select" aria-label="Choose seed document">
+    <option value="specificity">Specificity Fight</option>
+    <option value="boxmodel">Box Model Width</option>
+  </select>
+  <button id="reset-btn" type="button">Reset</button>
+  <a href="../">Hub ↗</a>
+</header>
+
+<div class="workspace">
+
+  <!-- ── LEFT: editors ── -->
+  <div class="editors">
+    <div class="eg">
+      <div class="slbl">HTML</div>
+      <textarea id="html-editor" spellcheck="false" aria-label="HTML source"></textarea>
+    </div>
+    <div class="eg">
+      <div class="slbl">CSS Sheet 1</div>
+      <textarea id="css1-editor" spellcheck="false" aria-label="CSS Sheet 1"></textarea>
+    </div>
+    <div class="eg">
+      <div class="slbl">CSS Sheet 2</div>
+      <textarea id="css2-editor" spellcheck="false" aria-label="CSS Sheet 2"></textarea>
+    </div>
+  </div>
+
+  <!-- ── CENTRE: preview + element tree ── -->
+  <div class="preview-col">
+    <div class="slbl">Preview — click element to inspect</div>
+    <iframe id="preview" title="Live CSS preview" aria-label="Live CSS preview"></iframe>
+    <div class="slbl">Element tree</div>
+    <div id="element-tree" class="tree-pane" aria-label="Element tree"></div>
+  </div>
+
+  <!-- ── RIGHT: inspector ── -->
+  <div class="inspector">
+    <div class="slbl">Inspector</div>
+    <div id="sel-display" class="sel-display empty" aria-live="polite">
+      — click an element in the preview —
+    </div>
+
+    <div class="prop-row">
+      <label for="prop-select">Property:</label>
+      <select id="prop-select" aria-label="CSS property to trace">
+        <option value="width">width</option>
+        <option value="color">color</option>
+        <option value="background-color">background-color</option>
+        <option value="font-size">font-size</option>
+        <option value="padding">padding</option>
+        <option value="margin">margin</option>
+        <option value="display">display</option>
+      </select>
+    </div>
+
+    <div class="slbl">Cascade trace</div>
+    <div id="cascade-trace" class="trace-area" aria-live="polite">
+      <p class="hint">Select an element to trace its cascade.</p>
+    </div>
+
+    <div class="slbl">Computed</div>
+    <div id="computed-box" class="computed-area" aria-live="polite">
+      <p class="hint">—</p>
+    </div>
+  </div>
+
+</div><!-- .workspace -->
+
+<script src="js/cascade.js?v=1"></script>
+<script src="js/app.js?v=1"></script>
+</body>
+</html>

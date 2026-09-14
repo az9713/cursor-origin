@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ledger Books</title>
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+
+<!-- ═══ SITE HEADER ═══ -->
+<header class="site-header">
+  <a href="../" class="hub-link">Hub</a>
+  <span class="sep">›</span>
+  <h1>Ledger Books</h1>
+  <span class="ledger-badge">DOUBLE-ENTRY</span>
+</header>
+
+<!-- ═══ NAV TABS ═══ -->
+<nav class="nav-bar" role="tablist">
+  <button class="nav-btn active" role="tab" data-view="journal">Journal</button>
+  <button class="nav-btn" role="tab" data-view="trial-balance">Trial Balance</button>
+  <button class="nav-btn" role="tab" data-view="pl">P&amp;L</button>
+  <button class="nav-btn" role="tab" data-view="accounts">Chart of Accounts</button>
+  <button class="nav-btn" role="tab" data-view="audit">Audit Log</button>
+</nav>
+
+<!-- ═══ MAIN ═══ -->
+<main>
+
+  <!-- ─── JOURNAL VIEW ─── -->
+  <section id="view-journal" class="view active" role="tabpanel">
+    <div class="section-header">
+      <h2>Journal Entries</h2>
+      <span class="count-badge" id="journal-count">0</span>
+      <div style="flex:1"></div>
+      <button class="btn btn-primary" id="btn-new-entry">+ New Entry</button>
+    </div>
+    <div class="entry-list" id="entry-list"></div>
+  </section>
+
+  <!-- ─── TRIAL BALANCE VIEW ─── -->
+  <section id="view-trial-balance" class="view" role="tabpanel">
+    <div class="section-header">
+      <h2>Trial Balance</h2>
+      <span style="font-size:.78rem;color:var(--text-muted)">Posted entries only</span>
+    </div>
+
+    <div id="tb-banner" class="tb-foot-banner ok"></div>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:70px">Code</th>
+            <th>Account Name</th>
+            <th style="width:100px">Type</th>
+            <th style="text-align:right;width:130px">Debit</th>
+            <th style="text-align:right;width:130px">Credit</th>
+          </tr>
+        </thead>
+        <tbody id="tb-tbody"></tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3" class="foot-label">Totals</td>
+            <td class="num" id="tb-tfoot-dr"></td>
+            <td class="num" id="tb-tfoot-cr"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+  </section>
+
+  <!-- ─── P&L VIEW ─── -->
+  <section id="view-pl" class="view" role="tabpanel">
+    <div class="section-header">
+      <h2>Profit &amp; Loss</h2>
+    </div>
+
+    <div class="pl-controls card" style="margin-bottom:var(--sp-4)">
+      <div class="form-group">
+        <label>From</label>
+        <input type="date" id="pl-from" />
+      </div>
+      <div class="form-group">
+        <label>To</label>
+        <input type="date" id="pl-to" />
+      </div>
+    </div>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Account</th>
+            <th style="text-align:right;width:160px">Amount</th>
+          </tr>
+        </thead>
+        <tbody id="pl-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ─── ACCOUNTS VIEW ─── -->
+  <section id="view-accounts" class="view" role="tabpanel">
+    <div class="section-header">
+      <h2>Chart of Accounts</h2>
+      <span class="count-badge" id="accounts-count">0</span>
+    </div>
+    <div class="accounts-grid" id="accounts-grid"></div>
+  </section>
+
+  <!-- ─── AUDIT LOG VIEW ─── -->
+  <section id="view-audit" class="view" role="tabpanel">
+    <div class="section-header">
+      <h2>Audit Log</h2>
+    </div>
+    <div class="audit-list" id="audit-list"></div>
+  </section>
+
+  <!-- ─── RESET ─── -->
+  <div class="reset-zone">
+    <p>Restore the built-in seed data (11 accounts, 6 posted entries).</p>
+    <button class="btn btn-secondary" id="btn-reset">↺ Reset to Seed</button>
+  </div>
+
+</main>
+
+<!-- ═══ NEW ENTRY MODAL ═══ -->
+<div class="modal-backdrop" id="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">New Journal Entry</span>
+      <button class="btn btn-ghost" id="btn-close-modal" aria-label="Close">✕</button>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="entry-date">Date</label>
+        <input type="date" id="entry-date" />
+      </div>
+      <div class="form-group grow">
+        <label for="entry-memo">Memo / Description</label>
+        <input type="text" id="entry-memo" placeholder="What is this entry for?" />
+      </div>
+    </div>
+
+    <p style="font-size:.75rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin:var(--sp-3) 0 var(--sp-2)">
+      Lines <span style="font-weight:400;font-style:italic">(each line: debit or credit, not both)</span>
+    </p>
+
+    <div class="lines-builder">
+      <div id="lines-container"></div>
+      <button class="btn btn-secondary btn-sm" id="btn-add-line" style="margin-top:var(--sp-2)">+ Add Line</button>
+    </div>
+
+    <div id="balance-indicator" class="balance-indicator empty">Add amounts to balance</div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="btn-close-modal-2" onclick="document.getElementById('btn-close-modal').click()">Cancel</button>
+      <button class="btn btn-secondary" id="btn-save-entry" disabled>Save Draft</button>
+      <button class="btn btn-primary" id="btn-save-post-entry" disabled>Save &amp; Post</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TOAST STACK ═══ -->
+<div class="toast-stack" id="toast-stack" aria-live="polite"></div>
+
+<!-- ═══ SCRIPTS ═══ -->
+<script src="js/ledger.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>

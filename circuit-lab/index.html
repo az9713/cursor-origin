@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Circuit Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+  <!-- ─── Header ──────────────────────────────────────────────────────────── -->
+  <header class="hdr">
+    <h1>Circuit Lab</h1>
+    <div class="sep"></div>
+
+    <label for="circuit-sel" style="font-size:11px;color:#9a8a76;font-family:var(--mono);">circuit</label>
+    <select id="circuit-sel">
+      <option value="xor">XOR from gates</option>
+      <option value="dff-reg">1-bit register</option>
+    </select>
+
+    <button id="reset-btn" title="Reset to seed HDL">Reset</button>
+    <div class="sep"></div>
+
+    <button id="step-btn" title="One clock tick (↷)">Step ↷</button>
+    <button id="run-btn"  title="Run clock at 2 Hz">▶ Run</button>
+    <span  id="clock-lbl" class="clock-lbl"></span>
+
+    <div class="sep"></div>
+    <span id="roundtrip-pill" class="rt-pill">roundtrip –</span>
+    <span id="err-pill" class="err-pill" hidden></span>
+
+    <span class="spacer"></span>
+    <a href="../" title="Back to hub">Hub ↗</a>
+  </header>
+
+  <!-- ─── Palette ─────────────────────────────────────────────────────────── -->
+  <div class="palette">
+    <label>Place:</label>
+    <button data-op="IN">IN</button>
+    <button data-op="OUT">OUT</button>
+    <div class="psep"></div>
+    <button data-op="NOT">NOT</button>
+    <button data-op="AND">AND</button>
+    <button data-op="OR">OR</button>
+    <button data-op="XOR">XOR</button>
+    <button data-op="NAND">NAND</button>
+    <button data-op="NOR">NOR</button>
+    <button data-op="DFF">DFF</button>
+    <div class="psep"></div>
+    <span class="tool-hint" id="palette-hint">select a gate, then click canvas</span>
+  </div>
+
+  <!-- ─── Work area ────────────────────────────────────────────────────────── -->
+  <div class="work">
+
+    <!-- Schematic canvas -->
+    <div class="canvas-wrap">
+      <canvas id="schematic"></canvas>
+      <div class="canvas-hint" id="canvas-hint">
+        Click output port (●) to wire · Click IN gate to toggle · Drag to move
+      </div>
+    </div>
+
+    <!-- Right panel: HDL editor + truth table -->
+    <aside class="side">
+
+      <div class="hdl-panel">
+        <div class="panel-hdr">HDL</div>
+        <textarea id="hdl" spellcheck="false" autocomplete="off"
+          aria-label="HDL editor — edit netlist statements"></textarea>
+        <div id="hdl-errors" role="alert"></div>
+      </div>
+
+      <div class="truth-panel">
+        <div class="panel-hdr">Truth Table</div>
+        <div id="tt-wrap" aria-live="polite"></div>
+      </div>
+
+    </aside>
+  </div><!-- .work -->
+
+  <script src="js/hdl.js"></script>
+  <script src="js/sim.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

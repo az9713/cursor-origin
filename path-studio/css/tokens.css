@@ -1,0 +1,19 @@
+/* path-studio/css/tokens.css */
+:root {
+  --ink:        #161410;
+  --paper:      #ebe4d6;
+  --panel:      #fffdf8;
+  --line:       #cfc6b6;
+  --line-soft:  rgba(207,198,182,0.55);
+  --muted:      #5c564c;
+  --head:       #2a251f;
+  --rust:       #b4451a;
+  --rust-dim:   rgba(180,69,26,0.14);
+  --ok:         #2c4a3e;
+  --bad:        #8a2a1a;
+  --font:       "IBM Plex Sans", "Segoe UI", sans-serif;
+  --mono:       "IBM Plex Mono", ui-monospace, monospace;
+  --radius:     3px;
+  --rule:       rgba(0,0,0,0.07);
+  --rule-strong:rgba(0,0,0,0.14);
+}

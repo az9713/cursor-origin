@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Constraint Sketch</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+  <!-- ── Header ──────────────────────────────────────────────────────────── -->
+  <header class="app-header">
+    <a href="../" class="hub-link">← Hub</a>
+    <h1 class="app-title">Constraint Sketch</h1>
+    <div class="sketch-nav">
+      <select id="sketch-select" title="Switch sketch"></select>
+      <button id="btn-new-sketch"    class="btn btn-ghost">New</button>
+      <button id="btn-reset-sketch"  class="btn btn-ghost">Reset</button>
+    </div>
+  </header>
+
+  <!-- ── Main ────────────────────────────────────────────────────────────── -->
+  <main class="app-main">
+
+    <!-- Toolbar -->
+    <aside class="toolbar">
+
+      <div class="tool-section">
+        <div class="tool-label">Tools</div>
+        <div class="tool-group">
+
+          <button class="tool-btn active" data-tool="select" title="Select — drag points (S)">
+            <!-- arrow cursor icon -->
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+              <path d="M3.5 1.5L3.5 11.5L6.5 8.5L8.5 13.5L10 12.8L8 7.8L11.5 7.5L3.5 1.5Z"
+                    fill="currentColor"/>
+            </svg>
+          </button>
+
+          <button class="tool-btn" data-tool="point" title="Add Point (P)">
+            <svg width="15" height="15" viewBox="0 0 15 15">
+              <circle cx="7.5" cy="7.5" r="3.5" fill="currentColor"/>
+            </svg>
+          </button>
+
+          <button class="tool-btn" data-tool="line" title="Add Line — click 2 pts (L)">
+            <svg width="15" height="15" viewBox="0 0 15 15">
+              <line x1="2" y1="13" x2="13" y2="2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+
+          <button class="tool-btn" data-tool="circle" title="Add Circle — click center then radius (C)">
+            <svg width="15" height="15" viewBox="0 0 15 15">
+              <circle cx="7.5" cy="7.5" r="5" fill="none" stroke="currentColor" stroke-width="2"/>
+            </svg>
+          </button>
+
+        </div>
+      </div><!-- /tool-section -->
+
+      <div class="tool-section">
+        <div class="tool-label">Constraint type</div>
+        <select id="constraint-type" class="constraint-type-select">
+          <option value="coincident">Coincident</option>
+          <option value="distance" selected>Distance</option>
+          <option value="parallel">Parallel</option>
+          <option value="angle">Angle (°)</option>
+          <option value="point-on-line">Point on Line</option>
+          <option value="radius">Radius</option>
+        </select>
+        <div class="constraint-tool-row">
+          <button class="tool-btn" data-tool="constraint" title="Add selected constraint">
+            <svg width="15" height="15" viewBox="0 0 15 15">
+              <circle cx="7.5" cy="7.5" r="5.5" fill="none" stroke="currentColor" stroke-width="1.8"/>
+              <line x1="7.5" y1="3.5" x2="7.5" y2="11.5" stroke="currentColor" stroke-width="1.8"/>
+              <line x1="3.5" y1="7.5" x2="11.5" y2="7.5" stroke="currentColor" stroke-width="1.8"/>
+            </svg>
+            Add
+          </button>
+        </div>
+      </div><!-- /tool-section -->
+
+      <div class="tool-section">
+        <div class="tool-label">Seed Sketches</div>
+        <button id="load-rect"     class="btn-seed">📐 Rectangle</button>
+        <button id="load-triangle" class="btn-seed">△ Right Triangle</button>
+      </div>
+
+    </aside><!-- /toolbar -->
+
+    <!-- Canvas area -->
+    <div class="canvas-wrap">
+      <div class="canvas-container">
+        <canvas id="canvas"></canvas>
+      </div>
+      <div class="status-bar">
+        <span id="status-dof"      class="status-item"></span>
+        <span id="status-badge"    class="badge"></span>
+        <span id="status-residual" class="status-item mono"></span>
+        <span id="status-hint"     class="status-hint"></span>
+      </div>
+    </div>
+
+    <!-- Inspector -->
+    <aside class="inspector">
+      <div class="inspector-header">Inspector</div>
+      <div id="inspector-content" class="inspector-body">
+        <p class="inspector-empty">Nothing selected.<br>Click an entity or load a seed sketch.</p>
+      </div>
+    </aside>
+
+  </main><!-- /app-main -->
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

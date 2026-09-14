@@ -1,0 +1,35 @@
+/* packet-forge/css/tokens.css — design tokens */
+:root {
+  /* Paper tones (spec) */
+  --paper-dark: #ebe4d6;
+  --paper:      #fffdf8;
+
+  /* Ink / Header (spec) */
+  --ink:        #2a251f;
+  --header-bg:  #2a251f;
+  --header-fg:  #ebe4d6;
+  --muted:      #6b6358;
+
+  /* Accent (spec) */
+  --rust:       #b4451a;
+  --rust-dim:   rgba(180, 69, 26, 0.10);
+  --rust-mid:   rgba(180, 69, 26, 0.25);
+
+  /* Rules */
+  --rule:       #d5cec0;
+  --rule-strong:#b5ac9e;
+
+  /* Layer colours for hex dump */
+  --c-eth:     #2a5e9a;
+  --c-ip:      #2a7a48;
+  --c-tcp:     #b4451a;
+  --c-udp:     #8a6814;
+  --c-payload: #5a4090;
+
+  /* Typography */
+  --font-sans: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Courier New", monospace;
+
+  /* Misc */
+  --radius: 2px;
+}

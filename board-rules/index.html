@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Board Rules — Chess Legal-Move Engine</title>
+  <link rel="stylesheet" href="css/app.css" />
+  <style>
+    /* Inline board-size CSS variable so we can reference it before JS */
+    :root { --board-px: 480px; }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ─────────────────────────────────────────────────── -->
+<header>
+  <a href="../" class="hub-link">← Hub</a>
+  <span class="sep">|</span>
+  <h1>Board Rules</h1>
+</header>
+
+<!-- ── Main ───────────────────────────────────────────────────── -->
+<main>
+
+  <!-- Left: eval bar + board -->
+  <div class="board-area">
+
+    <!-- Eval bar -->
+    <div class="eval-bar-wrap">
+      <div class="eval-bar">
+        <div class="eval-bar__fill" id="eval-fill"></div>
+      </div>
+      <span class="eval-label" id="eval-label">=</span>
+    </div>
+
+    <!-- Board with coords -->
+    <div class="board-wrap">
+      <div style="display:flex; gap:0;">
+        <!-- Rank labels -->
+        <div class="board-ranks-label" id="rank-labels">
+          <span>8</span><span>7</span><span>6</span>
+          <span>5</span><span>4</span><span>3</span>
+          <span>2</span><span>1</span>
+        </div>
+
+        <!-- Board -->
+        <div class="board-container">
+          <div id="board"></div>
+        </div>
+      </div>
+
+      <!-- File labels -->
+      <div class="board-files-label">
+        <span>a</span><span>b</span><span>c</span><span>d</span>
+        <span>e</span><span>f</span><span>g</span><span>h</span>
+      </div>
+
+      <!-- FEN display -->
+      <div style="margin-top:4px;">
+        <span style="font-family:var(--font-mono);font-size:0.6rem;color:var(--ink-muted);word-break:break-all;" id="fen-display"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: side panel -->
+  <div class="side-panel">
+
+    <!-- Status bar -->
+    <div class="status-bar">
+      <div class="turn-dot white"></div>
+      <span id="status-text">White to move</span>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <button class="btn" id="btn-reset">Reset</button>
+      <button class="btn" id="btn-takeback">Takeback</button>
+    </div>
+
+    <!-- Move list -->
+    <div class="move-list-wrap">
+      <div class="move-list-header">Moves</div>
+      <div id="move-list"></div>
+    </div>
+
+    <!-- Fixtures -->
+    <div class="fixtures-wrap">
+      <div class="fixtures-header">Fixtures</div>
+      <div class="fixtures-list" id="fixtures-list"></div>
+    </div>
+
+    <!-- PGN -->
+    <div class="pgn-wrap">
+      <div class="pgn-header">PGN</div>
+      <textarea id="pgn-textarea" placeholder="Paste PGN here and click Apply…" spellcheck="false"></textarea>
+      <div class="pgn-actions">
+        <button class="btn primary" id="btn-pgn-apply">Apply</button>
+        <button class="btn" id="btn-pgn-export">Export</button>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- Drag ghost element -->
+<div id="drag-ghost" aria-hidden="true"></div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

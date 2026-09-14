@@ -1,0 +1,47 @@
+/* ── Design Tokens — Constraint Sketch ─────────────────────────────────── */
+:root {
+  /* Palette */
+  --paper-warm:   #ebe4d6;
+  --paper-light:  #fffdf8;
+  --rust:         #b4451a;
+  --header-bg:    #2a251f;
+  --text:         #2a251f;
+  --text-muted:   #7a7068;
+  --border:       rgba(42, 37, 31, 0.13);
+  --border-strong:rgba(42, 37, 31, 0.28);
+  --shadow:       0 1px 4px rgba(42, 37, 31, 0.12);
+
+  /* Status badge colours */
+  --satisfied:    #296929;
+  --under:        #b4451a;
+  --over:         #6a2a6e;
+  --failed:       #b30000;
+  --pending:      #7a6e60;
+
+  /* Canvas entity colours */
+  --pt-fill:      #2a251f;
+  --pt-sel:       #b4451a;
+  --line-stroke:  #2a251f;
+  --line-sel:     #b4451a;
+  --circ-stroke:  #2a251f;
+  --circ-sel:     #b4451a;
+  --dim-color:    #b4451a;
+  --grid-color:   rgba(42, 37, 31, 0.06);
+
+  /* Typography */
+  --font-sans:    'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono:    'IBM Plex Mono', monospace;
+
+  /* Spacing */
+  --sp1:  4px;
+  --sp2:  8px;
+  --sp3: 12px;
+  --sp4: 16px;
+  --sp5: 20px;
+  --sp6: 24px;
+
+  /* Radii */
+  --r-sm:  4px;
+  --r-md:  6px;
+  --r-lg: 10px;
+}

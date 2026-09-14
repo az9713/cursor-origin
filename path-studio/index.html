@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Path Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<!-- ── Header ────────────────────────────────────────────────────────────── -->
+<header class="app-header">
+  <a href="../" class="hub-link">Hub ↗</a>
+  <h1 class="app-title">Path Studio</h1>
+  <div class="header-sep"></div>
+  <div class="header-controls">
+
+    <label for="algo-select" style="font-size:11px;color:rgba(235,228,214,0.65);white-space:nowrap">Algo</label>
+    <select id="algo-select" class="ctrl-select" title="Pathfinding algorithm">
+      <option value="dijkstra">Dijkstra</option>
+      <option value="astar"   selected>A* (Manhattan)</option>
+      <option value="flow">Flow Field</option>
+    </select>
+
+    <label class="toggle-label" title="Overlay g-score / cost-to-go heatmap">
+      <input type="checkbox" id="heatmap-toggle" checked>
+      Heatmap
+    </label>
+
+    <label for="map-select" style="font-size:11px;color:rgba(235,228,214,0.65);white-space:nowrap">Map</label>
+    <select id="map-select" class="ctrl-select" title="Seed map">
+      <option value="open">Open Field</option>
+      <option value="maze">Corridor Maze</option>
+    </select>
+
+    <button class="btn" id="reset-btn" title="Reset map to seed">Reset Map</button>
+
+  </div>
+</header>
+
+<!-- ── Left: tools pane ──────────────────────────────────────────────────── -->
+<aside class="tools-pane" aria-label="Paint tools">
+
+  <div class="pane-section">
+    <div class="pane-label">Paint tool</div>
+    <div class="tool-list" id="tool-group" role="group" aria-label="Select paint tool">
+
+      <button class="tool-btn active" data-tool="blocked"
+              title="Paint blocked walls (left-click drag)">
+        <span class="tool-swatch swatch-blocked"></span>Blocked
+      </button>
+
+      <button class="tool-btn" data-tool="cost1"
+              title="Paint cost-1 (normal) tiles">
+        <span class="tool-swatch swatch-cost1"></span>Cost 1
+      </button>
+
+      <button class="tool-btn" data-tool="cost5"
+              title="Paint cost-5 (slow) tiles">
+        <span class="tool-swatch swatch-cost5"></span>Cost 5
+      </button>
+
+      <button class="tool-btn" data-tool="start"
+              title="Place start cell">
+        <span class="tool-swatch swatch-start"></span>Start (S)
+      </button>
+
+      <button class="tool-btn" data-tool="goal"
+              title="Place goal cell">
+        <span class="tool-swatch swatch-goal"></span>Goal (G)
+      </button>
+
+      <button class="tool-btn" data-tool="erase"
+              title="Erase to cost-1">
+        <span class="tool-swatch swatch-erase"></span>Erase
+      </button>
+
+    </div>
+  </div>
+
+  <div class="pane-divider"></div>
+
+  <div class="pane-section">
+    <div class="pane-label">Agent</div>
+    <div class="agent-row">
+      <button class="btn" id="step-btn"        title="Advance agent one step">Step</button>
+      <button class="btn" id="auto-btn"        title="Auto-walk the path">Auto</button>
+    </div>
+    <div class="agent-row" style="margin-top:3px">
+      <button class="btn btn-ghost" id="reset-agent-btn" title="Return agent to start">Reset agent</button>
+    </div>
+  </div>
+
+  <div class="pane-divider"></div>
+
+  <!-- Legend -->
+  <div class="pane-section">
+    <div class="pane-label">Legend</div>
+    <div style="display:flex;flex-direction:column;gap:4px;padding:0 4px;font-size:11px;color:var(--muted)">
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="width:12px;height:12px;border-radius:50%;background:#2c4a3e;flex-shrink:0"></span>Start
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="width:12px;height:12px;border-radius:50%;background:#b4451a;flex-shrink:0"></span>Goal
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="width:12px;height:12px;border-radius:50%;background:#ff8844;flex-shrink:0"></span>Agent
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="width:12px;height:4px;background:#b4451a;flex-shrink:0;border-radius:2px"></span>Path
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="width:12px;height:12px;background:rgba(180,69,26,0.45);flex-shrink:0;border-radius:2px"></span>Closed (heat)
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="width:12px;height:12px;background:rgba(44,120,100,0.40);flex-shrink:0;border-radius:2px"></span>Open (frontier)
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="width:12px;height:12px;background:#d0c9b9;flex-shrink:0;border-radius:2px;border:1px solid #cfc6b6"></span>Cost 5
+      </div>
+    </div>
+  </div>
+
+</aside>
+
+<!-- ── Center: grid canvas ────────────────────────────────────────────────── -->
+<main class="grid-wrap" aria-label="Path-finding grid">
+  <canvas id="grid-canvas"
+          role="img"
+          aria-label="24×16 tile grid; left-click drag to paint"></canvas>
+  <div id="no-path-badge" class="no-path-badge">No path found</div>
+</main>
+
+<!-- ── Right: debug pane ─────────────────────────────────────────────────── -->
+<aside class="debug-pane" aria-label="Debug info">
+
+  <div class="pane-label">Debug</div>
+
+  <!-- Counts -->
+  <div class="debug-stats">
+    <div class="stat-row">
+      <span>Open set</span>
+      <span class="stat-val" id="stat-open">—</span>
+    </div>
+    <div class="stat-row">
+      <span>Closed set</span>
+      <span class="stat-val" id="stat-closed">—</span>
+    </div>
+    <div class="stat-row stat-path">
+      <span>Path length</span>
+      <span class="stat-val" id="stat-path">—</span>
+    </div>
+  </div>
+
+  <!-- Expandable lists -->
+  <details class="debug-detail det-open" id="det-open">
+    <summary>Open set cells</summary>
+    <div class="debug-list" id="debug-open-list"></div>
+  </details>
+
+  <details class="debug-detail det-close" id="det-closed">
+    <summary>Closed set cells</summary>
+    <div class="debug-list" id="debug-closed-list"></div>
+  </details>
+
+  <details class="debug-detail det-path" id="det-path" open>
+    <summary>Path cells</summary>
+    <div class="debug-list" id="debug-path-list"></div>
+  </details>
+
+  <!-- Step info -->
+  <div class="agent-info" id="agent-step-info">Agent: —</div>
+
+</aside>
+
+<script src="js/path.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

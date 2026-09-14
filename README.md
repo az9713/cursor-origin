@@ -2,7 +2,7 @@
 
 ## About
 
-Hub repo for vanilla HTML/CSS/JS apps that stress Cursor’s agentic IDE loop — freeze a spec, implement, click the broken control, keep old flows green. Twenty sibling products (Mini Linear through CRDT notes) plus a [warts-and-all development journey](https://az9713.github.io/cursor-origin/development_journey.html). No backends, no build step.
+Hub repo for vanilla HTML/CSS/JS apps that stress Cursor’s agentic IDE loop — freeze a spec, implement, click the broken control, keep old flows green. Thirty sibling products (Mini Linear through Board rules) plus a [warts-and-all development journey](https://az9713.github.io/cursor-origin/development_journey.html). No backends, no build step.
 
 Live site:
 
@@ -32,6 +32,16 @@ https://az9713.github.io/cursor-origin/
 - [Motion editor](https://az9713.github.io/cursor-origin/motion-editor/)
 - [Spec hunter](https://az9713.github.io/cursor-origin/spec-hunter/)
 - [CRDT notes](https://az9713.github.io/cursor-origin/crdt-notes/)
+- [Regex studio](https://az9713.github.io/cursor-origin/regex-studio/)
+- [Git theatre](https://az9713.github.io/cursor-origin/git-theatre/)
+- [Circuit lab](https://az9713.github.io/cursor-origin/circuit-lab/)
+- [Packet forge](https://az9713.github.io/cursor-origin/packet-forge/)
+- [Ledger books](https://az9713.github.io/cursor-origin/ledger-books/)
+- [Constraint sketch](https://az9713.github.io/cursor-origin/constraint-sketch/)
+- [Path studio](https://az9713.github.io/cursor-origin/path-studio/)
+- [CSS cascade](https://az9713.github.io/cursor-origin/css-cascade/)
+- [Audio tracker](https://az9713.github.io/cursor-origin/audio-tracker/)
+- [Board rules](https://az9713.github.io/cursor-origin/board-rules/)
 
 ## Run locally
 

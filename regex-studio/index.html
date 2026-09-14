@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Regex Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<header class="top">
+  <h1>Regex studio</h1>
+  <div class="pattern-bar">
+    <textarea id="pattern" spellcheck="false" rows="1" aria-label="Regex pattern" placeholder="e.g. (\w+)\s+or\s+(\w+)"></textarea>
+    <span id="parse-err-bar" class="parse-err-bar" hidden></span>
+  </div>
+  <span id="roundtrip" class="pill dim" hidden>roundtrip –</span>
+  <button type="button" id="reset-btn" class="ghost">Reset</button>
+  <a href="../">Hub ↗</a>
+</header>
+
+<div class="work">
+
+  <!-- Left: Presets -->
+  <aside class="presets-pane" id="presets" aria-label="Presets"></aside>
+
+  <!-- Center top: builder -->
+  <div class="builder-wrap">
+    <div class="section-label">Visual builder — click atom to set quantifier, × to remove</div>
+    <div id="builder" aria-label="Visual pattern builder"></div>
+    <!-- Add-atom controls -->
+    <div class="builder-add">
+      <select id="add-type" title="Atom type">
+        <option value="char">Char</option>
+        <option value="dot">Any  .  </option>
+        <option value="escape">Escape  \d\w\s</option>
+        <option value="charclass">Class  [...]</option>
+        <option value="anchor">Anchor  ^ $</option>
+        <option value="group">Group  (...)</option>
+        <option value="ncgroup">Non-cap  (?:...)</option>
+      </select>
+      <input id="add-value" type="text" placeholder="value / contents" title="Value for the selected atom type">
+      <select id="add-quant" title="Quantifier">
+        <option value="">none</option>
+        <option value="*">* (0+)</option>
+        <option value="+">+ (1+)</option>
+        <option value="?">? (0 or 1)</option>
+        <option value="{n}">{n} exact</option>
+        <option value="{n,m}">{n,m} range</option>
+      </select>
+      <span id="quant-extra" class="quant-extra">
+        <input id="add-quant-n" type="number" min="0" placeholder="n" title="min repetitions">
+        <span style="font-family:var(--mono)">,</span>
+        <input id="add-quant-m" type="number" min="0" placeholder="m" title="max repetitions (blank = ∞)">
+      </span>
+      <button type="button" id="add-atom-btn">Add atom</button>
+      <button type="button" class="ghost" id="add-branch-shortcut" title="Add an alternation branch (|)" onclick="RS._addBranch()">+ | branch</button>
+    </div>
+  </div>
+
+  <!-- Center bottom: haystack -->
+  <div class="hay-col">
+    <div class="section-label">Haystack</div>
+    <div class="hay-inner">
+      <textarea id="haystack" spellcheck="false"
+        aria-label="Haystack — text to match against"
+        placeholder="Paste or type text here…"></textarea>
+      <div id="haystack-hl" class="haystack-hl" aria-label="Match highlights" tabindex="0"></div>
+    </div>
+  </div>
+
+  <!-- Right: matches + captures + explain -->
+  <div class="right-col">
+    <div class="section-label" id="matches-label">Matches</div>
+    <div class="matches-list" id="matches-list"></div>
+
+    <div class="section-label">Captures</div>
+    <div class="capture-wrap">
+      <div id="capture-table"><p class="hint">Select a match.</p></div>
+    </div>
+
+    <div class="section-label">Explain this match</div>
+    <div class="explain-wrap">
+      <div id="explain"><p class="explain-empty">Select a match to trace.</p></div>
+    </div>
+  </div>
+
+</div><!-- .work -->
+
+<script src="js/parser.js?v=1"></script>
+<script src="js/engine.js?v=1"></script>
+<script src="js/app.js?v=1"></script>
+</body>
+</html>

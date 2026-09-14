@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Git Theatre</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     HEADER
+══════════════════════════════════════════════════════════════════════════ -->
+<header class="site-header">
+
+  <span class="logo">git-theatre</span>
+
+  <!-- Current branch indicator + checkout via dropdown -->
+  <div class="branch-pill">
+    <!-- branch icon -->
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+      <path d="M11.75 2.5a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0zm.75 2.25a2.25 2.25 0 1 1 0-4.5 2.25 2.25 0 0 1 0 4.5zM2.75 14a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0zM3.5 16a2.25 2.25 0 1 1 0-4.5 2.25 2.25 0 0 1 0 4.5zM3.5 6.25a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5zM3.5 7.75a2.25 2.25 0 1 1 0-4.5 2.25 2.25 0 0 1 0 4.5zM4.25 6.5A.75.75 0 0 1 5 5.75h1.5a.75.75 0 0 1 0 1.5H5a.75.75 0 0 1-.75-.75zm0 5A.75.75 0 0 1 5 10.75h.75V7.25a.75.75 0 0 1 1.5 0v4.5a.75.75 0 0 1-.75.75H5a.75.75 0 0 1-.75-.75zm5.25-8a.75.75 0 0 1 .75-.75h1.25a.75.75 0 0 1 0 1.5H10.25a.75.75 0 0 1-.75-.75z"/>
+    </svg>
+    <select id="branchSelect" aria-label="Current branch"></select>
+  </div>
+
+  <div class="hdr-actions">
+    <button class="btn btn-ghost btn-sm" id="newBranchBtn"  title="Create a new branch">+ Branch</button>
+    <button class="btn btn-ghost btn-sm" id="mergeBtn"      title="Merge a branch into current">Merge</button>
+    <button class="btn btn-ghost btn-sm" id="rebaseBtn"     title="Rebase current branch onto another">Rebase</button>
+    <button class="btn btn-ghost btn-sm" id="resetSeedBtn"  title="Reset to the seed state">Reset</button>
+    <a class="hub-link" href="../" title="Back to hub">Hub →</a>
+  </div>
+
+</header>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     MAIN LAYOUT
+══════════════════════════════════════════════════════════════════════════ -->
+<main class="app-layout">
+
+  <!-- ── LEFT: Working tree ──────────────────────────────────────────────── -->
+  <section class="wt-panel" aria-label="Working tree">
+
+    <div class="panel-heading">Working Tree</div>
+
+    <!-- File list -->
+    <div class="file-list" id="fileList" role="list"></div>
+
+    <!-- New file -->
+    <div class="new-file-row">
+      <button class="btn btn-outline btn-sm" id="newFileBtn">+ New File</button>
+    </div>
+
+    <!-- Editor -->
+    <div class="editor-section">
+      <div class="editor-toolbar">
+        <span class="editor-filename" id="editorFilename">(no file selected)</span>
+        <button class="btn btn-outline btn-sm" id="stageFileBtn" title="Stage this file">Stage</button>
+      </div>
+      <textarea
+        id="fileEditor"
+        spellcheck="false"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="off"
+        placeholder="Select a file to edit…"
+        aria-label="File editor"
+      ></textarea>
+    </div>
+
+    <!-- Commit area -->
+    <div class="commit-area">
+      <div class="conflict-banner" id="conflictBanner" role="alert"></div>
+      <div class="commit-row">
+        <input type="text" id="commitMessage" placeholder="Commit message…" autocomplete="off" aria-label="Commit message">
+        <button class="btn btn-ghost btn-sm"    id="stageAllBtn" title="Stage all working-tree files">Stage All</button>
+        <button class="btn btn-primary btn-sm"  id="commitBtn"   title="Create commit">Commit</button>
+      </div>
+    </div>
+
+  </section>
+
+
+  <!-- ── RIGHT: DAG / Reflog / Cat-file ─────────────────────────────────── -->
+  <section class="right-panel" aria-label="Graph and inspection">
+
+    <!-- Tab bar -->
+    <div class="tabs" role="tablist">
+      <button class="tab-btn active" data-tab="dag"     role="tab" aria-selected="true" >DAG</button>
+      <button class="tab-btn"        data-tab="reflog"  role="tab" aria-selected="false">Reflog</button>
+      <button class="tab-btn"        data-tab="catfile" role="tab" aria-selected="false">Cat-file</button>
+    </div>
+
+    <div class="tab-content">
+
+      <!-- DAG pane -->
+      <div class="tab-pane active" id="tab-dag" role="tabpanel">
+        <div class="dag-container" id="dagContainer">
+          <!-- SVG inserted by app.js -->
+        </div>
+      </div>
+
+      <!-- Reflog pane -->
+      <div class="tab-pane" id="tab-reflog" role="tabpanel">
+        <div id="reflogContainer">
+          <!-- Entries inserted by app.js -->
+        </div>
+      </div>
+
+      <!-- Cat-file pane -->
+      <div class="tab-pane" id="tab-catfile" role="tabpanel">
+        <div class="catfile-input-row">
+          <input type="text" id="catfileHash"
+                 placeholder="SHA-1 (40 hex chars)…"
+                 spellcheck="false" autocomplete="off"
+                 aria-label="Object SHA to inspect">
+          <button class="btn btn-outline btn-sm" id="catfileBtn">Inspect</button>
+        </div>
+        <pre class="catfile-output" id="catfileOutput"
+             aria-label="Cat-file output">Click a commit in the DAG, or paste a SHA above and click Inspect.</pre>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     MODALS
+══════════════════════════════════════════════════════════════════════════ -->
+
+<!-- New branch -->
+<div class="modal-backdrop" id="newBranchModal" role="dialog" aria-modal="true" aria-labelledby="newBranchTitle">
+  <div class="modal">
+    <h3 id="newBranchTitle">New Branch</h3>
+    <div class="modal-field">
+      <label for="newBranchName">Branch name</label>
+      <input type="text" id="newBranchName" placeholder="my-feature" autocomplete="off">
+    </div>
+    <p class="modal-note">Branch will be created from the current HEAD.</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost"   onclick="document.getElementById('newBranchModal').classList.remove('visible')">Cancel</button>
+      <button class="btn btn-primary" id="newBranchConfirm">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- Merge -->
+<div class="modal-backdrop" id="mergeModal" role="dialog" aria-modal="true" aria-labelledby="mergeTitle">
+  <div class="modal">
+    <h3 id="mergeTitle">Merge into current branch</h3>
+    <div class="modal-field">
+      <label for="mergeBranchSelect">Branch to merge</label>
+      <select id="mergeBranchSelect"></select>
+    </div>
+    <p class="modal-note">
+      If both branches changed the same file, conflict markers will appear
+      in the editor for you to resolve. Stage All + Commit to complete.
+    </p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost"   onclick="document.getElementById('mergeModal').classList.remove('visible')">Cancel</button>
+      <button class="btn btn-primary" id="mergeConfirm">Merge</button>
+    </div>
+  </div>
+</div>
+
+<!-- Rebase -->
+<div class="modal-backdrop" id="rebaseModal" role="dialog" aria-modal="true" aria-labelledby="rebaseTitle">
+  <div class="modal">
+    <h3 id="rebaseTitle">Rebase current branch onto…</h3>
+    <div class="modal-field">
+      <label for="rebaseBranchSelect">Target branch</label>
+      <select id="rebaseBranchSelect"></select>
+    </div>
+    <p class="modal-note">
+      Unique commits are replayed on top of the target. Each replayed commit
+      gets a <strong>new hash</strong>; originals are preserved in the reflog.
+    </p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost"   onclick="document.getElementById('rebaseModal').classList.remove('visible')">Cancel</button>
+      <button class="btn btn-primary" id="rebaseConfirm">Rebase</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     SCRIPTS
+══════════════════════════════════════════════════════════════════════════ -->
+<script src="js/sha1.js"></script>
+<script src="js/git.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>

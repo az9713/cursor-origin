@@ -1,0 +1,31 @@
+/* board-rules — design tokens */
+:root {
+  /* Color palette */
+  --paper-0: #ebe4d6;
+  --paper-1: #fffdf8;
+  --rust:    #b4451a;
+  --header:  #2a251f;
+  --ink:     #1a1614;
+  --ink-muted: #6b5e52;
+
+  /* Board */
+  --sq-light: #f0d9b5;
+  --sq-dark:  #b58863;
+  --sq-legal: rgba(20, 85, 30, 0.45);
+  --sq-last-light: rgba(180, 69, 26, 0.30);
+  --sq-last-dark:  rgba(180, 69, 26, 0.45);
+  --sq-selected: rgba(20, 85, 30, 0.60);
+  --sq-check: rgba(200, 30, 30, 0.60);
+
+  /* Eval bar */
+  --bar-white: #fffdf8;
+  --bar-black: #2a251f;
+
+  /* Typography */
+  --font-sans: 'IBM Plex Sans', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+
+  /* Spacing */
+  --radius: 4px;
+  --radius-lg: 8px;
+}

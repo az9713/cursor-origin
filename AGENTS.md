@@ -25,6 +25,16 @@ Current sub-projects:
 - `motion-editor/` — Project 18: keyframe timeline
 - `spec-hunter/` — Project 19: planted-bug issue tracker
 - `crdt-notes/` — Project 20: two-peer CRDT notes
+- `regex-studio/` — Project 21: bidirectional regex studio
+- `git-theatre/` — Project 22: in-browser Git object store
+- `circuit-lab/` — Project 23: schematic ↔ HDL
+- `packet-forge/` — Project 24: packet header forge
+- `ledger-books/` — Project 25: double-entry ledger
+- `constraint-sketch/` — Project 26: geometric constraint sketch
+- `path-studio/` — Project 27: tile map + pathfinding
+- `css-cascade/` — Project 28: CSS cascade laboratory
+- `audio-tracker/` — Project 29: multi-track audio tracker
+- `board-rules/` — Project 30: chess rules + PGN
 
 ## How to run
 

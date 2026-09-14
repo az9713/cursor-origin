@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Packet Forge — Ethernet/IPv4/TCP/UDP Builder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<!-- ── Header ─────────────────────────────────────────────────────────────── -->
+<header class="app-header">
+  <a class="hub-link" href="../">← Hub</a>
+  <h1 class="app-title">Packet Forge</h1>
+  <span class="header-sep"></span>
+  <div class="header-controls">
+    <button class="btn btn-accent" id="btn-syn"     title="Load TCP SYN preset  (#/p/tcp-syn)">TCP SYN</button>
+    <button class="btn"            id="btn-udp-dns" title="Load UDP DNS preset   (#/p/udp-dns)">UDP DNS</button>
+    <button class="btn"            id="btn-reset"   title="Reset to defaults">Reset</button>
+    <button class="btn"            id="btn-import"  title="Import hex bytes">Import</button>
+    <button class="btn"            id="btn-export"  title="Export hex bytes">Export</button>
+    <label class="toggle-label" title="When locked, checksums are NOT recomputed">
+      <input type="checkbox" id="fld-lock-cksum">
+      Lock checksum
+    </label>
+    <span id="cksum-status" class="cksum-status" hidden></span>
+  </div>
+</header>
+
+<!-- ── Form pane ──────────────────────────────────────────────────────────── -->
+<div class="pane-form">
+  <form id="form-packet" autocomplete="off" onsubmit="return false">
+
+    <!-- Ethernet -->
+    <div class="proto-section">
+      <div class="section-head">
+        <span class="section-badge badge-eth">ETH</span>
+        <span class="section-title">Ethernet II</span>
+      </div>
+
+      <div class="field-row" id="row-eth-dst">
+        <label class="field-label" for="fld-eth-dst">Dst MAC</label>
+        <input  class="field-input" id="fld-eth-dst" type="text"
+                value="ff:ff:ff:ff:ff:ff" placeholder="ff:ff:ff:ff:ff:ff" spellcheck="false">
+        <span class="field-hint">6 B</span>
+      </div>
+
+      <div class="field-row" id="row-eth-src">
+        <label class="field-label" for="fld-eth-src">Src MAC</label>
+        <input  class="field-input" id="fld-eth-src" type="text"
+                value="00:11:22:33:44:55" placeholder="00:11:22:33:44:55" spellcheck="false">
+        <span class="field-hint">6 B</span>
+      </div>
+
+      <div class="field-row" id="row-eth-type">
+        <label class="field-label">EtherType</label>
+        <span  class="field-computed">0x0800 — IPv4</span>
+        <span  class="field-hint">fixed</span>
+      </div>
+    </div><!-- /Ethernet -->
+
+    <!-- IPv4 -->
+    <div class="proto-section">
+      <div class="section-head">
+        <span class="section-badge badge-ip">IPv4</span>
+        <span class="section-title">Internet Protocol v4</span>
+      </div>
+
+      <div class="field-row" id="row-ip-ver-ihl">
+        <label class="field-label">Ver / IHL</label>
+        <span  class="field-computed">4 / 5 — 20 B header</span>
+        <span  class="field-hint">fixed</span>
+      </div>
+
+      <div class="field-row" id="row-ip-tos">
+        <label class="field-label" for="fld-ip-tos">DSCP / TOS</label>
+        <input  class="field-input" id="fld-ip-tos" type="text"
+                value="0x00" placeholder="0x00" spellcheck="false">
+        <span class="field-hint">1 B</span>
+      </div>
+
+      <div class="field-row" id="row-ip-totlen">
+        <label class="field-label">Total Length</label>
+        <span  class="field-computed" id="disp-ip-totlen">—</span>
+        <span  class="field-hint">auto</span>
+      </div>
+
+      <div class="field-row" id="row-ip-id">
+        <label class="field-label" for="fld-ip-id">ID</label>
+        <input  class="field-input" id="fld-ip-id" type="text"
+                value="0x0001" placeholder="0x0001" spellcheck="false">
+        <span class="field-hint">2 B</span>
+      </div>
+
+      <div class="field-row" id="row-ip-flags" style="align-items:flex-start;padding-top:4px">
+        <label class="field-label" style="padding-top:2px">Flags / Frag</label>
+        <div class="check-group">
+          <label class="check-lbl"><input type="checkbox" id="fld-ip-df" checked> DF</label>
+          <label class="check-lbl"><input type="checkbox" id="fld-ip-mf"> MF</label>
+          <input  class="field-input frag-offset-input"
+                  id="fld-ip-frag" type="number" min="0" max="8191"
+                  value="0" placeholder="0" title="Fragment offset (13 bits)">
+          <span style="font-size:10px;color:var(--muted);align-self:center">offset</span>
+        </div>
+        <span class="field-hint">2 B</span>
+      </div>
+
+      <div class="field-row" id="row-ip-ttl">
+        <label class="field-label" for="fld-ip-ttl">TTL</label>
+        <input  class="field-input" id="fld-ip-ttl" type="number"
+                min="0" max="255" value="64" placeholder="64">
+        <span class="field-hint">1 B</span>
+      </div>
+
+      <div class="field-row" id="row-ip-proto">
+        <label class="field-label" for="fld-ip-proto">Protocol</label>
+        <select class="field-select" id="fld-ip-proto">
+          <option value="6"  selected>6 — TCP</option>
+          <option value="17">17 — UDP</option>
+        </select>
+        <span class="field-hint">1 B</span>
+      </div>
+
+      <div class="field-row" id="row-ip-cksum">
+        <label class="field-label">Checksum</label>
+        <span  class="field-computed" id="disp-ip-cksum">—</span>
+        <span  class="field-hint">auto</span>
+      </div>
+
+      <div class="field-row" id="row-ip-src">
+        <label class="field-label" for="fld-ip-src">Src IP</label>
+        <input  class="field-input" id="fld-ip-src" type="text"
+                value="192.168.1.1" placeholder="192.168.1.1" spellcheck="false">
+        <span class="field-hint">4 B</span>
+      </div>
+
+      <div class="field-row" id="row-ip-dst">
+        <label class="field-label" for="fld-ip-dst">Dst IP</label>
+        <input  class="field-input" id="fld-ip-dst" type="text"
+                value="192.168.1.2" placeholder="192.168.1.2" spellcheck="false">
+        <span class="field-hint">4 B</span>
+      </div>
+    </div><!-- /IPv4 -->
+
+    <!-- TCP -->
+    <div class="proto-section" id="section-tcp">
+      <div class="section-head">
+        <span class="section-badge badge-tcp">TCP</span>
+        <span class="section-title">Transmission Control Protocol</span>
+      </div>
+
+      <div class="field-row" id="row-tcp-sport">
+        <label class="field-label" for="fld-tcp-sport">Src Port</label>
+        <input  class="field-input" id="fld-tcp-sport" type="number"
+                min="0" max="65535" value="54321" placeholder="54321">
+        <span class="field-hint">2 B</span>
+      </div>
+
+      <div class="field-row" id="row-tcp-dport">
+        <label class="field-label" for="fld-tcp-dport">Dst Port</label>
+        <input  class="field-input" id="fld-tcp-dport" type="number"
+                min="0" max="65535" value="80" placeholder="80">
+        <span class="field-hint">2 B</span>
+      </div>
+
+      <div class="field-row" id="row-tcp-seq">
+        <label class="field-label" for="fld-tcp-seq">Seq</label>
+        <input  class="field-input" id="fld-tcp-seq" type="text"
+                value="0x00000000" placeholder="0x00000000" spellcheck="false">
+        <span class="field-hint">4 B</span>
+      </div>
+
+      <div class="field-row" id="row-tcp-ack">
+        <label class="field-label" for="fld-tcp-ack-num">Ack</label>
+        <input  class="field-input" id="fld-tcp-ack-num" type="text"
+                value="0x00000000" placeholder="0x00000000" spellcheck="false">
+        <span class="field-hint">4 B</span>
+      </div>
+
+      <div class="field-row" id="row-tcp-flags" style="align-items:flex-start;padding-top:4px">
+        <label class="field-label" style="padding-top:2px">Flags</label>
+        <div class="check-group">
+          <label class="check-lbl"><input type="checkbox" id="fld-tcp-flag-urg"> URG</label>
+          <label class="check-lbl"><input type="checkbox" id="fld-tcp-flag-ack"> ACK</label>
+          <label class="check-lbl"><input type="checkbox" id="fld-tcp-flag-psh"> PSH</label>
+          <label class="check-lbl"><input type="checkbox" id="fld-tcp-flag-rst"> RST</label>
+          <label class="check-lbl"><input type="checkbox" id="fld-tcp-flag-syn" checked> SYN</label>
+          <label class="check-lbl"><input type="checkbox" id="fld-tcp-flag-fin"> FIN</label>
+        </div>
+        <span class="field-hint">6 b</span>
+      </div>
+
+      <div class="field-row" id="row-tcp-window">
+        <label class="field-label" for="fld-tcp-window">Window</label>
+        <input  class="field-input" id="fld-tcp-window" type="number"
+                min="0" max="65535" value="65535" placeholder="65535">
+        <span class="field-hint">2 B</span>
+      </div>
+
+      <div class="field-row" id="row-tcp-cksum">
+        <label class="field-label">Checksum</label>
+        <span  class="field-computed" id="disp-tcp-cksum">—</span>
+        <span  class="field-hint">auto</span>
+      </div>
+
+      <div class="field-row" id="row-tcp-urgent">
+        <label class="field-label" for="fld-tcp-urgent">Urgent Ptr</label>
+        <input  class="field-input" id="fld-tcp-urgent" type="number"
+                min="0" max="65535" value="0" placeholder="0">
+        <span class="field-hint">2 B</span>
+      </div>
+    </div><!-- /TCP -->
+
+    <!-- UDP -->
+    <div class="proto-section" id="section-udp" style="display:none">
+      <div class="section-head">
+        <span class="section-badge badge-udp">UDP</span>
+        <span class="section-title">User Datagram Protocol</span>
+      </div>
+
+      <div class="field-row" id="row-udp-sport">
+        <label class="field-label" for="fld-udp-sport">Src Port</label>
+        <input  class="field-input" id="fld-udp-sport" type="number"
+                min="0" max="65535" value="1234" placeholder="1234">
+        <span class="field-hint">2 B</span>
+      </div>
+
+      <div class="field-row" id="row-udp-dport">
+        <label class="field-label" for="fld-udp-dport">Dst Port</label>
+        <input  class="field-input" id="fld-udp-dport" type="number"
+                min="0" max="65535" value="53" placeholder="53">
+        <span class="field-hint">2 B</span>
+      </div>
+
+      <div class="field-row" id="row-udp-length">
+        <label class="field-label">Length</label>
+        <span  class="field-computed" id="disp-udp-length">—</span>
+        <span  class="field-hint">auto</span>
+      </div>
+
+      <div class="field-row" id="row-udp-cksum">
+        <label class="field-label">Checksum</label>
+        <span  class="field-computed" id="disp-udp-cksum">—</span>
+        <span  class="field-hint">auto</span>
+      </div>
+    </div><!-- /UDP -->
+
+    <!-- Payload -->
+    <div class="proto-section">
+      <div class="section-head">
+        <span class="section-badge badge-payload">DATA</span>
+        <span class="section-title">Payload</span>
+      </div>
+
+      <div class="field-row" id="row-payload" style="align-items:flex-start;padding-top:4px">
+        <label class="field-label" for="fld-payload" style="padding-top:4px">Hex bytes</label>
+        <textarea class="field-input" id="fld-payload" rows="3"
+                  placeholder="deadbeef cafe..." spellcheck="false"
+                  style="height:auto;resize:vertical"></textarea>
+        <span class="field-hint"></span>
+      </div>
+    </div><!-- /Payload -->
+
+  </form>
+</div><!-- /pane-form -->
+
+<!-- ── Hex dump pane ───────────────────────────────────────────────────────── -->
+<div class="pane-hex" id="hex-dump-pane">
+  <p class="hex-pane-title">Live hex dump — click any byte to jump to its field</p>
+  <pre class="hex-dump" id="hex-dump"></pre>
+
+  <div class="hex-legend">
+    <div class="legend-item">
+      <div class="legend-dot" style="background:var(--c-eth)"></div>Ethernet
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:var(--c-ip)"></div>IPv4
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:var(--c-tcp)"></div>TCP
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:var(--c-udp)"></div>UDP
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:var(--c-payload)"></div>Payload
+    </div>
+  </div>
+</div><!-- /pane-hex -->
+
+<script src="js/codec.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
