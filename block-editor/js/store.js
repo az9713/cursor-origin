@@ -287,11 +287,13 @@ const Store = (() => {
     [...page.children].forEach(_deleteDeep);
     page.children = [];
 
-    // Insert new blocks
+    // Insert new blocks. Nested bullets/todos already have parentId + children ids.
     newBlocks.forEach(b => {
-      b.parentId = pageId;
+      if (!b.parentId) {
+        b.parentId = pageId;
+        page.children.push(b.id);
+      }
       state.blocks[b.id] = b;
-      page.children.push(b.id);
     });
     persist();
   }

@@ -58,16 +58,27 @@ let tlDragging      = false;
 
 // ─── Persistence ──────────────────────────────────────────────────────────────
 
+function isValidClip(c) {
+  return !!(c && typeof c === 'object'
+    && typeof c.durationMs === 'number' && c.durationMs > 0
+    && Array.isArray(c.nodes)
+    && c.nodes.every(n => n && Array.isArray(n.track)));
+}
+
 function loadFromStorage() {
   try {
     const raw = localStorage.getItem(LS_KEY);
-    if (raw) return JSON.parse(raw);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (isValidClip(parsed)) return parsed;
   } catch (_) { /* ignore */ }
   return null;
 }
 
 function persist() {
-  localStorage.setItem(LS_KEY, JSON.stringify(clip));
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(clip));
+  } catch (_) { /* quota or private mode — keep working in memory */ }
 }
 
 function deepClone(o) {
@@ -652,3 +663,4 @@ window.addEventListener('keydown', e => {
 clip = loadFromStorage() || deepClone(DEFAULT_CLIP);
 fullInit();
 applyHashPlayhead();
+window.addEventListener('hashchange', applyHashPlayhead);

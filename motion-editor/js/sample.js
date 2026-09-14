@@ -54,7 +54,9 @@ function sample(node, p) {
 
   const a   = kfs[i];
   const b   = kfs[i + 1];
-  const raw = (p - a.t) / (b.t - a.t);   // 0..1 within this segment
+  const span = b.t - a.t;
+  if (!span) return { x: a.x, y: a.y };
+  const raw = (p - a.t) / span;   // 0..1 within this segment
   const et  = easeValue(raw, a.ease);     // apply left-keyframe easing
 
   return {

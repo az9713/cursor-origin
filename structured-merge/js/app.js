@@ -70,12 +70,13 @@ const FIXTURES = {
 
 const STORAGE_KEY = 'structured-merge-v1';
 
-/** @type {{ fixtureId: string|null, pendingMap: Object, result: object|null, autoHunks: Array }} */
+/** @type {{ fixtureId: string|null, pendingMap: Object, result: object|null, autoHunks: Array, stash: Object }} */
 let state = {
   fixtureId:  null,
   pendingMap: {},   // { [hunkId]: Hunk }  — remaining (unresolved) conflicts
   result:     null,
   autoHunks:  [],   // serialisable summary of auto-applied hunks (for display)
+  stash:      {},   // per-fixture progress so switching does not drop resolutions
 };
 
 function loadState() {
@@ -228,6 +229,16 @@ function renderAll(fixture) {
  * Load a fixture. If the same fixture is already loaded and forceReset=false,
  * restore from persisted state instead of re-running the diff.
  */
+function snapshotFixture(id) {
+  if (!id) return;
+  state.stash = state.stash || {};
+  state.stash[id] = {
+    pendingMap: state.pendingMap,
+    result:     state.result,
+    autoHunks:  state.autoHunks,
+  };
+}
+
 function loadFixture(fixtureId, forceReset = false) {
   const fixture = FIXTURES[fixtureId];
   if (!fixture) return;
@@ -241,7 +252,28 @@ function loadFixture(fixtureId, forceReset = false) {
     return;
   }
 
+  if (!forceReset && state.fixtureId && state.fixtureId !== fixtureId) {
+    snapshotFixture(state.fixtureId);
+  }
+
+  if (!forceReset && state.stash?.[fixtureId]?.result != null) {
+    const saved = state.stash[fixtureId];
+    state.fixtureId  = fixtureId;
+    state.pendingMap = saved.pendingMap || {};
+    state.result     = saved.result;
+    state.autoHunks  = saved.autoHunks || [];
+    saveState();
+    setHash(fixtureId);
+    renderAll(fixture);
+    return;
+  }
+
   // ── Fresh diff ──────────────────────────────────────────
+  if (forceReset) {
+    state.stash = state.stash || {};
+    delete state.stash[fixtureId];
+  }
+
   const hunks = threeWayDiff(fixture.base, fixture.ours, fixture.theirs);
   const { result, pending } = buildResult(fixture.base, hunks);
 
@@ -275,13 +307,14 @@ function acceptConflict(id, side) {
   if (!h) return;
 
   const val = side === 'ours' ? h.oursVal : h.theirsVal;
-  if (val === undefined || val === null) {
+  if (val === undefined) {
     deleteAtPath(state.result, h.path);
   } else {
     setAtPath(state.result, h.path, val);
   }
 
   delete state.pendingMap[id];
+  snapshotFixture(state.fixtureId);
   saveState();
 
   // Animate card out then remove

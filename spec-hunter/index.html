@@ -758,9 +758,22 @@ function route() {
 }
 
 // ── Event wiring ──────────────────────────────────────────────────────────────
+function syncDetailVisibility() {
+  const id = activeIssueId();
+  if (id == null) return;
+  const visible = getVisible();
+  const panel = document.getElementById('main-panel');
+  if (!visible.some(i => i.id === id)) {
+    panel.innerHTML = '<div class="welcome">Select an issue or create a new one.</div>';
+  } else {
+    renderDetail(id);
+  }
+}
+
 document.getElementById('search-input').addEventListener('input', e => {
   searchQuery = e.target.value;
   renderList();
+  syncDetailVisibility();
 });
 
 document.querySelectorAll('.filter-btn').forEach(btn => {
@@ -769,6 +782,7 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
     btn.classList.add('active');
     activeFilter = btn.dataset.filter;
     renderList();
+    syncDetailVisibility();
   });
 });
 

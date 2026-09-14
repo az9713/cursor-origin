@@ -157,5 +157,7 @@ const App = (() => {
   return { init, render, renderBlocks, highlightBlock };
 })();
 
+window.App = App;
+
 /* ── Bootstrap ───────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => App.init());

@@ -31,6 +31,7 @@ const peers = {
     snapshotLabel: null,    // human-readable timestamp
     selectedNoteId: null,
     conflicts: [],          // { noteId, peerA_value, peerB_value, lamportA, lamportB }
+    localState: null,       // offline fork — not written to shared storage
     // DOM refs filled below
     el: null, statusEl: null, toggleBtn: null, queueBadge: null,
     noteListEl: null, editorTitleEl: null, editorBodyEl: null,
@@ -44,6 +45,7 @@ const peers = {
     snapshotLabel: null,
     selectedNoteId: null,
     conflicts: [],
+    localState: null,
     el: null, statusEl: null, toggleBtn: null, queueBadge: null,
     noteListEl: null, editorTitleEl: null, editorBodyEl: null,
     conflictZoneEl: null, snapshotInfoEl: null,
@@ -171,7 +173,7 @@ function renderNoteList(id) {
   const el = p.noteListEl;
   el.innerHTML = '';
 
-  const notes = Object.values(state.notes).sort((a, b) =>
+  const notes = Object.values(viewState(id).notes).sort((a, b) =>
     a.lamport - b.lamport || a.id.localeCompare(b.id)
   );
 
@@ -191,7 +193,7 @@ function renderNoteList(id) {
 
 function renderEditor(id) {
   const p = peers[id];
-  const note = p.selectedNoteId ? state.notes[p.selectedNoteId] : null;
+  const note = p.selectedNoteId ? viewState(id).notes[p.selectedNoteId] : null;
 
   const emptyDiv = document.getElementById(`editor-empty-${id}`);
   const editorDiv = document.getElementById(`editor-main-${id}`);
@@ -266,6 +268,9 @@ function toggleOnline(id) {
 
   if (p.online) {
     flushQueue(id);
+    p.localState = null;
+  } else {
+    p.localState = cloneState(state);
   }
 
   renderAll();
@@ -277,12 +282,12 @@ function toggleOnline(id) {
  */
 function flushQueue(id) {
   const p = peers[id];
-  const otherId = id === 'A' ? 'B' : 'A';
 
   for (const op of p.queue) {
     state = applyOp(state, op, id);
   }
   p.queue = [];
+  p.localState = null;
 
   save(state);
   renderAll();
@@ -360,10 +365,9 @@ function dispatch(peerId, op) {
     renderAll();
   } else {
     p.queue.push(op);
-    // Apply locally for the offline peer's own view
-    state = applyOp(state, op, peerId);
-    save(state);
-    renderAll();
+    if (!p.localState) p.localState = cloneState(state);
+    p.localState = applyOp(p.localState, op, peerId);
+    renderPeer(peerId);
   }
 }
 
@@ -372,13 +376,10 @@ function dispatch(peerId, op) {
 ═══════════════════════════════════════════════════════════════════════ */
 
 function doCreateNote(peerId) {
-  const res = createNote(state, peerId);
-  state = res.state;
+  const res = createNote(viewState(peerId), peerId);
   peers[peerId].selectedNoteId = res.op.noteId;
-  navigateToNote(res.op.noteId);
-
   dispatch(peerId, res.op);
-  renderAll();
+  navigateToNote(res.op.noteId);
 }
 
 function onTitleInput(peerId) {
@@ -391,8 +392,7 @@ function onTitleInput(peerId) {
   // Record what this peer considers the current title
   lastSeenTitle[peerId][noteId] = newTitle;
 
-  const res = setTitle(state, peerId, noteId, newTitle);
-  state = res.state;
+  const res = setTitle(viewState(peerId), peerId, noteId, newTitle);
   dispatch(peerId, res.op);
 }
 
@@ -401,13 +401,13 @@ function onBodyInput(peerId) {
   if (!p.selectedNoteId) return;
 
   const noteId = p.selectedNoteId;
-  const oldBody = lastBody[peerId][noteId] ?? (state.notes[noteId]?.body ?? '');
+  const st = viewState(peerId);
+  const oldBody = lastBody[peerId][noteId] ?? (st.notes[noteId]?.body ?? '');
   const newBody = p.editorBodyEl.value;
 
   if (oldBody === newBody) return;
 
-  const res = diffBody(state, peerId, noteId, oldBody, newBody);
-  state = res.state;
+  const res = diffBody(st, peerId, noteId, oldBody, newBody);
   lastBody[peerId][noteId] = newBody;
 
   for (const op of res.ops) {
@@ -435,12 +435,19 @@ function doSnapshotRestore(peerId) {
   for (const id of ['A', 'B']) {
     peers[id].queue = [];
     peers[id].conflicts = [];
+    peers[id].localState = null;
+    lastSeenTitle[id] = {};
+    lastBody[id] = {};
     // Re-select note if it still exists
     if (peers[id].selectedNoteId && !state.notes[peers[id].selectedNoteId]) {
       peers[id].selectedNoteId = null;
     }
   }
   renderAll();
+  // Force editor fields to match restored bodies even if a textarea has focus
+  for (const id of ['A', 'B']) {
+    syncEditorFromState(id);
+  }
 }
 
 /* ── Conflict resolution ──────────────────────────────────────────── */
@@ -480,6 +487,7 @@ function doReset() {
     peers[id].snapshotLabel = null;
     peers[id].selectedNoteId = null;
     peers[id].online = true;
+    peers[id].localState = null;
     lastSeenTitle[id] = {};
     lastBody[id] = {};
   }
@@ -491,6 +499,25 @@ function doReset() {
 /* ═══════════════════════════════════════════════════════════════════════
    UTILITIES
 ═══════════════════════════════════════════════════════════════════════ */
+
+function cloneState(st) {
+  return JSON.parse(JSON.stringify(st));
+}
+
+function viewState(peerId) {
+  const p = peers[peerId];
+  return (!p.online && p.localState) ? p.localState : state;
+}
+
+function syncEditorFromState(id) {
+  const p = peers[id];
+  const note = p.selectedNoteId ? viewState(id).notes[p.selectedNoteId] : null;
+  if (!note) return;
+  p.editorTitleEl.value = note.title;
+  p.editorBodyEl.value = note.body;
+  lastSeenTitle[id][note.id] = note.title;
+  lastBody[id][note.id] = note.body;
+}
 
 function escapeHTML(str) {
   return String(str)

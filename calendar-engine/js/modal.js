@@ -115,8 +115,11 @@ function openEditModal(eventId, occStartISO) {
   btnDelete.classList.remove('hidden');
 
   const tz = ev.tz || 'America/Los_Angeles';
-  const sMs = new Date(ev.startISO).getTime();
-  const eMs = new Date(ev.endISO).getTime();
+  const seriesStart = new Date(ev.startISO).getTime();
+  const seriesEnd   = new Date(ev.endISO).getTime();
+  const duration    = Number.isFinite(seriesEnd - seriesStart) ? seriesEnd - seriesStart : 0;
+  const sMs = occStartISO ? new Date(occStartISO).getTime() : seriesStart;
+  const eMs = (Number.isFinite(sMs) ? sMs : seriesStart) + duration;
   const sLp = getLocalParts(sMs, tz);
   const eLp = getLocalParts(eMs, tz);
 

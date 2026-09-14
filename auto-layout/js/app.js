@@ -248,6 +248,9 @@ function renderInspector() {
   }
 
   const isRoot = node.id === root.id;
+  const parent = findParent(root, node.id);
+  const blockFillX = !!(parent && parent.sizingX === 'hug');
+  const blockFillY = !!(parent && parent.sizingY === 'hug');
   const hasFW  = node.sizingX === 'fixed';
   const hasFH  = node.sizingY === 'fixed';
 
@@ -307,7 +310,7 @@ function renderInspector() {
           <label>Width</label>
           <select id="f-sx">
             <option value="hug"   ${sel(node.sizingX,'hug')}>Hug</option>
-            <option value="fill"  ${sel(node.sizingX,'fill')}>Fill</option>
+            <option value="fill"  ${sel(node.sizingX,'fill')} ${blockFillX ? 'disabled' : ''}>Fill</option>
             <option value="fixed" ${sel(node.sizingX,'fixed')}>Fixed</option>
           </select>
           ${hasFW ? `<input id="f-w" type="number" min="1" max="2000" value="${node.w}" style="width:56px;flex:none">` : ''}
@@ -316,7 +319,7 @@ function renderInspector() {
           <label>Height</label>
           <select id="f-sy">
             <option value="hug"   ${sel(node.sizingY,'hug')}>Hug</option>
-            <option value="fill"  ${sel(node.sizingY,'fill')}>Fill</option>
+            <option value="fill"  ${sel(node.sizingY,'fill')} ${blockFillY ? 'disabled' : ''}>Fill</option>
             <option value="fixed" ${sel(node.sizingY,'fixed')}>Fixed</option>
           </select>
           ${hasFH ? `<input id="f-h" type="number" min="1" max="2000" value="${node.h}" style="width:56px;flex:none">` : ''}
@@ -426,11 +429,22 @@ function saveAndRender() {
   renderAll();
 }
 
+function coerceFillInHug(node, parent) {
+  if (parent) {
+    if (parent.sizingX === 'hug' && node.sizingX === 'fill') node.sizingX = 'hug';
+    if (parent.sizingY === 'hug' && node.sizingY === 'fill') node.sizingY = 'hug';
+  }
+  for (const c of node.children || []) coerceFillInHug(c, node);
+}
+
 function renderAll() {
   // Update toolbar buttons
   document.querySelectorAll('.fixture-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.fixture === state.currentFixture);
   });
+
+  // Fill inside Hug collapses to 0×0 — treat as Hug
+  coerceFillInHug(state.trees[state.currentFixture], null);
 
   // Solve
   solve(state.trees[state.currentFixture]);
@@ -488,6 +502,7 @@ function init() {
     if (fid && state.trees[fid] && fid !== state.currentFixture) {
       state.currentFixture = fid;
       state.selectedId     = null;
+      saveState();
       renderAll();
     }
   });

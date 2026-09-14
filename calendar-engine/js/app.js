@@ -103,6 +103,7 @@
       const [y, mo, d] = m[1].split('-').map(Number);
       S.focusDate = new Date(y, mo - 1, d);
     }
+    refresh();
   }
 
   /**

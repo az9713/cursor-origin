@@ -396,13 +396,30 @@ function showResult(htmlOrText) {
 }
 
 function doRename(oldName, newName) {
-  const re = new RegExp(
-    `\\b${oldName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'g'
-  );
   for (const fname of Object.keys(st.files)) {
-    const newSrc = st.files[fname].replace(re, newName);
-    if (newSrc !== st.files[fname]) {
-      st.files[fname] = newSrc;
+    const src = st.files[fname];
+    const toks = tokenize(src);
+    const hits = toks.filter(t => t.type === TK.IDENT && t.value === oldName);
+    if (!hits.length) continue;
+
+    const lines = src.split('\n');
+    function offset(line, col) {
+      let o = 0;
+      for (let i = 0; i < line - 1; i++) o += lines[i].length + 1;
+      return o + (col - 1);
+    }
+
+    const spans = hits.map(t => {
+      const start = offset(t.line, t.col);
+      return { start, end: start + oldName.length };
+    }).sort((a, b) => b.start - a.start);
+
+    let next = src;
+    for (const s of spans) {
+      next = next.slice(0, s.start) + newName + next.slice(s.end);
+    }
+    if (next !== src) {
+      st.files[fname] = next;
       st.dirty.add(fname);
       reparseFile(fname);
     }
@@ -497,8 +514,9 @@ document.addEventListener('keydown', e => {
   for (const fname of Object.keys(st.files)) reparseFile(fname);
   analyzeAll();
 
-  // Override active file from URL hash if present
+  // Override active file from URL hash if present; otherwise publish it
   handleHash();
+  if (st.activeFile) setHash(st.activeFile);
 
   renderAll();
 

@@ -38,6 +38,7 @@ const Markdown = (() => {
   function importMarkdown(text) {
     const lines  = text.split('\n');
     const blocks = [];
+    const stack  = []; // nestable bullets/todos: { indent, block }
 
     function mkBlock(type, text, checked = false) {
       return {
@@ -46,8 +47,29 @@ const Markdown = (() => {
         text:     text.trim(),
         children: [],
         checked,
-        parentId: null, // filled in by store.importPageBlocks
+        parentId: null, // roots filled in by store.importPageBlocks
       };
+    }
+
+    function indentOf(line) {
+      const m = line.match(/^(\s*)/);
+      return Math.floor((m ? m[1].length : 0) / 2);
+    }
+
+    function attachNestable(block, indent) {
+      while (stack.length && stack[stack.length - 1].indent >= indent) stack.pop();
+      const parent = stack.length ? stack[stack.length - 1].block : null;
+      if (parent && (parent.type === 'bullet' || parent.type === 'todo')) {
+        parent.children.push(block.id);
+        block.parentId = parent.id;
+      }
+      blocks.push(block);
+      stack.push({ indent, block });
+    }
+
+    function attachRoot(block) {
+      stack.length = 0;
+      blocks.push(block);
     }
 
     for (const raw of lines) {
@@ -55,27 +77,27 @@ const Markdown = (() => {
 
       // Headings
       const h1 = line.match(/^#\s+(.+)/);
-      if (h1) { blocks.push(mkBlock('h1', h1[1])); continue; }
+      if (h1) { attachRoot(mkBlock('h1', h1[1])); continue; }
 
       const h2 = line.match(/^##\s+(.+)/);
-      if (h2) { blocks.push(mkBlock('h2', h2[1])); continue; }
+      if (h2) { attachRoot(mkBlock('h2', h2[1])); continue; }
 
       // Todos (must come before plain bullet)
       const todoX = line.match(/^[\s]*-\s+\[x\]\s+(.+)/i);
-      if (todoX) { blocks.push(mkBlock('todo', todoX[1], true)); continue; }
+      if (todoX) { attachNestable(mkBlock('todo', todoX[1], true), indentOf(line)); continue; }
 
       const todoO = line.match(/^[\s]*-\s+\[\s?\]\s+(.+)/i);
-      if (todoO) { blocks.push(mkBlock('todo', todoO[1], false)); continue; }
+      if (todoO) { attachNestable(mkBlock('todo', todoO[1], false), indentOf(line)); continue; }
 
       // Bullet
       const bullet = line.match(/^[\s]*-\s+(.+)/);
-      if (bullet) { blocks.push(mkBlock('bullet', bullet[1])); continue; }
+      if (bullet) { attachNestable(mkBlock('bullet', bullet[1]), indentOf(line)); continue; }
 
       // Blank lines → skip
       if (!line.trim()) continue;
 
       // Everything else → paragraph
-      blocks.push(mkBlock('p', line));
+      attachRoot(mkBlock('p', line));
     }
 
     return blocks;

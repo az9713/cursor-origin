@@ -18,20 +18,28 @@ const STORAGE_KEY = 'crdt-notes-v1';
 /* ── INITIAL SEED ───────────────────────────────────────────────────── */
 const SEED_NOTE_ID = 'seed-hello';
 function seedState() {
+  const seedBody = 'Welcome to crdt-notes!';
+  // Seed characters must live in the log — replay is the source of truth.
+  const bodyLog = [...seedBody].map((ch, i) => ({
+    type: 'body-ins',
+    peer: 'A',
+    lamport: i + 1,
+    noteId: SEED_NOTE_ID,
+    index: i,
+    ch,
+  }));
   return {
     notes: {
       [SEED_NOTE_ID]: {
         id: SEED_NOTE_ID,
         title: 'Hello',
-        body: 'Welcome to crdt-notes!',
+        body: seedBody,
         lamport: 1,
         peer: 'A',
       },
     },
-    // bodyLog: ordered list of applied ops for body CRDT reconstruction
-    bodyLog: [],
-    // lamport clock (shared logical clock ceiling)
-    lamport: 1,
+    bodyLog,
+    lamport: seedBody.length,
   };
 }
 
